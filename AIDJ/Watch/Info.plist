@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Bundle Configuration -->
+    <key>CFBundleDevelopmentRegion</key>
+    <string>$(DEVELOPMENT_LANGUAGE)</string>
+    <key>CFBundleDisplayName</key>
+    <string>AI DJ</string>
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
+    <key>CFBundleIdentifier</key>
+    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>$(PRODUCT_NAME)</string>
+    <key>CFBundlePackageType</key>
+    <string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+
+    <!-- watchOS Specific -->
+    <key>WKApplication</key>
+    <true/>
+    <key>WKCompanionAppBundleIdentifier</key>
+    <string>com.aidj.ios</string>
+    <key>WKRunsIndependentlyOfCompanionApp</key>
+    <false/>
+    <key>WKWatchOnly</key>
+    <false/>
+
+    <!-- Complications -->
+    <key>CLKComplicationPrincipalClass</key>
+    <string>$(PRODUCT_MODULE_NAME).ComplicationController</string>
+    <key>CLKComplicationSupportedFamilies</key>
+    <array>
+        <string>CLKComplicationFamilyCircularSmall</string>
+        <string>CLKComplicationFamilyModularSmall</string>
+        <string>CLKComplicationFamilyModularLarge</string>
+        <string>CLKComplicationFamilyUtilitarianSmall</string>
+        <string>CLKComplicationFamilyUtilitarianSmallFlat</string>
+        <string>CLKComplicationFamilyUtilitarianLarge</string>
+        <string>CLKComplicationFamilyExtraLarge</string>
+        <string>CLKComplicationFamilyGraphicCorner</string>
+        <string>CLKComplicationFamilyGraphicCircular</string>
+        <string>CLKComplicationFamilyGraphicRectangular</string>
+    </array>
+
+    <!-- Privacy - Usage Descriptions -->
+    <key>NSHealthShareUsageDescription</key>
+    <string>AI DJ reads your heart rate and HRV from Apple Watch to select music that matches your current state.</string>
+
+    <key>NSHealthUpdateUsageDescription</key>
+    <string>AI DJ may record workout and activity data to improve music recommendations.</string>
+
+    <!-- Background Modes -->
+    <key>WKBackgroundModes</key>
+    <array>
+        <string>workout-processing</string>
+        <string>self-care</string>
+    </array>
+</dict>
+</plist>

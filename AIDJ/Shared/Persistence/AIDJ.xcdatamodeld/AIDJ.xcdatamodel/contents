@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="22225" systemVersion="23F79" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+
+    <!-- Song Entity -->
+    <entity name="Song" representedClassName="Song" syncable="YES" codeGenerationType="class">
+        <!-- Identifiers -->
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="appleMusicId" attributeType="String"/>
+        <attribute name="persistentId" optional="YES" attributeType="String"/>
+
+        <!-- Metadata -->
+        <attribute name="title" attributeType="String"/>
+        <attribute name="artistName" attributeType="String"/>
+        <attribute name="albumName" optional="YES" attributeType="String"/>
+        <attribute name="durationSeconds" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="artworkURL" optional="YES" attributeType="String"/>
+        <attribute name="genreNames" optional="YES" attributeType="Transformable" valueTransformerName="NSSecureUnarchiveFromDataTransformerName" customClassName="[String]"/>
+        <attribute name="releaseDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+
+        <!-- Audio Features -->
+        <attribute name="bpm" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="energyEstimate" attributeType="Double" defaultValueString="0.5" usesScalarValueType="YES"/>
+        <attribute name="acousticDensity" attributeType="Double" defaultValueString="0.5" usesScalarValueType="YES"/>
+        <attribute name="valence" attributeType="Double" defaultValueString="0.5" usesScalarValueType="YES"/>
+        <attribute name="instrumentalness" attributeType="Double" defaultValueString="0.5" usesScalarValueType="YES"/>
+
+        <!-- Derived Metrics -->
+        <attribute name="calmScore" attributeType="Double" defaultValueString="0.5" usesScalarValueType="YES"/>
+        <attribute name="focusScore" attributeType="Double" defaultValueString="0.5" usesScalarValueType="YES"/>
+        <attribute name="activationScore" attributeType="Double" defaultValueString="0.5" usesScalarValueType="YES"/>
+        <attribute name="familiarityScore" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="confidenceLevel" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+
+        <!-- Statistics -->
+        <attribute name="totalPlayCount" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="totalSkipCount" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="lastPlayedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="addedToLibraryAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+
+        <!-- Relationships -->
+        <relationship name="playlists" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Playlist" inverseName="songs" inverseEntity="Playlist"/>
+        <relationship name="playbackEvents" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="PlaybackEvent" inverseName="song" inverseEntity="PlaybackEvent"/>
+        <relationship name="effects" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="SongEffect" inverseName="song" inverseEntity="SongEffect"/>
+    </entity>
+
+    <!-- Playlist Entity -->
+    <entity name="Playlist" representedClassName="Playlist" syncable="YES" codeGenerationType="class">
+        <!-- Identifiers -->
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="appleMusicId" attributeType="String"/>
+        <attribute name="persistentId" optional="YES" attributeType="String"/>
+
+        <!-- Metadata -->
+        <attribute name="name" attributeType="String"/>
+        <attribute name="descriptionText" optional="YES" attributeType="String"/>
+        <attribute name="artworkURL" optional="YES" attributeType="String"/>
+        <attribute name="isUserCreated" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
+        <attribute name="songCount" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+
+        <!-- Derived Metrics -->
+        <attribute name="avgCalmEffect" attributeType="Double" defaultValueString="0.5" usesScalarValueType="YES"/>
+        <attribute name="avgFocusEffect" attributeType="Double" defaultValueString="0.5" usesScalarValueType="YES"/>
+        <attribute name="avgEnergyEffect" attributeType="Double" defaultValueString="0.5" usesScalarValueType="YES"/>
+        <attribute name="avgBPM" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="effectConfidence" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+
+        <!-- Context Associations (JSON) -->
+        <attribute name="contextAssociations" optional="YES" attributeType="Binary"/>
+
+        <!-- Timestamps -->
+        <attribute name="lastSyncedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="lastPlayedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="createdAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+
+        <!-- Relationships -->
+        <relationship name="songs" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Song" inverseName="playlists" inverseEntity="Song"/>
+        <relationship name="sessions" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="HistoricalSession" inverseName="playlist" inverseEntity="HistoricalSession"/>
+    </entity>
+
+    <!-- HistoricalSession Entity -->
+    <entity name="HistoricalSession" representedClassName="HistoricalSession" syncable="YES" codeGenerationType="class">
+        <!-- Identifiers -->
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+
+        <!-- Session Boundaries -->
+        <attribute name="startTime" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="endTime" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="durationMinutes" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+
+        <!-- Context -->
+        <attribute name="contextType" attributeType="String" defaultValueString="unknown"/>
+        <attribute name="locationContext" optional="YES" attributeType="String"/>
+        <attribute name="timeOfDaySlot" attributeType="String" defaultValueString="unknown"/>
+        <attribute name="dayOfWeek" attributeType="Integer 16" defaultValueString="1" usesScalarValueType="YES"/>
+
+        <!-- Biometric Summary - Heart Rate -->
+        <attribute name="startingHeartRate" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="endingHeartRate" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="avgHeartRate" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="minHeartRate" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="maxHeartRate" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="deltaHeartRate" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+
+        <!-- Biometric Summary - HRV -->
+        <attribute name="startingHRV" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="endingHRV" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="avgHRV" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="deltaHRV" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+
+        <!-- Motion -->
+        <attribute name="totalSteps" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="motionIntensity" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+
+        <!-- Workout Info -->
+        <attribute name="isWorkoutSession" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="workoutType" optional="YES" attributeType="String"/>
+        <attribute name="workoutCalories" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+
+        <!-- Sleep Correlation -->
+        <attribute name="nextNightSleepScore" optional="YES" attributeType="Double" usesScalarValueType="NO"/>
+        <attribute name="nextNightSleepDuration" optional="YES" attributeType="Double" usesScalarValueType="NO"/>
+        <attribute name="nextNightDeepSleepPct" optional="YES" attributeType="Double" usesScalarValueType="NO"/>
+
+        <!-- Session Quality -->
+        <attribute name="totalSongsPlayed" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="totalSkips" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="skipRate" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="avgListenPercentage" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="overallImpactScore" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+
+        <!-- Relationships -->
+        <relationship name="playlist" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Playlist" inverseName="sessions" inverseEntity="Playlist"/>
+        <relationship name="playbackEvents" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="PlaybackEvent" inverseName="session" inverseEntity="PlaybackEvent"/>
+    </entity>
+
+    <!-- PlaybackEvent Entity -->
+    <entity name="PlaybackEvent" representedClassName="PlaybackEvent" syncable="YES" codeGenerationType="class">
+        <!-- Identifiers -->
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+
+        <!-- Timing -->
+        <attribute name="startedAt" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="endedAt" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="durationListened" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="songDuration" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="listenPercentage" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+
+        <!-- Playback Outcome -->
+        <attribute name="wasSkipped" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="skipReason" optional="YES" attributeType="String"/>
+        <attribute name="wasRepeated" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="volumeAtStart" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="volumeAtEnd" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="volumeAdjustments" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+
+        <!-- Biometric Snapshot -->
+        <attribute name="hrAtStart" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="hrAtEnd" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="hrDelta" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="hrvAtStart" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="hrvAtEnd" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="hrvDelta" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+
+        <!-- Selection Context -->
+        <attribute name="wasAISelected" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="selectionScore" optional="YES" attributeType="Double" usesScalarValueType="NO"/>
+        <attribute name="selectionReason" optional="YES" attributeType="String"/>
+
+        <!-- Relationships -->
+        <relationship name="song" maxCount="1" deletionRule="Nullify" destinationEntity="Song" inverseName="playbackEvents" inverseEntity="Song"/>
+        <relationship name="session" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="HistoricalSession" inverseName="playbackEvents" inverseEntity="HistoricalSession"/>
+    </entity>
+
+    <!-- SongEffect Entity -->
+    <entity name="SongEffect" representedClassName="SongEffect" syncable="YES" codeGenerationType="class">
+        <!-- Identifiers -->
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+
+        <!-- Context Scope -->
+        <attribute name="contextType" attributeType="String" defaultValueString="any"/>
+        <attribute name="timeOfDaySlot" attributeType="String" defaultValueString="any"/>
+
+        <!-- Effect Metrics -->
+        <attribute name="calmScore" attributeType="Double" defaultValueString="0.5" usesScalarValueType="YES"/>
+        <attribute name="focusScore" attributeType="Double" defaultValueString="0.5" usesScalarValueType="YES"/>
+        <attribute name="energyScore" attributeType="Double" defaultValueString="0.5" usesScalarValueType="YES"/>
+        <attribute name="moodLiftScore" attributeType="Double" defaultValueString="0.5" usesScalarValueType="YES"/>
+
+        <!-- Confidence -->
+        <attribute name="sampleCount" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="confidenceLevel" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+
+        <!-- Timestamps -->
+        <attribute name="lastUpdatedAt" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="firstRecordedAt" attributeType="Date" usesScalarValueType="NO"/>
+
+        <!-- Relationships -->
+        <relationship name="song" maxCount="1" deletionRule="Nullify" destinationEntity="Song" inverseName="effects" inverseEntity="Song"/>
+    </entity>
+
+    <!-- BiometricSample Entity -->
+    <entity name="BiometricSample" representedClassName="BiometricSample" syncable="YES" codeGenerationType="class">
+        <!-- Identifiers -->
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="timestamp" attributeType="Date" usesScalarValueType="NO"/>
+
+        <!-- Heart Data -->
+        <attribute name="heartRate" optional="YES" attributeType="Double" usesScalarValueType="NO"/>
+        <attribute name="heartRateVariability" optional="YES" attributeType="Double" usesScalarValueType="NO"/>
+
+        <!-- Motion Data -->
+        <attribute name="stepCount" optional="YES" attributeType="Integer 64" usesScalarValueType="NO"/>
+        <attribute name="isStationary" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
+        <attribute name="activityType" optional="YES" attributeType="String"/>
+
+        <!-- Source -->
+        <attribute name="sourceDevice" attributeType="String" defaultValueString="watch"/>
+        <attribute name="sampleQuality" attributeType="Double" defaultValueString="1.0" usesScalarValueType="YES"/>
+
+        <!-- Context Reference -->
+        <attribute name="activePlaybackEventId" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+    </entity>
+
+    <!-- MacOSContext Entity -->
+    <entity name="MacOSContext" representedClassName="MacOSContext" syncable="YES" codeGenerationType="class">
+        <!-- Identifiers -->
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="timestamp" attributeType="Date" usesScalarValueType="NO"/>
+
+        <!-- Focus Mode -->
+        <attribute name="focusModeActive" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="focusModeName" optional="YES" attributeType="String"/>
+
+        <!-- Active Application -->
+        <attribute name="activeAppBundleId" optional="YES" attributeType="String"/>
+        <attribute name="activeAppName" optional="YES" attributeType="String"/>
+        <attribute name="activeAppCategory" optional="YES" attributeType="String"/>
+
+        <!-- Screen Time -->
+        <attribute name="productivityMinutes" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="entertainmentMinutes" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="socialMinutes" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+
+        <!-- Calendar -->
+        <attribute name="hasOngoingMeeting" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="minutesUntilNextEvent" optional="YES" attributeType="Double" usesScalarValueType="NO"/>
+        <attribute name="nextEventType" optional="YES" attributeType="String"/>
+
+        <!-- Derived Context -->
+        <attribute name="inferredWorkState" attributeType="String" defaultValueString="idle"/>
+    </entity>
+
+</model>
