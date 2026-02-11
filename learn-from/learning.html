@@ -1,0 +1,3170 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>learning</title>
+  <style>
+
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+
+ul.task-list[class]{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+font-size: inherit;
+width: 0.8em;
+margin: 0 0.8em 0.2em -1.6em;
+vertical-align: middle;
+}
+.display.math{display: block; text-align: center; margin: 0.5rem auto;}
+</style>
+  <style type="text/css">body {
+background-color: #0d0d0d;
+color: #e0e0e0;
+font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+line-height: 1.7;
+padding: 50px;
+max-width: 900px;
+margin: 0 auto;
+}
+h1, h2, h3, h4 { color: #61afef; }
+h1 { border-bottom: 2px solid #61afef; padding-bottom: 12px; margin-top: 2.5em; }
+h2 { margin-top: 2.5em; color: #c678dd; }
+h3 { color: #98c379; }
+h4 { color: #e5c07b; }
+a { color: #56b6c2; }
+a:hover { color: #61afef; }
+code {
+background-color: #1a1a1a;
+color: #e06c75;
+padding: 3px 8px;
+border-radius: 4px;
+font-family: "SF Mono", "Fira Code", Menlo, Monaco, monospace;
+font-size: 0.9em;
+}
+pre {
+background-color: #1a1a1a;
+padding: 20px;
+border-radius: 8px;
+overflow-x: auto;
+font-size: 14px;
+border: 1px solid #2a2a2a;
+box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
+}
+pre code {
+padding: 0;
+background: none;
+color: #abb2bf;
+}
+
+code span.kw { color: #c678dd; font-weight: bold; } 
+code span.dt { color: #e5c07b; } 
+code span.dv { color: #d19a66; } 
+code span.bn { color: #d19a66; } 
+code span.fl { color: #d19a66; } 
+code span.ch { color: #98c379; } 
+code span.st { color: #98c379; } 
+code span.co { color: #5c6370; font-style: italic; } 
+code span.ot { color: #56b6c2; } 
+code span.al { color: #e06c75; font-weight: bold; } 
+code span.fu { color: #61afef; } 
+code span.er { color: #e06c75; font-weight: bold; } 
+code span.wa { color: #e5c07b; font-weight: bold; } 
+code span.cn { color: #d19a66; } 
+code span.sc { color: #98c379; } 
+code span.vs { color: #98c379; } 
+code span.ss { color: #98c379; } 
+code span.im { color: #c678dd; } 
+code span.va { color: #e06c75; } 
+code span.cf { color: #c678dd; font-weight: bold; } 
+code span.op { color: #56b6c2; } 
+code span.bu { color: #e5c07b; } 
+code span.ex { color: #61afef; } 
+code span.pp { color: #c678dd; } 
+code span.at { color: #d19a66; } 
+code span.do { color: #5c6370; font-style: italic; } 
+code span.an { color: #5c6370; font-style: italic; } 
+code span.cv { color: #5c6370; font-style: italic; } 
+code span.in { color: #5c6370; font-style: italic; } 
+blockquote {
+border-left: 4px solid #c678dd;
+padding-left: 20px;
+color: #98c379;
+background-color: #141414;
+margin: 20px 0;
+padding: 16px 20px;
+border-radius: 0 8px 8px 0;
+font-style: italic;
+}
+table {
+border-collapse: collapse;
+width: 100%;
+margin: 20px 0;
+}
+th, td {
+border: 1px solid #333;
+padding: 12px 16px;
+text-align: left;
+}
+th {
+background-color: #1a1a1a;
+color: #61afef;
+font-weight: 600;
+}
+tr:nth-child(even) { background-color: #141414; }
+tr:hover { background-color: #1f1f1f; }
+hr {
+border: none;
+border-top: 1px solid #333;
+margin: 3em 0;
+}
+ul, ol {
+padding-left: 28px;
+}
+li {
+margin: 6px 0;
+}
+li code {
+background-color: #1a1a1a;
+}
+strong { color: #e5c07b; }
+em { color: #c678dd; }
+#TOC {
+background-color: #141414;
+padding: 24px;
+border-radius: 8px;
+margin-bottom: 2.5em;
+border: 1px solid #2a2a2a;
+}
+#TOC a {
+text-decoration: none;
+color: #61afef;
+}
+#TOC a:hover {
+text-decoration: underline;
+color: #98c379;
+}
+#TOC ul {
+list-style-type: none;
+padding-left: 20px;
+}
+#TOC > ul {
+padding-left: 0;
+}
+
+h1 {
+page-break-before: always;
+}
+h1:first-of-type {
+page-break-before: avoid;
+}
+pre {
+page-break-inside: avoid;
+}
+</style>
+</head>
+<body>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#ai-dj-resonance---complete-learning-guide" id="toc-ai-dj-resonance---complete-learning-guide">AI DJ (Resonance) -
+Complete Learning Guide</a>
+<ul>
+<li><a href="#purpose" id="toc-purpose">Purpose</a></li>
+</ul></li>
+<li><a href="#table-of-contents" id="toc-table-of-contents">TABLE OF
+CONTENTS</a></li>
+<li><a href="#swift-language-fundamentals" id="toc-swift-language-fundamentals">1. SWIFT LANGUAGE FUNDAMENTALS</a>
+<ul>
+<li><a href="#core-language-syntax" id="toc-core-language-syntax">1.1
+Core Language Syntax</a></li>
+<li><a href="#optionals-critical-for-swift" id="toc-optionals-critical-for-swift">1.2 Optionals (Critical for
+Swift)</a></li>
+<li><a href="#object-oriented-programming-in-swift" id="toc-object-oriented-programming-in-swift">1.3 Object-Oriented
+Programming in Swift</a></li>
+<li><a href="#protocol-oriented-programming-essential-for-swift" id="toc-protocol-oriented-programming-essential-for-swift">1.4
+Protocol-Oriented Programming (Essential for Swift)</a></li>
+<li><a href="#closures" id="toc-closures">1.5 Closures</a></li>
+<li><a href="#error-handling" id="toc-error-handling">1.6 Error
+Handling</a></li>
+<li><a href="#generics" id="toc-generics">1.7 Generics</a></li>
+<li><a href="#memory-management-arc" id="toc-memory-management-arc">1.8
+Memory Management (ARC)</a></li>
+<li><a href="#access-control" id="toc-access-control">1.9 Access
+Control</a></li>
+</ul></li>
+<li><a href="#xcode-apple-development-environment" id="toc-xcode-apple-development-environment">2. XCODE &amp; APPLE
+DEVELOPMENT ENVIRONMENT</a>
+<ul>
+<li><a href="#xcode-ide" id="toc-xcode-ide">2.1 Xcode IDE</a></li>
+<li><a href="#project-structure" id="toc-project-structure">2.2 Project
+Structure</a></li>
+<li><a href="#swift-package-manager" id="toc-swift-package-manager">2.3
+Swift Package Manager</a></li>
+<li><a href="#simulators-devices" id="toc-simulators-devices">2.4
+Simulators &amp; Devices</a></li>
+<li><a href="#apple-developer-account" id="toc-apple-developer-account">2.5 Apple Developer Account</a></li>
+</ul></li>
+<li><a href="#swiftui-framework" id="toc-swiftui-framework">3. SWIFTUI
+FRAMEWORK</a>
+<ul>
+<li><a href="#swiftui-fundamentals" id="toc-swiftui-fundamentals">3.1
+SwiftUI Fundamentals</a></li>
+<li><a href="#layout-system" id="toc-layout-system">3.2 Layout
+System</a></li>
+<li><a href="#state-management" id="toc-state-management">3.3 State
+Management</a></li>
+<li><a href="#navigation" id="toc-navigation">3.4 Navigation</a></li>
+<li><a href="#data-flow" id="toc-data-flow">3.5 Data Flow</a></li>
+<li><a href="#swiftui-uikit-interop" id="toc-swiftui-uikit-interop">3.6
+SwiftUI &amp; UIKit Interop</a></li>
+</ul></li>
+<li><a href="#swift-concurrency-combine" id="toc-swift-concurrency-combine">4. SWIFT CONCURRENCY &amp;
+COMBINE</a>
+<ul>
+<li><a href="#swift-concurrency-asyncawait" id="toc-swift-concurrency-asyncawait">4.1 Swift Concurrency
+(async/await)</a></li>
+<li><a href="#combine-framework" id="toc-combine-framework">4.2 Combine
+Framework</a></li>
+<li><a href="#choosing-between-asyncawait-and-combine" id="toc-choosing-between-asyncawait-and-combine">4.3 Choosing Between
+async/await and Combine</a></li>
+</ul></li>
+<li><a href="#data-persistence-with-coredata" id="toc-data-persistence-with-coredata">5. DATA PERSISTENCE WITH
+COREDATA</a>
+<ul>
+<li><a href="#coredata-fundamentals" id="toc-coredata-fundamentals">5.1
+CoreData Fundamentals</a></li>
+<li><a href="#data-modeling" id="toc-data-modeling">5.2 Data
+Modeling</a></li>
+<li><a href="#crud-operations" id="toc-crud-operations">5.3 CRUD
+Operations</a></li>
+<li><a href="#coredata-with-swiftui" id="toc-coredata-with-swiftui">5.4
+CoreData with SwiftUI</a></li>
+<li><a href="#advanced-coredata" id="toc-advanced-coredata">5.5 Advanced
+CoreData</a></li>
+</ul></li>
+<li><a href="#ios-app-architecture-patterns" id="toc-ios-app-architecture-patterns">6. IOS APP ARCHITECTURE
+PATTERNS</a>
+<ul>
+<li><a href="#mvvm-pattern" id="toc-mvvm-pattern">6.1 MVVM
+Pattern</a></li>
+<li><a href="#dependency-injection" id="toc-dependency-injection">6.2
+Dependency Injection</a></li>
+<li><a href="#repository-pattern" id="toc-repository-pattern">6.3
+Repository Pattern</a></li>
+<li><a href="#service-layer" id="toc-service-layer">6.4 Service
+Layer</a></li>
+</ul></li>
+<li><a href="#musickit-framework" id="toc-musickit-framework">7.
+MUSICKIT FRAMEWORK</a>
+<ul>
+<li><a href="#musickit-fundamentals" id="toc-musickit-fundamentals">7.1
+MusicKit Fundamentals</a></li>
+<li><a href="#authorization" id="toc-authorization">7.2
+Authorization</a></li>
+<li><a href="#library-access" id="toc-library-access">7.3 Library
+Access</a></li>
+<li><a href="#playback" id="toc-playback">7.4 Playback</a></li>
+<li><a href="#musickit-data-types" id="toc-musickit-data-types">7.5
+MusicKit Data Types</a></li>
+</ul></li>
+<li><a href="#healthkit-framework" id="toc-healthkit-framework">8.
+HEALTHKIT FRAMEWORK</a>
+<ul>
+<li><a href="#healthkit-fundamentals" id="toc-healthkit-fundamentals">8.1 HealthKit Fundamentals</a></li>
+<li><a href="#authorization-1" id="toc-authorization-1">8.2
+Authorization</a></li>
+<li><a href="#reading-data" id="toc-reading-data">8.3 Reading
+Data</a></li>
+<li><a href="#heart-rate-hrv" id="toc-heart-rate-hrv">8.4 Heart Rate
+&amp; HRV</a></li>
+<li><a href="#workouts-sleep" id="toc-workouts-sleep">8.5 Workouts &amp;
+Sleep</a></li>
+<li><a href="#background-delivery" id="toc-background-delivery">8.6
+Background Delivery</a></li>
+</ul></li>
+<li><a href="#watchos-development" id="toc-watchos-development">9.
+WATCHOS DEVELOPMENT</a>
+<ul>
+<li><a href="#watchos-fundamentals" id="toc-watchos-fundamentals">9.1
+watchOS Fundamentals</a></li>
+<li><a href="#watch-app-structure" id="toc-watch-app-structure">9.2
+Watch App Structure</a></li>
+<li><a href="#digital-crown" id="toc-digital-crown">9.3 Digital
+Crown</a></li>
+<li><a href="#watch-sensors" id="toc-watch-sensors">9.4 Watch
+Sensors</a></li>
+<li><a href="#extended-runtime" id="toc-extended-runtime">9.5 Extended
+Runtime</a></li>
+</ul></li>
+<li><a href="#watchconnectivity-framework" id="toc-watchconnectivity-framework">10. WATCHCONNECTIVITY FRAMEWORK</a>
+<ul>
+<li><a href="#watchconnectivity-fundamentals" id="toc-watchconnectivity-fundamentals">10.1 WatchConnectivity
+Fundamentals</a></li>
+<li><a href="#communication-methods" id="toc-communication-methods">10.2
+Communication Methods</a></li>
+<li><a href="#delegate-methods" id="toc-delegate-methods">10.3 Delegate
+Methods</a></li>
+<li><a href="#best-practices" id="toc-best-practices">10.4 Best
+Practices</a></li>
+</ul></li>
+<li><a href="#macos-development-menu-bar-apps" id="toc-macos-development-menu-bar-apps">11. MACOS DEVELOPMENT (MENU BAR
+APPS)</a>
+<ul>
+<li><a href="#macos-app-fundamentals" id="toc-macos-app-fundamentals">11.1 macOS App Fundamentals</a></li>
+<li><a href="#menu-bar-apps" id="toc-menu-bar-apps">11.2 Menu Bar
+Apps</a></li>
+<li><a href="#macos-context-access" id="toc-macos-context-access">11.3
+macOS Context Access</a></li>
+</ul></li>
+<li><a href="#background-processing-app-lifecycle" id="toc-background-processing-app-lifecycle">12. BACKGROUND PROCESSING
+&amp; APP LIFECYCLE</a>
+<ul>
+<li><a href="#ios-app-lifecycle" id="toc-ios-app-lifecycle">12.1 iOS App
+Lifecycle</a></li>
+<li><a href="#background-tasks-framework" id="toc-background-tasks-framework">12.2 Background Tasks
+Framework</a></li>
+<li><a href="#background-modes" id="toc-background-modes">12.3
+Background Modes</a></li>
+</ul></li>
+<li><a href="#widgets-complications" id="toc-widgets-complications">13.
+WIDGETS &amp; COMPLICATIONS</a>
+<ul>
+<li><a href="#widgetkit-ios" id="toc-widgetkit-ios">13.1 WidgetKit
+(iOS)</a></li>
+<li><a href="#watchos-complications" id="toc-watchos-complications">13.2
+watchOS Complications</a></li>
+</ul></li>
+<li><a href="#biometrics-signal-processing-concepts" id="toc-biometrics-signal-processing-concepts">14. BIOMETRICS &amp;
+SIGNAL PROCESSING CONCEPTS</a>
+<ul>
+<li><a href="#heart-rate-physiology" id="toc-heart-rate-physiology">14.1
+Heart Rate Physiology</a></li>
+<li><a href="#heart-rate-variability-hrv" id="toc-heart-rate-variability-hrv">14.2 Heart Rate Variability
+(HRV)</a></li>
+<li><a href="#signal-smoothing-analysis" id="toc-signal-smoothing-analysis">14.3 Signal Smoothing &amp;
+Analysis</a></li>
+</ul></li>
+<li><a href="#algorithm-scoring-system-design" id="toc-algorithm-scoring-system-design">15. ALGORITHM &amp; SCORING
+SYSTEM DESIGN</a>
+<ul>
+<li><a href="#scoring-system-basics" id="toc-scoring-system-basics">15.1
+Scoring System Basics</a></li>
+<li><a href="#distance-matching-algorithms" id="toc-distance-matching-algorithms">15.2 Distance &amp; Matching
+Algorithms</a></li>
+<li><a href="#learning-adaptation" id="toc-learning-adaptation">15.3
+Learning &amp; Adaptation</a></li>
+</ul></li>
+<li><a href="#testing-in-swift" id="toc-testing-in-swift">16. TESTING IN
+SWIFT</a>
+<ul>
+<li><a href="#xctest-framework" id="toc-xctest-framework">16.1 XCTest
+Framework</a></li>
+<li><a href="#mocking-dependency-injection" id="toc-mocking-dependency-injection">16.2 Mocking &amp; Dependency
+Injection</a></li>
+<li><a href="#testing-best-practices" id="toc-testing-best-practices">16.3 Testing Best Practices</a></li>
+</ul></li>
+<li><a href="#security-privacy-entitlements" id="toc-security-privacy-entitlements">17. SECURITY, PRIVACY &amp;
+ENTITLEMENTS</a>
+<ul>
+<li><a href="#ios-security-model" id="toc-ios-security-model">17.1 iOS
+Security Model</a></li>
+<li><a href="#privacy" id="toc-privacy">17.2 Privacy</a></li>
+<li><a href="#entitlements" id="toc-entitlements">17.3
+Entitlements</a></li>
+</ul></li>
+<li><a href="#app-distribution-deployment" id="toc-app-distribution-deployment">18. APP DISTRIBUTION &amp;
+DEPLOYMENT</a>
+<ul>
+<li><a href="#app-store-connect" id="toc-app-store-connect">18.1 App
+Store Connect</a></li>
+<li><a href="#testflight" id="toc-testflight">18.2 TestFlight</a></li>
+<li><a href="#submission-process" id="toc-submission-process">18.3
+Submission Process</a></li>
+</ul></li>
+<li><a href="#recommended-learning-order" id="toc-recommended-learning-order">RECOMMENDED LEARNING ORDER</a>
+<ul>
+<li><a href="#beginner-path-if-new-to-ios" id="toc-beginner-path-if-new-to-ios">Beginner Path (If New to
+iOS)</a></li>
+<li><a href="#intermediate-path-some-ios-experience" id="toc-intermediate-path-some-ios-experience">Intermediate Path (Some
+iOS Experience)</a></li>
+<li><a href="#project-specific-path-ready-to-build" id="toc-project-specific-path-ready-to-build">Project-Specific Path
+(Ready to Build)</a></li>
+</ul></li>
+<li><a href="#resources" id="toc-resources">RESOURCES</a>
+<ul>
+<li><a href="#official-documentation" id="toc-official-documentation">Official Documentation</a></li>
+<li><a href="#wwdc-sessions-recommended" id="toc-wwdc-sessions-recommended">WWDC Sessions (Recommended)</a></li>
+<li><a href="#books" id="toc-books">Books</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="ai-dj-resonance---complete-learning-guide">AI DJ (Resonance) -
+Complete Learning Guide</h1>
+<h2 id="purpose">Purpose</h2>
+<p>This document provides a structured learning path covering all
+concepts needed to understand, build, and maintain the AI DJ project
+from initialization to completion. Topics are ordered for optimal
+learning progression.</p>
+<hr />
+<h1 id="table-of-contents">TABLE OF CONTENTS</h1>
+<ol type="1">
+<li><a href="#1-swift-language-fundamentals">Swift Language
+Fundamentals</a></li>
+<li><a href="#2-xcode--apple-development-environment">Xcode &amp; Apple
+Development Environment</a></li>
+<li><a href="#3-swiftui-framework">SwiftUI Framework</a></li>
+<li><a href="#4-swift-concurrency--combine">Swift Concurrency &amp;
+Combine</a></li>
+<li><a href="#5-data-persistence-with-coredata">Data Persistence with
+CoreData</a></li>
+<li><a href="#6-ios-app-architecture-patterns">iOS App Architecture
+Patterns</a></li>
+<li><a href="#7-musickit-framework">MusicKit Framework</a></li>
+<li><a href="#8-healthkit-framework">HealthKit Framework</a></li>
+<li><a href="#9-watchos-development">watchOS Development</a></li>
+<li><a href="#10-watchconnectivity-framework">WatchConnectivity
+Framework</a></li>
+<li><a href="#11-macos-development-menu-bar-apps">macOS Development
+(Menu Bar Apps)</a></li>
+<li><a href="#12-background-processing--app-lifecycle">Background
+Processing &amp; App Lifecycle</a></li>
+<li><a href="#13-widgets--complications">Widgets &amp;
+Complications</a></li>
+<li><a href="#14-biometrics--signal-processing-concepts">Biometrics
+&amp; Signal Processing Concepts</a></li>
+<li><a href="#15-algorithm--scoring-system-design">Algorithm &amp;
+Scoring System Design</a></li>
+<li><a href="#16-testing-in-swift">Testing in Swift</a></li>
+<li><a href="#17-security-privacy--entitlements">Security, Privacy &amp;
+Entitlements</a></li>
+<li><a href="#18-app-distribution--deployment">App Distribution &amp;
+Deployment</a></li>
+</ol>
+<hr />
+<h1 id="swift-language-fundamentals">1. SWIFT LANGUAGE FUNDAMENTALS</h1>
+<blockquote>
+<p><strong>Best Resource:</strong> <a href="https://docs.swift.org/swift-book/documentation/the-swift-programming-language/">The
+Swift Programming Language (Official Book)</a> - Apple’s definitive,
+free, always-updated Swift guide. Read chapters 1-15 for complete
+coverage.</p>
+</blockquote>
+<p>Understanding Swift is the foundation for everything in this
+project.</p>
+<h2 id="core-language-syntax">1.1 Core Language Syntax</h2>
+<pre><code>Swift Basics
+├── Variables &amp; Constants
+│   ├── let (constants) vs var (variables)
+│   ├── Type inference
+│   ├── Explicit type annotation
+│   └── String interpolation
+│
+├── Basic Types
+│   ├── Int, Double, Float
+│   ├── String, Character
+│   ├── Bool
+│   └── Type conversion/casting
+│
+├── Collection Types
+│   ├── Array&lt;T&gt; / [T]
+│   │   ├── Creation and initialization
+│   │   ├── Accessing elements
+│   │   ├── Mutating methods (append, insert, remove)
+│   │   └── Iterating with for-in
+│   │
+│   ├── Dictionary&lt;K, V&gt; / [K: V]
+│   │   ├── Key-value storage
+│   │   ├── Accessing and updating
+│   │   ├── Default values
+│   │   └── Iterating (keys, values, tuples)
+│   │
+│   └── Set&lt;T&gt;
+│       ├── Uniqueness guarantee
+│       ├── Set operations (union, intersection, difference)
+│       └── Hashable requirement
+│
+├── Control Flow
+│   ├── if / else / else if
+│   ├── switch statements
+│   │   ├── Pattern matching
+│   │   ├── Value binding
+│   │   ├── where clauses
+│   │   └── Compound cases
+│   ├── for-in loops
+│   ├── while / repeat-while
+│   ├── guard statements (early exit)
+│   └── defer statements (cleanup)
+│
+└── Functions
+    ├── Function declaration syntax
+    ├── Parameters and return types
+    ├── Argument labels vs parameter names
+    ├── Default parameter values
+    ├── Variadic parameters
+    ├── inout parameters
+    └── Function types as parameters/returns</code></pre>
+<h2 id="optionals-critical-for-swift">1.2 Optionals (Critical for
+Swift)</h2>
+<pre><code>Optionals
+├── What is an Optional?
+│   ├── Represents &quot;value or nothing&quot;
+│   ├── Optional&lt;T&gt; vs T?
+│   └── Why they exist (null safety)
+│
+├── Unwrapping Optionals
+│   ├── Force unwrapping (!) - DANGEROUS
+│   ├── Optional binding (if let)
+│   │   └── Multiple bindings in one statement
+│   ├── Guard let (early return pattern)
+│   ├── Nil coalescing operator (??)
+│   └── Optional chaining (?.)
+│
+├── Implicitly Unwrapped Optionals (T!)
+│   ├── When to use
+│   ├── IBOutlet pattern
+│   └── Risks and alternatives
+│
+└── Optional Patterns
+    ├── map and flatMap on optionals
+    ├── Comparing optionals
+    └── Optional in collections</code></pre>
+<h2 id="object-oriented-programming-in-swift">1.3 Object-Oriented
+Programming in Swift</h2>
+<pre><code>OOP in Swift
+├── Classes
+│   ├── Class definition syntax
+│   ├── Properties
+│   │   ├── Stored properties
+│   │   ├── Computed properties (get/set)
+│   │   ├── Property observers (willSet/didSet)
+│   │   └── Lazy properties
+│   │
+│   ├── Methods
+│   │   ├── Instance methods
+│   │   ├── Type methods (static/class)
+│   │   └── Mutating methods
+│   │
+│   ├── Initializers
+│   │   ├── Designated initializers
+│   │   ├── Convenience initializers
+│   │   ├── Failable initializers (init?)
+│   │   └── Required initializers
+│   │
+│   ├── Inheritance
+│   │   ├── Subclassing
+│   │   ├── Overriding methods/properties
+│   │   ├── super keyword
+│   │   ├── final keyword
+│   │   └── Initialization chain
+│   │
+│   └── Reference Type Semantics
+│       ├── Pass by reference
+│       ├── Identity operators (===, !==)
+│       └── Reference counting (ARC preview)
+│
+├── Structures
+│   ├── Struct definition syntax
+│   ├── Memberwise initializers
+│   ├── Value type semantics
+│   │   ├── Copy on assignment
+│   │   └── Mutating keyword
+│   └── When to use struct vs class
+│
+└── Enumerations
+    ├── Basic enum definition
+    ├── Raw values
+    ├── Associated values
+    ├── CaseIterable protocol
+    ├── Methods on enums
+    └── Recursive enums (indirect)</code></pre>
+<h2 id="protocol-oriented-programming-essential-for-swift">1.4
+Protocol-Oriented Programming (Essential for Swift)</h2>
+<pre><code>Protocols
+├── Protocol Definition
+│   ├── Property requirements
+│   ├── Method requirements
+│   ├── Initializer requirements
+│   └── Static/Type requirements
+│
+├── Protocol Adoption
+│   ├── Conforming to protocols
+│   ├── Protocol inheritance
+│   ├── Multiple protocol conformance
+│   └── Class-only protocols (AnyObject)
+│
+├── Protocol Extensions
+│   ├── Default implementations
+│   ├── Adding computed properties
+│   ├── Conditional conformance
+│   └── Where clauses on extensions
+│
+├── Common Swift Protocols
+│   ├── Equatable (== comparison)
+│   ├── Hashable (dictionary keys, sets)
+│   ├── Comparable (&lt;, &gt;, &lt;=, &gt;=)
+│   ├── Codable (Encodable + Decodable)
+│   ├── Identifiable (id property)
+│   ├── CustomStringConvertible
+│   └── Error protocol
+│
+└── Protocol-Oriented Design
+    ├── Composition over inheritance
+    ├── Protocol as type
+    ├── Existential types (any Protocol)
+    └── Type erasure patterns</code></pre>
+<h2 id="closures">1.5 Closures</h2>
+<pre><code>Closures
+├── Closure Syntax
+│   ├── Full syntax { (params) -&gt; ReturnType in body }
+│   ├── Type inference
+│   ├── Shorthand argument names ($0, $1)
+│   ├── Implicit returns
+│   └── Trailing closure syntax
+│
+├── Capturing Values
+│   ├── Capture lists
+│   ├── Strong vs weak references
+│   ├── [weak self] pattern
+│   └── [unowned self] pattern
+│
+├── Escaping vs Non-Escaping
+│   ├── @escaping annotation
+│   ├── Completion handlers
+│   └── Storage of closures
+│
+└── Higher-Order Functions
+    ├── map - transform elements
+    ├── filter - select elements
+    ├── reduce - combine elements
+    ├── compactMap - transform + remove nils
+    ├── flatMap - flatten nested collections
+    ├── sorted(by:) - custom sorting
+    └── forEach - iteration without return</code></pre>
+<h2 id="error-handling">1.6 Error Handling</h2>
+<pre><code>Error Handling
+├── Defining Errors
+│   ├── Error protocol
+│   ├── Custom error enums
+│   └── Associated values for context
+│
+├── Throwing and Catching
+│   ├── throw keyword
+│   ├── throws in function signature
+│   ├── do-catch blocks
+│   ├── Pattern matching in catch
+│   └── Rethrowing (rethrows)
+│
+├── Error Propagation
+│   ├── try keyword
+│   ├── try? (optional result)
+│   ├── try! (force, crashes on error)
+│   └── Propagating with throws
+│
+└── Result Type
+    ├── Result&lt;Success, Failure&gt;
+    ├── .success and .failure cases
+    ├── get() throws method
+    └── map and flatMap on Result</code></pre>
+<h2 id="generics">1.7 Generics</h2>
+<pre><code>Generics
+├── Generic Functions
+│   ├── Type parameters &lt;T&gt;
+│   ├── Multiple type parameters
+│   └── Type constraints
+│
+├── Generic Types
+│   ├── Generic classes/structs
+│   ├── Generic enums
+│   └── Type parameter usage
+│
+├── Type Constraints
+│   ├── Protocol constraints (T: Protocol)
+│   ├── Class constraints (T: SomeClass)
+│   ├── Multiple constraints
+│   └── where clauses
+│
+├── Associated Types
+│   ├── associatedtype keyword
+│   ├── Protocol with associated types
+│   ├── Type constraints on associated types
+│   └── Primary associated types (&lt;T&gt;)
+│
+└── Opaque Types
+    ├── some keyword
+    ├── some Protocol return types
+    └── Difference from protocol types</code></pre>
+<h2 id="memory-management-arc">1.8 Memory Management (ARC)</h2>
+<pre><code>Automatic Reference Counting
+├── How ARC Works
+│   ├── Reference counting basics
+│   ├── Strong references (default)
+│   ├── When memory is deallocated
+│   └── deinit method
+│
+├── Reference Cycles
+│   ├── What causes retain cycles
+│   ├── Detecting memory leaks
+│   └── Common cycle patterns
+│
+├── Weak References
+│   ├── weak keyword
+│   ├── Always optional
+│   ├── Delegate pattern with weak
+│   └── Closure capture lists [weak self]
+│
+├── Unowned References
+│   ├── unowned keyword
+│   ├── Non-optional assumption
+│   ├── When to use vs weak
+│   └── Crashes if accessed after dealloc
+│
+└── Value Types and ARC
+    ├── Structs don&#39;t participate in ARC
+    ├── Classes inside structs do
+    └── Copy-on-write optimization</code></pre>
+<h2 id="access-control">1.9 Access Control</h2>
+<pre><code>Access Control
+├── Access Levels
+│   ├── open - subclass from any module
+│   ├── public - access from any module
+│   ├── internal - same module (default)
+│   ├── fileprivate - same source file
+│   └── private - enclosing declaration
+│
+├── Applying Access Control
+│   ├── On types
+│   ├── On properties/methods
+│   ├── On initializers
+│   └── On extensions
+│
+└── Best Practices
+    ├── Principle of least access
+    ├── API design considerations
+    └── Testing and access levels</code></pre>
+<hr />
+<h1 id="xcode-apple-development-environment">2. XCODE &amp; APPLE
+DEVELOPMENT ENVIRONMENT</h1>
+<blockquote>
+<p><strong>Best Resource:</strong> <a href="https://developer.apple.com/documentation/xcode">Apple’s Xcode
+Documentation</a> + <a href="https://developer.apple.com/tutorials/develop-in-swift">Develop in
+Swift Tutorials</a> - Official tutorials that walk through Xcode from
+scratch with hands-on projects.</p>
+</blockquote>
+<h2 id="xcode-ide">2.1 Xcode IDE</h2>
+<pre><code>Xcode Fundamentals
+├── Interface Overview
+│   ├── Navigator panel (left)
+│   │   ├── Project navigator
+│   │   ├── Source control navigator
+│   │   ├── Symbol navigator
+│   │   ├── Find navigator
+│   │   ├── Issue navigator
+│   │   ├── Test navigator
+│   │   ├── Debug navigator
+│   │   └── Breakpoint navigator
+│   │
+│   ├── Editor area (center)
+│   │   ├── Code editor
+│   │   ├── Canvas (SwiftUI previews)
+│   │   ├── Interface Builder
+│   │   └── Version editor
+│   │
+│   ├── Inspector panel (right)
+│   │   ├── File inspector
+│   │   ├── History inspector
+│   │   ├── Quick help inspector
+│   │   └── Attributes inspector
+│   │
+│   └── Debug area (bottom)
+│       ├── Console output
+│       └── Variable viewer
+│
+├── Keyboard Shortcuts
+│   ├── Cmd+B - Build
+│   ├── Cmd+R - Run
+│   ├── Cmd+Shift+K - Clean
+│   ├── Cmd+0 through Cmd+9 - Navigator panels
+│   ├── Cmd+Option+Enter - Canvas toggle
+│   └── Ctrl+I - Re-indent code
+│
+└── Essential Features
+    ├── Code completion
+    ├── Quick documentation (Opt+Click)
+    ├── Jump to definition (Cmd+Click)
+    ├── Find in project (Cmd+Shift+F)
+    └── Refactoring tools</code></pre>
+<h2 id="project-structure">2.2 Project Structure</h2>
+<pre><code>Xcode Project Structure
+├── Project File (.xcodeproj)
+│   ├── Project settings
+│   ├── Build settings
+│   ├── Build phases
+│   └── Build rules
+│
+├── Workspace (.xcworkspace)
+│   ├── Contains multiple projects
+│   ├── Shared build settings
+│   └── Cross-project dependencies
+│
+├── Targets
+│   ├── What is a target?
+│   ├── iOS app target
+│   ├── watchOS app target
+│   ├── macOS app target
+│   ├── Extension targets (widgets)
+│   ├── Test targets
+│   └── Target dependencies
+│
+├── Schemes
+│   ├── Build action
+│   ├── Run action
+│   ├── Test action
+│   ├── Profile action
+│   └── Archive action
+│
+├── Build Configurations
+│   ├── Debug vs Release
+│   ├── Custom configurations
+│   └── Per-configuration settings
+│
+└── File Organization
+    ├── Groups vs folder references
+    ├── Organizing by feature
+    ├── Shared code across targets
+    └── Asset catalogs</code></pre>
+<h2 id="swift-package-manager">2.3 Swift Package Manager</h2>
+<pre><code>Swift Package Manager (SPM)
+├── Package.swift Manifest
+│   ├── Package name
+│   ├── Products (libraries, executables)
+│   ├── Dependencies
+│   ├── Targets
+│   └── Platform requirements
+│
+├── Adding Dependencies
+│   ├── Via Xcode (File &gt; Add Packages)
+│   ├── By URL
+│   ├── Version rules (exact, range, branch)
+│   └── Updating packages
+│
+├── Creating Packages
+│   ├── Local packages
+│   ├── Package structure
+│   ├── Tests in packages
+│   └── Publishing packages
+│
+└── Integration
+    ├── SPM vs CocoaPods vs Carthage
+    ├── Mixed dependency managers
+    └── Resolving conflicts</code></pre>
+<h2 id="simulators-devices">2.4 Simulators &amp; Devices</h2>
+<pre><code>Running Apps
+├── iOS Simulator
+│   ├── Device selection
+│   ├── Simulator features (location, shake, etc.)
+│   ├── Simulator limitations
+│   └── Multiple simulators
+│
+├── watchOS Simulator
+│   ├── Paired with iOS simulator
+│   ├── Complication preview
+│   └── Digital Crown simulation
+│
+├── Physical Devices
+│   ├── Device registration
+│   ├── Provisioning profiles
+│   ├── Wireless debugging
+│   └── Device logs
+│
+└── Debugging
+    ├── Breakpoints
+    ├── LLDB commands
+    ├── View debugging
+    ├── Memory debugging
+    └── Network debugging</code></pre>
+<h2 id="apple-developer-account">2.5 Apple Developer Account</h2>
+<pre><code>Developer Account
+├── Account Types
+│   ├── Free account (limited)
+│   ├── Individual ($99/year)
+│   └── Organization ($99/year)
+│
+├── Certificates
+│   ├── Development certificates
+│   ├── Distribution certificates
+│   ├── Creating certificates
+│   └── Keychain management
+│
+├── Identifiers
+│   ├── App IDs
+│   ├── Bundle IDs
+│   ├── Capabilities registration
+│   └── App Groups
+│
+├── Provisioning Profiles
+│   ├── Development profiles
+│   ├── Distribution profiles
+│   ├── Automatic signing
+│   └── Manual signing
+│
+└── Capabilities
+    ├── Enabling capabilities
+    ├── HealthKit capability
+    ├── MusicKit capability
+    ├── App Groups capability
+    └── Background Modes</code></pre>
+<hr />
+<h1 id="swiftui-framework">3. SWIFTUI FRAMEWORK</h1>
+<blockquote>
+<p><strong>Best Resource:</strong> <a href="https://www.hackingwithswift.com/100/swiftui">Hacking with Swift -
+100 Days of SwiftUI</a> - Free, comprehensive, project-based course by
+Paul Hudson. The gold standard for learning SwiftUI from zero to
+proficient.</p>
+</blockquote>
+<h2 id="swiftui-fundamentals">3.1 SwiftUI Fundamentals</h2>
+<pre><code>SwiftUI Basics
+├── Declarative Syntax
+│   ├── What vs How
+│   ├── View as a function of state
+│   └── Automatic UI updates
+│
+├── View Protocol
+│   ├── var body: some View
+│   ├── View composition
+│   └── View modifiers
+│
+├── Basic Views
+│   ├── Text
+│   │   ├── String interpolation
+│   │   ├── Formatting
+│   │   └── Text modifiers (font, color, etc.)
+│   │
+│   ├── Image
+│   │   ├── System images (SF Symbols)
+│   │   ├── Asset catalog images
+│   │   ├── Resizing and scaling
+│   │   └── AsyncImage (remote images)
+│   │
+│   ├── Button
+│   │   ├── Action closures
+│   │   ├── Button styles
+│   │   └── Custom button appearance
+│   │
+│   ├── TextField / SecureField
+│   │   ├── Binding to state
+│   │   ├── Placeholder text
+│   │   └── Text field styles
+│   │
+│   └── Toggle / Slider / Picker
+│       ├── Binding to state
+│       └── Customization options
+│
+└── View Modifiers
+    ├── .padding()
+    ├── .background()
+    ├── .foregroundColor() / .foregroundStyle()
+    ├── .font()
+    ├── .frame()
+    ├── .cornerRadius() / .clipShape()
+    └── Modifier order matters!</code></pre>
+<h2 id="layout-system">3.2 Layout System</h2>
+<pre><code>SwiftUI Layout
+├── Stack Views
+│   ├── VStack (vertical)
+│   │   ├── alignment parameter
+│   │   └── spacing parameter
+│   │
+│   ├── HStack (horizontal)
+│   │   ├── alignment parameter
+│   │   └── spacing parameter
+│   │
+│   ├── ZStack (layered/depth)
+│   │   └── alignment parameter
+│   │
+│   └── Spacer
+│       ├── Flexible space
+│       └── minLength parameter
+│
+├── Lazy Stacks
+│   ├── LazyVStack
+│   ├── LazyHStack
+│   └── Performance benefits
+│
+├── Grids
+│   ├── LazyVGrid
+│   ├── LazyHGrid
+│   ├── Grid (iOS 16+)
+│   ├── GridItem
+│   │   ├── .fixed
+│   │   ├── .flexible
+│   │   └── .adaptive
+│   └── Columns/rows configuration
+│
+├── Lists
+│   ├── List basics
+│   ├── ForEach with Identifiable
+│   ├── Section headers/footers
+│   ├── Swipe actions
+│   ├── List styles
+│   └── Pull to refresh
+│
+├── ScrollView
+│   ├── Horizontal/vertical
+│   ├── ScrollViewReader
+│   ├── scrollTo(_:anchor:)
+│   └── Scroll indicators
+│
+├── GeometryReader
+│   ├── Reading container size
+│   ├── GeometryProxy
+│   ├── Coordinate spaces
+│   └── Use sparingly (performance)
+│
+└── Alignment Guides
+    ├── Custom alignment
+    ├── alignmentGuide modifier
+    └── HorizontalAlignment / VerticalAlignment</code></pre>
+<h2 id="state-management">3.3 State Management</h2>
+<pre><code>State Management in SwiftUI
+├── Property Wrappers Overview
+│   ├── What are property wrappers?
+│   ├── @-prefixed syntax
+│   └── wrappedValue and projectedValue
+│
+├── @State
+│   ├── Local view state
+│   ├── Value types only
+│   ├── private convention
+│   └── Triggers view updates
+│
+├── @Binding
+│   ├── Two-way connection
+│   ├── $ prefix to create binding
+│   ├── Parent-child communication
+│   └── Constant bindings
+│
+├── @StateObject
+│   ├── Reference type ownership
+│   ├── ObservableObject protocol
+│   ├── Created once per view lifecycle
+│   └── Use for view-owned objects
+│
+├── @ObservedObject
+│   ├── Reference type observation
+│   ├── Not owned by view
+│   ├── Passed in from parent
+│   └── @Published properties
+│
+├── @EnvironmentObject
+│   ├── Dependency injection
+│   ├── .environmentObject() modifier
+│   ├── Implicit passing down hierarchy
+│   └── Crashes if missing
+│
+├── @Environment
+│   ├── System values
+│   ├── \.colorScheme, \.locale, etc.
+│   ├── Custom environment keys
+│   └── Reading vs writing
+│
+├── @Published
+│   ├── Observable property
+│   ├── Publishes changes
+│   ├── Combine integration
+│   └── Use in ObservableObject
+│
+├── ObservableObject Protocol
+│   ├── objectWillChange publisher
+│   ├── Manual publishing
+│   └── @Published automatic publishing
+│
+└── @Observable (iOS 17+)
+    ├── Macro-based observation
+    ├── Replaces ObservableObject
+    ├── More granular updates
+    └── Migration from ObservableObject</code></pre>
+<h2 id="navigation">3.4 Navigation</h2>
+<pre><code>Navigation in SwiftUI
+├── NavigationStack (iOS 16+)
+│   ├── Basic usage
+│   ├── NavigationLink
+│   ├── navigationDestination(for:)
+│   ├── Navigation path
+│   └── Programmatic navigation
+│
+├── NavigationView (Legacy)
+│   ├── Basic usage
+│   ├── Differences from NavigationStack
+│   └── Migration path
+│
+├── TabView
+│   ├── Tab items
+│   ├── .tabItem modifier
+│   ├── Selection binding
+│   └── Page style (paging)
+│
+├── Sheet / FullScreenCover
+│   ├── .sheet modifier
+│   ├── .fullScreenCover modifier
+│   ├── Presentation bindings
+│   ├── onDismiss callback
+│   └── Detents (iOS 16+)
+│
+├── Alert / ConfirmationDialog
+│   ├── .alert modifier
+│   ├── .confirmationDialog modifier
+│   ├── Button roles
+│   └── Text fields in alerts
+│
+└── Toolbar
+    ├── .toolbar modifier
+    ├── ToolbarItem
+    ├── Placement options
+    └── Principal placement</code></pre>
+<h2 id="data-flow">3.5 Data Flow</h2>
+<pre><code>Data Flow Patterns
+├── Single Source of Truth
+│   ├── State ownership
+│   ├── Passing state down
+│   └── Actions flowing up
+│
+├── View Hierarchy Data Flow
+│   ├── Parent → Child (props)
+│   ├── Child → Parent (callbacks)
+│   ├── Siblings (lift state up)
+│   └── Deep hierarchy (environment)
+│
+├── View Identity
+│   ├── Structural identity
+│   ├── Explicit identity (.id())
+│   └── ForEach and Identifiable
+│
+└── Performance Considerations
+    ├── Minimize state scope
+    ├── Equatable views
+    ├── Avoid GeometryReader
+    └── Profile with Instruments</code></pre>
+<h2 id="swiftui-uikit-interop">3.6 SwiftUI &amp; UIKit Interop</h2>
+<pre><code>SwiftUI-UIKit Integration
+├── UIViewRepresentable
+│   ├── makeUIView(context:)
+│   ├── updateUIView(_:context:)
+│   ├── Coordinator pattern
+│   └── Wrapping UIKit views
+│
+├── UIViewControllerRepresentable
+│   ├── makeUIViewController(context:)
+│   ├── updateUIViewController(_:context:)
+│   └── Wrapping view controllers
+│
+└── UIHostingController
+    ├── Embed SwiftUI in UIKit
+    ├── rootView property
+    └── Size considerations</code></pre>
+<hr />
+<h1 id="swift-concurrency-combine">4. SWIFT CONCURRENCY &amp;
+COMBINE</h1>
+<blockquote>
+<p><strong>Best Resource:</strong> <a href="https://developer.apple.com/videos/play/wwdc2021/10132/">WWDC21:
+Meet async/await in Swift</a> + <a href="https://developer.apple.com/videos/play/wwdc2021/10254/">WWDC21:
+Swift concurrency: Behind the scenes</a> - Apple engineers explain the
+fundamentals with visual animations. For Combine: <a href="https://www.donnywals.com/practical-combine/">Donny Wals -
+Practical Combine</a></p>
+</blockquote>
+<h2 id="swift-concurrency-asyncawait">4.1 Swift Concurrency
+(async/await)</h2>
+<pre><code>Modern Swift Concurrency
+├── Basics
+│   ├── async keyword
+│   ├── await keyword
+│   ├── Async function declaration
+│   └── Calling async functions
+│
+├── Tasks
+│   ├── Task { } - unstructured task
+│   ├── Task.detached { }
+│   ├── Task cancellation
+│   ├── Task.isCancelled
+│   └── Task.sleep()
+│
+├── Async Sequences
+│   ├── AsyncSequence protocol
+│   ├── for await loops
+│   ├── AsyncStream
+│   └── AsyncThrowingStream
+│
+├── Structured Concurrency
+│   ├── TaskGroup
+│   ├── async let bindings
+│   ├── Child task cancellation
+│   └── Waiting for results
+│
+├── Actors
+│   ├── actor keyword
+│   ├── Actor isolation
+│   ├── Protecting shared state
+│   ├── nonisolated methods
+│   └── @MainActor
+│
+├── MainActor
+│   ├── @MainActor annotation
+│   ├── Main thread execution
+│   ├── UI updates
+│   └── MainActor.run { }
+│
+├── Sendable
+│   ├── Sendable protocol
+│   ├── @Sendable closures
+│   ├── Value types are Sendable
+│   └── Marking classes Sendable
+│
+└── Continuations
+    ├── withCheckedContinuation
+    ├── withCheckedThrowingContinuation
+    ├── Bridging callback APIs
+    └── Resume exactly once rule</code></pre>
+<h2 id="combine-framework">4.2 Combine Framework</h2>
+<pre><code>Combine Framework
+├── Core Concepts
+│   ├── Publishers - emit values
+│   ├── Subscribers - receive values
+│   ├── Operators - transform values
+│   └── Cancellables - manage subscriptions
+│
+├── Publishers
+│   ├── Just - single value
+│   ├── Future - async single value
+│   ├── PassthroughSubject - manual sending
+│   ├── CurrentValueSubject - stateful
+│   ├── @Published property wrapper
+│   ├── NotificationCenter.publisher
+│   ├── Timer.publish
+│   └── URLSession.dataTaskPublisher
+│
+├── Subscribers
+│   ├── sink(receiveValue:)
+│   ├── sink(receiveCompletion:receiveValue:)
+│   ├── assign(to:on:)
+│   └── Custom subscribers
+│
+├── Operators - Transforming
+│   ├── map
+│   ├── flatMap
+│   ├── compactMap
+│   ├── tryMap
+│   └── scan
+│
+├── Operators - Filtering
+│   ├── filter
+│   ├── removeDuplicates
+│   ├── first / last
+│   ├── dropFirst
+│   └── prefix
+│
+├── Operators - Combining
+│   ├── combineLatest
+│   ├── merge
+│   ├── zip
+│   └── switchToLatest
+│
+├── Operators - Timing
+│   ├── debounce
+│   ├── throttle
+│   ├── delay
+│   ├── timeout
+│   └── receive(on:) - scheduler
+│
+├── Operators - Error Handling
+│   ├── catch
+│   ├── retry
+│   ├── replaceError
+│   └── mapError
+│
+├── Cancellation
+│   ├── AnyCancellable
+│   ├── Cancellable protocol
+│   ├── store(in: &amp;cancellables)
+│   └── Lifecycle management
+│
+└── SwiftUI Integration
+    ├── onReceive modifier
+    ├── ObservableObject + @Published
+    └── Binding from publisher</code></pre>
+<h2 id="choosing-between-asyncawait-and-combine">4.3 Choosing Between
+async/await and Combine</h2>
+<pre><code>When to Use What
+├── Use async/await
+│   ├── One-shot async operations
+│   ├── Simple sequential code
+│   ├── Cleaner error handling
+│   └── Modern APIs (iOS 15+)
+│
+├── Use Combine
+│   ├── Streams of values over time
+│   ├── Complex transformations
+│   ├── Debouncing user input
+│   ├── Combining multiple sources
+│   └── ObservableObject pattern
+│
+└── Bridging Both
+    ├── values property on publishers (iOS 15+)
+    ├── AsyncStream from publisher
+    └── Publisher from async sequence</code></pre>
+<hr />
+<h1 id="data-persistence-with-coredata">5. DATA PERSISTENCE WITH
+COREDATA</h1>
+<blockquote>
+<p><strong>Best Resource:</strong> <a href="https://www.donnywals.com/practical-core-data/">Donny Wals -
+Practical Core Data</a> - Modern, SwiftUI-focused Core Data book.
+Alternatively, free: <a href="https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/CoreData/index.html">Apple’s
+Core Data Programming Guide</a></p>
+</blockquote>
+<h2 id="coredata-fundamentals">5.1 CoreData Fundamentals</h2>
+<pre><code>CoreData Basics
+├── What is CoreData?
+│   ├── Object graph management
+│   ├── Persistence framework
+│   ├── Not a database (abstraction)
+│   └── Uses SQLite by default
+│
+├── Core Stack
+│   ├── NSManagedObjectModel
+│   │   └── Describes entities and relationships
+│   │
+│   ├── NSPersistentStoreCoordinator
+│   │   └── Manages persistent stores
+│   │
+│   ├── NSManagedObjectContext
+│   │   ├── Workspace for objects
+│   │   ├── Track changes
+│   │   └── Save changes
+│   │
+│   └── NSPersistentContainer
+│       ├── Modern setup convenience
+│       ├── Contains viewContext
+│       └── Factory for contexts
+│
+├── NSManagedObject
+│   ├── Base class for entities
+│   ├── Dynamic property generation
+│   ├── @NSManaged attribute
+│   └── Custom subclasses
+│
+└── Model Editor (.xcdatamodeld)
+    ├── Creating entities
+    ├── Adding attributes
+    ├── Setting attribute types
+    └── Code generation options</code></pre>
+<h2 id="data-modeling">5.2 Data Modeling</h2>
+<pre><code>CoreData Modeling
+├── Entities
+│   ├── Naming conventions
+│   ├── Abstract entities
+│   ├── Entity inheritance
+│   └── Class vs Codegen
+│
+├── Attributes
+│   ├── Standard Types
+│   │   ├── String
+│   │   ├── Integer 16/32/64
+│   │   ├── Double / Float
+│   │   ├── Boolean
+│   │   ├── Date
+│   │   ├── Binary Data
+│   │   ├── UUID
+│   │   └── URI
+│   │
+│   ├── Transformable
+│   │   ├── Custom types
+│   │   ├── NSSecureCoding
+│   │   ├── ValueTransformer
+│   │   └── Storing arrays/dicts
+│   │
+│   ├── Attribute Properties
+│   │   ├── Optional vs required
+│   │   ├── Default values
+│   │   ├── Indexed
+│   │   └── Transient
+│   │
+│   └── Derived Attributes
+│       └── Computed from other values
+│
+├── Relationships
+│   ├── To-One Relationships
+│   │   └── Optional vs required
+│   │
+│   ├── To-Many Relationships
+│   │   ├── Unordered (Set)
+│   │   └── Ordered (Array)
+│   │
+│   ├── Inverse Relationships
+│   │   ├── Always define both sides
+│   │   └── Automatic management
+│   │
+│   └── Delete Rules
+│       ├── Nullify
+│       ├── Cascade
+│       ├── Deny
+│       └── No Action
+│
+├── Fetched Properties
+│   ├── Weak relationships
+│   └── Predicate-based
+│
+└── Unique Constraints
+    ├── Attribute uniqueness
+    └── Merge policies</code></pre>
+<h2 id="crud-operations">5.3 CRUD Operations</h2>
+<pre><code>CoreData Operations
+├── Creating Objects
+│   ├── NSEntityDescription.insertNewObject
+│   ├── Convenience initializers
+│   ├── Setting properties
+│   └── Relationship assignment
+│
+├── Fetching Objects
+│   ├── NSFetchRequest&lt;T&gt;
+│   │   ├── Entity name
+│   │   ├── Predicate (filtering)
+│   │   ├── Sort descriptors
+│   │   ├── Fetch limit
+│   │   └── Result type
+│   │
+│   ├── Predicates (NSPredicate)
+│   │   ├── Format strings
+│   │   ├── Comparison operators
+│   │   ├── Compound predicates
+│   │   ├── CONTAINS, BEGINSWITH
+│   │   └── Relationship traversal
+│   │
+│   ├── Sort Descriptors
+│   │   ├── NSSortDescriptor
+│   │   ├── Multiple sort keys
+│   │   └── Ascending/descending
+│   │
+│   └── Fetch Request Templates
+│       └── Defined in model editor
+│
+├── Updating Objects
+│   ├── Modify properties directly
+│   ├── Relationship updates
+│   ├── Dirty tracking
+│   └── Refresh from store
+│
+├── Deleting Objects
+│   ├── context.delete(object)
+│   ├── Cascade behavior
+│   └── Validation before delete
+│
+└── Saving
+    ├── context.save()
+    ├── hasChanges check
+    ├── Error handling
+    └── Save on background thread</code></pre>
+<h2 id="coredata-with-swiftui">5.4 CoreData with SwiftUI</h2>
+<pre><code>CoreData + SwiftUI
+├── @FetchRequest
+│   ├── Property wrapper
+│   ├── Automatic updates
+│   ├── Sort descriptors
+│   ├── Predicate
+│   └── Animation
+│
+├── @SectionedFetchRequest
+│   ├── Grouped results
+│   └── Section key path
+│
+├── Environment
+│   ├── \.managedObjectContext
+│   ├── Injecting context
+│   └── Child contexts
+│
+├── Preview Support
+│   ├── In-memory store
+│   ├── Sample data
+│   └── Preview container
+│
+└── NSManagedObject in Views
+    ├── Identifiable conformance
+    ├── ObservableObject behavior
+    └── Avoiding crashes on delete</code></pre>
+<h2 id="advanced-coredata">5.5 Advanced CoreData</h2>
+<pre><code>Advanced Topics
+├── Multiple Contexts
+│   ├── Main context (viewContext)
+│   ├── Background contexts
+│   ├── newBackgroundContext()
+│   ├── performBackgroundTask { }
+│   └── Merging changes
+│
+├── Performance
+│   ├── Batch fetching
+│   ├── Faulting and unfaulting
+│   ├── Prefetching relationships
+│   ├── Fetch limits
+│   └── NSFetchedResultsController
+│
+├── Migrations
+│   ├── Lightweight migration
+│   ├── Model versioning
+│   ├── Mapping models
+│   └── Custom migrations
+│
+├── Concurrency
+│   ├── perform { } block
+│   ├── performAndWait { }
+│   ├── Thread confinement
+│   └── Object IDs across threads
+│
+└── CloudKit Integration
+    ├── NSPersistentCloudKitContainer
+    ├── Automatic sync
+    └── Merge policies</code></pre>
+<hr />
+<h1 id="ios-app-architecture-patterns">6. IOS APP ARCHITECTURE
+PATTERNS</h1>
+<blockquote>
+<p><strong>Best Resource:</strong> <a href="https://www.pointfree.co/">Point-Free</a> - Deep-dive video series
+on Swift architecture (paid, but highest quality). Free alternative: <a href="https://www.hackingwithswift.com/books/ios-swiftui/introducing-mvvm-into-your-swiftui-project">Hacking
+with Swift - MVVM introduction</a></p>
+</blockquote>
+<h2 id="mvvm-pattern">6.1 MVVM Pattern</h2>
+<pre><code>Model-View-ViewModel
+├── Model Layer
+│   ├── Data structures
+│   ├── Business logic
+│   ├── CoreData entities
+│   └── Network models
+│
+├── View Layer
+│   ├── SwiftUI views
+│   ├── Pure presentation
+│   ├── No business logic
+│   └── Binds to ViewModel
+│
+├── ViewModel Layer
+│   ├── ObservableObject
+│   ├── @Published properties
+│   ├── Transforms model for view
+│   ├── Handles user actions
+│   └── Coordinates with services
+│
+├── Implementation
+│   ├── ViewModel as @StateObject
+│   ├── Dependency injection
+│   ├── Protocol-based ViewModels
+│   └── Testing ViewModels
+│
+└── Common Mistakes
+    ├── Fat ViewModels
+    ├── View logic in ViewModel
+    ├── Tight coupling
+    └── Singleton abuse</code></pre>
+<h2 id="dependency-injection">6.2 Dependency Injection</h2>
+<pre><code>Dependency Injection
+├── What is DI?
+│   ├── Providing dependencies externally
+│   ├── Inversion of control
+│   └── Benefits (testing, flexibility)
+│
+├── Constructor Injection
+│   ├── Pass via initializer
+│   ├── Required dependencies
+│   └── Immutable after creation
+│
+├── Property Injection
+│   ├── Set after creation
+│   ├── Optional dependencies
+│   └── More flexible
+│
+├── Environment Injection
+│   ├── SwiftUI environment
+│   ├── @EnvironmentObject
+│   ├── Custom environment keys
+│   └── Implicit passing
+│
+└── DI Containers
+    ├── Manual composition root
+    ├── Factory patterns
+    └── Third-party containers</code></pre>
+<h2 id="repository-pattern">6.3 Repository Pattern</h2>
+<pre><code>Repository Pattern
+├── Purpose
+│   ├── Abstract data source
+│   ├── Single access point
+│   └── Testable data layer
+│
+├── Interface
+│   ├── Protocol definition
+│   ├── CRUD methods
+│   └── Query methods
+│
+├── Implementation
+│   ├── CoreData repository
+│   ├── Network repository
+│   ├── Mock repository (tests)
+│   └── Cached repository
+│
+└── Usage
+    ├── Inject into ViewModels
+    ├── Swap implementations
+    └── Combine multiple sources</code></pre>
+<h2 id="service-layer">6.4 Service Layer</h2>
+<pre><code>Service Layer
+├── Purpose
+│   ├── Encapsulate business logic
+│   ├── Coordinate multiple operations
+│   └── Abstract complex APIs
+│
+├── Common Services
+│   ├── MusicKitService
+│   ├── HealthKitService
+│   ├── SyncService
+│   └── NotificationService
+│
+├── Design Principles
+│   ├── Single responsibility
+│   ├── Protocol-based
+│   ├── Stateless when possible
+│   └── Async/await interfaces
+│
+└── Integration
+    ├── Composed in app startup
+    ├── Injected to ViewModels
+    └── Can use other services</code></pre>
+<hr />
+<h1 id="musickit-framework">7. MUSICKIT FRAMEWORK</h1>
+<blockquote>
+<p><strong>Best Resource:</strong> <a href="https://developer.apple.com/videos/play/wwdc2021/10294/">WWDC21:
+Meet MusicKit for Swift</a> + <a href="https://developer.apple.com/documentation/musickit">Apple MusicKit
+Documentation</a> - Official source; MusicKit has limited third-party
+resources, so Apple’s docs and WWDC sessions are essential.</p>
+</blockquote>
+<h2 id="musickit-fundamentals">7.1 MusicKit Fundamentals</h2>
+<pre><code>MusicKit Overview
+├── What is MusicKit?
+│   ├── Access Apple Music
+│   ├── User library access
+│   ├── Catalog search
+│   └── Playback control
+│
+├── Platform Support
+│   ├── iOS 15.0+
+│   ├── macOS 12.0+
+│   ├── watchOS 8.0+
+│   └── tvOS 15.0+
+│
+├── Setup Requirements
+│   ├── MusicKit entitlement
+│   ├── App ID configuration
+│   └── Usage description (not needed for music)
+│
+└── Key Concepts
+    ├── Music items (Song, Album, Artist)
+    ├── Library vs Catalog
+    ├── Authorization
+    └── Playback</code></pre>
+<h2 id="authorization">7.2 Authorization</h2>
+<pre><code>MusicKit Authorization
+├── MusicAuthorization
+│   ├── Status values
+│   │   ├── .notDetermined
+│   │   ├── .denied
+│   │   ├── .restricted
+│   │   └── .authorized
+│   │
+│   └── Checking status
+│       └── MusicAuthorization.currentStatus
+│
+├── Requesting Authorization
+│   ├── MusicAuthorization.request()
+│   ├── Async/await
+│   ├── Handling all status cases
+│   └── When to request
+│
+└── Best Practices
+    ├── Check before request
+    ├── Handle denial gracefully
+    └── Explain value to user</code></pre>
+<h2 id="library-access">7.3 Library Access</h2>
+<pre><code>Accessing User Library
+├── MusicLibrary
+│   ├── Shared instance
+│   └── Library operations
+│
+├── MusicLibraryRequest&lt;T&gt;
+│   ├── Request items from library
+│   ├── Generic over MusicItem types
+│   ├── Sorting
+│   │   └── sort(by:ascending:)
+│   ├── Filtering
+│   │   └── filter(matching:)
+│   └── Response handling
+│
+├── Item Types
+│   ├── Song
+│   ├── Album
+│   ├── Artist
+│   ├── Playlist
+│   ├── MusicVideo
+│   └── Station
+│
+├── Playlist Access
+│   ├── Fetching all playlists
+│   ├── Playlist properties
+│   │   ├── id, name
+│   │   ├── artwork
+│   │   ├── tracks (songs)
+│   │   └── curatorName
+│   │
+│   └── Getting playlist tracks
+│       └── with([.tracks])
+│
+└── Recently Played
+    ├── MusicRecentlyPlayedRequest
+    └── Configuring limit</code></pre>
+<h2 id="playback">7.4 Playback</h2>
+<pre><code>Music Playback
+├── ApplicationMusicPlayer
+│   ├── Shared instance
+│   ├── Controls app&#39;s playback
+│   └── System integration
+│
+├── Setting Queue
+│   ├── player.queue = [items]
+│   ├── MusicPlayer.Queue
+│   ├── QueueEntry
+│   └── Queue manipulation
+│
+├── Playback Control
+│   ├── play() - async throws
+│   ├── pause()
+│   ├── stop()
+│   ├── skipToNextEntry()
+│   ├── skipToPreviousEntry()
+│   └── seek(to:)
+│
+├── Playback State
+│   ├── state property
+│   │   ├── .playing
+│   │   ├── .paused
+│   │   ├── .stopped
+│   │   ├── .interrupted
+│   │   └── .seekingForward/.seekingBackward
+│   │
+│   ├── Observing changes
+│   │   └── objectWillChange publisher
+│   │
+│   └── Current entry
+│       └── queue.currentEntry
+│
+└── Now Playing
+    ├── Current song info
+    ├── Playback time
+    ├── Duration
+    └── Artwork</code></pre>
+<h2 id="musickit-data-types">7.5 MusicKit Data Types</h2>
+<pre><code>MusicKit Types
+├── MusicItemID
+│   ├── Unique identifier
+│   ├── rawValue: String
+│   └── Type-safe
+│
+├── Artwork
+│   ├── url(width:height:)
+│   ├── backgroundColor
+│   └── Loading images
+│
+├── Song Properties
+│   ├── id, title
+│   ├── artistName
+│   ├── albumTitle
+│   ├── duration
+│   ├── artwork
+│   ├── genreNames
+│   ├── releaseDate
+│   └── playParameters
+│
+└── Extended Properties
+    ├── .with([.artists, .albums])
+    ├── Relationship loading
+    └── Lazy loading strategy</code></pre>
+<hr />
+<h1 id="healthkit-framework">8. HEALTHKIT FRAMEWORK</h1>
+<blockquote>
+<p><strong>Best Resource:</strong> <a href="https://developer.apple.com/videos/all-videos/?q=healthkit">WWDC
+Videos: HealthKit series</a> (especially “What’s new in HealthKit”
+annually) + <a href="https://developer.apple.com/documentation/healthkit">Apple
+HealthKit Documentation</a> - HealthKit is Apple-proprietary, so
+official sources are the most accurate and complete.</p>
+</blockquote>
+<h2 id="healthkit-fundamentals">8.1 HealthKit Fundamentals</h2>
+<pre><code>HealthKit Overview
+├── What is HealthKit?
+│   ├── Centralized health data store
+│   ├── Read/write health data
+│   ├── Privacy-focused
+│   └── Apple Watch integration
+│
+├── Platform Support
+│   ├── iOS 8.0+
+│   ├── watchOS 2.0+
+│   ├── NOT available on macOS
+│   └── NOT available on iPad (some)
+│
+├── Key Concepts
+│   ├── HKHealthStore - central access
+│   ├── HKObjectType - data types
+│   ├── HKSample - data points
+│   └── Authorization per-type
+│
+└── Privacy Model
+    ├── Per-type authorization
+    ├── Read vs write separate
+    ├── User controls in Settings
+    └── Cannot see denial vs not asked</code></pre>
+<h2 id="authorization-1">8.2 Authorization</h2>
+<pre><code>HealthKit Authorization
+├── HKHealthStore
+│   ├── isHealthDataAvailable()
+│   ├── Check device support
+│   └── Singleton pattern common
+│
+├── Data Types
+│   ├── HKQuantityType (measurable)
+│   │   ├── heartRate
+│   │   ├── heartRateVariabilitySDNN
+│   │   ├── stepCount
+│   │   ├── activeEnergyBurned
+│   │   └── Many more...
+│   │
+│   ├── HKCategoryType (categories)
+│   │   ├── sleepAnalysis
+│   │   ├── mindfulSession
+│   │   └── Many more...
+│   │
+│   ├── HKWorkoutType
+│   │   └── For workout data
+│   │
+│   └── HKObjectType
+│       └── Base class
+│
+├── Requesting Authorization
+│   ├── requestAuthorization(toShare:read:)
+│   ├── Async version available
+│   ├── Set&lt;HKSampleType&gt; for both
+│   └── Completion handler
+│
+├── Checking Authorization
+│   ├── authorizationStatus(for:)
+│   ├── .notDetermined
+│   ├── .sharingDenied
+│   ├── .sharingAuthorized
+│   └── CANNOT determine read status!
+│
+└── Info.plist
+    ├── NSHealthShareUsageDescription
+    ├── NSHealthUpdateUsageDescription
+    └── Required strings</code></pre>
+<h2 id="reading-data">8.3 Reading Data</h2>
+<pre><code>Reading HealthKit Data
+├── Query Types
+│   ├── HKSampleQuery
+│   │   ├── One-time fetch
+│   │   ├── Predicate filtering
+│   │   ├── Sort descriptors
+│   │   └── Limit
+│   │
+│   ├── HKAnchoredObjectQuery
+│   │   ├── Initial fetch + updates
+│   │   ├── Anchor for incremental
+│   │   ├── updateHandler
+│   │   └── Real-time monitoring
+│   │
+│   ├── HKObserverQuery
+│   │   ├── Notification of changes
+│   │   ├── Background delivery
+│   │   └── Lightweight
+│   │
+│   ├── HKStatisticsQuery
+│   │   ├── Aggregated data
+│   │   ├── Sum, average, min, max
+│   │   └── Single time range
+│   │
+│   └── HKStatisticsCollectionQuery
+│       ├── Time-series aggregation
+│       ├── Daily/weekly/monthly
+│       └── Initial + updates
+│
+├── Predicates
+│   ├── HKQuery.predicateForSamples
+│   ├── Date range
+│   ├── Source (device)
+│   └── Compound predicates
+│
+├── Executing Queries
+│   ├── healthStore.execute(query)
+│   ├── Completion handlers
+│   ├── Background queue
+│   └── Stop long-running queries
+│
+└── Sample Types
+    ├── HKQuantitySample
+    │   ├── quantity property
+    │   ├── Unit conversion
+    │   └── doubleValue(for: unit)
+    │
+    └── HKCategorySample
+        └── value property (enum)</code></pre>
+<h2 id="heart-rate-hrv">8.4 Heart Rate &amp; HRV</h2>
+<pre><code>Heart Rate Data
+├── Heart Rate
+│   ├── Type: .heartRate
+│   ├── Unit: HKUnit.beatsPerMinute()
+│   ├── Continuous from Watch
+│   └── Sample every ~5 seconds
+│
+├── Heart Rate Variability
+│   ├── Type: .heartRateVariabilitySDNN
+│   ├── Unit: HKUnit.secondUnit(with: .milli)
+│   ├── SDNN measurement
+│   ├── Requires Watch
+│   └── Less frequent samples
+│
+├── Querying Recent HR
+│   ├── Time-based predicate
+│   ├── Sort by endDate descending
+│   ├── Limit for performance
+│   └── Handle missing data
+│
+└── Real-Time HR Monitoring
+    ├── HKAnchoredObjectQuery
+    ├── updateHandler for new samples
+    ├── Background delivery
+    └── Watch app requirements</code></pre>
+<h2 id="workouts-sleep">8.5 Workouts &amp; Sleep</h2>
+<pre><code>Workout Data
+├── HKWorkout
+│   ├── workoutActivityType
+│   ├── duration
+│   ├── totalEnergyBurned
+│   ├── totalDistance
+│   └── startDate / endDate
+│
+├── Workout Activity Types
+│   ├── .running
+│   ├── .cycling
+│   ├── .walking
+│   ├── .swimming
+│   └── Many more...
+│
+└── Querying Workouts
+    ├── HKWorkoutType
+    ├── Predicate for date range
+    └── Activity type filter
+
+Sleep Data
+├── HKCategorySample (sleepAnalysis)
+│   ├── value property
+│   │   ├── .inBed
+│   │   ├── .asleepUnspecified
+│   │   ├── .awake
+│   │   ├── .asleepCore
+│   │   ├── .asleepDeep
+│   │   └── .asleepREM
+│   │
+│   ├── startDate / endDate
+│   └── Duration calculation
+│
+└── Sleep Analysis
+    ├── Multiple samples per night
+    ├── Combining stages
+    └── Total sleep calculation</code></pre>
+<h2 id="background-delivery">8.6 Background Delivery</h2>
+<pre><code>Background Delivery
+├── Purpose
+│   ├── Wake app for new data
+│   ├── Process in background
+│   └── Real-time updates
+│
+├── Setup
+│   ├── enableBackgroundDelivery(for:frequency:)
+│   ├── Frequency options
+│   │   ├── .immediate
+│   │   ├── .hourly
+│   │   └── .daily
+│   │
+│   └── HKObserverQuery required
+│
+├── Requirements
+│   ├── Background modes capability
+│   ├── &quot;Background fetch&quot; enabled
+│   └── App must handle background launch
+│
+└── Implementation
+    ├── Register in app startup
+    ├── Observer query updateHandler
+    ├── Complete callback properly
+    └── Handle app termination</code></pre>
+<hr />
+<h1 id="watchos-development">9. WATCHOS DEVELOPMENT</h1>
+<blockquote>
+<p><strong>Best Resource:</strong> <a href="https://developer.apple.com/videos/play/wwdc2021/10009/">WWDC21:
+Build a workout app for Apple Watch</a> + <a href="https://developer.apple.com/documentation/watchos-apps">Apple
+watchOS Documentation</a> - This WWDC session covers sensors, workouts,
+and SwiftUI on Watch comprehensively.</p>
+</blockquote>
+<h2 id="watchos-fundamentals">9.1 watchOS Fundamentals</h2>
+<pre><code>watchOS Overview
+├── Platform Characteristics
+│   ├── Small screen (40-49mm)
+│   ├── Brief interactions
+│   ├── Glanceable UI
+│   ├── Always-on display support
+│   └── Limited resources
+│
+├── App Architecture
+│   ├── Watch App (SwiftUI)
+│   ├── Extension (legacy)
+│   ├── Single target (modern)
+│   └── Companion iPhone app
+│
+├── Lifecycle
+│   ├── Very short sessions
+│   ├── Aggressive suspension
+│   ├── Background runtime limits
+│   └── Extended runtime sessions
+│
+└── SwiftUI on watchOS
+    ├── Same framework, adapted
+    ├── Smaller touch targets
+    ├── Digital Crown input
+    └── Simplified navigation</code></pre>
+<h2 id="watch-app-structure">9.2 Watch App Structure</h2>
+<pre><code>Watch App Components
+├── App Entry Point
+│   ├── @main struct
+│   ├── App protocol
+│   └── WindowGroup or Scene
+│
+├── Navigation
+│   ├── NavigationStack
+│   ├── TabView (page-based)
+│   ├── .sheet for modals
+│   └── .toolbar for actions
+│
+├── Lists
+│   ├── List view
+│   ├── Swipe actions
+│   ├── Selection
+│   └── Scrolling
+│
+├── Controls
+│   ├── Button (sized for Watch)
+│   ├── Picker (wheel style default)
+│   ├── Toggle
+│   ├── Slider
+│   └── Stepper
+│
+└── Layout Considerations
+    ├── Minimal text
+    ├── Large touch targets
+    ├── Vertical scrolling
+    └── Circular elements work well</code></pre>
+<h2 id="digital-crown">9.3 Digital Crown</h2>
+<pre><code>Digital Crown Input
+├── Default Behaviors
+│   ├── List scrolling
+│   ├── Picker selection
+│   └── Volume control
+│
+├── Custom Crown Input
+│   ├── .digitalCrownRotation()
+│   ├── Binding to state
+│   ├── Rotation range
+│   ├── Sensitivity
+│   └── Haptic feedback
+│
+├── Focus and Activation
+│   ├── .focusable()
+│   ├── @FocusState
+│   └── Focus ring
+│
+└── Crown Events
+    ├── Rotation delta
+    ├── Velocity
+    └── Continuous vs discrete</code></pre>
+<h2 id="watch-sensors">9.4 Watch Sensors</h2>
+<pre><code>Watch Sensor Access
+├── HealthKit (Primary)
+│   ├── Heart rate
+│   ├── HRV
+│   ├── Step count
+│   ├── Active energy
+│   └── Workout data
+│
+├── CoreMotion
+│   ├── CMMotionManager
+│   ├── Accelerometer
+│   ├── Gyroscope
+│   └── Device motion
+│
+├── Workout Sessions
+│   ├── HKWorkoutSession
+│   ├── Extended runtime
+│   ├── Continuous sensor access
+│   └── Background execution
+│
+└── Location (Limited)
+    ├── CLLocationManager
+    ├── Background location
+    └── Workout requirement</code></pre>
+<h2 id="extended-runtime">9.5 Extended Runtime</h2>
+<pre><code>Extended Runtime Sessions
+├── When Needed
+│   ├── Background heart rate
+│   ├── Continuous monitoring
+│   ├── Long-running tasks
+│   └── Beyond normal limits
+│
+├── Session Types
+│   ├── HKWorkoutSession
+│   │   ├── Most permissive
+│   │   ├── Continuous sensor
+│   │   └── For fitness apps
+│   │
+│   ├── WKExtendedRuntimeSession
+│   │   ├── Self-care
+│   │   ├── Mindfulness
+│   │   ├── Physical therapy
+│   │   └── Alarm
+│   │
+│   └── Background App Refresh
+│       ├── Scheduled refresh
+│       └── Limited time
+│
+└── Implementation
+    ├── Session delegate
+    ├── Start/invalidate
+    ├── Handle expiration
+    └── Resource-conscious code</code></pre>
+<hr />
+<h1 id="watchconnectivity-framework">10. WATCHCONNECTIVITY
+FRAMEWORK</h1>
+<blockquote>
+<p><strong>Best Resource:</strong> <a href="https://developer.apple.com/documentation/watchconnectivity">Apple
+WatchConnectivity Documentation</a> + <a href="https://www.hackingwithswift.com/read/37/overview">Hacking with
+Swift - WatchConnectivity tutorial</a> - Paul Hudson’s tutorial provides
+practical examples that complement Apple’s API reference.</p>
+</blockquote>
+<h2 id="watchconnectivity-fundamentals">10.1 WatchConnectivity
+Fundamentals</h2>
+<pre><code>WatchConnectivity Overview
+├── Purpose
+│   ├── iPhone ↔ Watch communication
+│   ├── Bidirectional data transfer
+│   ├── Background and foreground
+│   └── Various transfer methods
+│
+├── WCSession
+│   ├── Singleton (default)
+│   ├── Activate before use
+│   ├── Delegate for callbacks
+│   └── Check activation state
+│
+├── Session States
+│   ├── .notActivated
+│   ├── .inactive
+│   ├── .activated
+│   └── State change handling
+│
+└── Reachability
+    ├── isReachable property
+    ├── Companion app foreground
+    ├── Instant messaging possible
+    └── Changes over time</code></pre>
+<h2 id="communication-methods">10.2 Communication Methods</h2>
+<pre><code>Transfer Methods
+├── Application Context
+│   ├── updateApplicationContext(_:)
+│   ├── Dictionary data
+│   ├── Latest value only
+│   ├── Survives app restart
+│   ├── Delivered when possible
+│   └── Best for state sync
+│
+├── User Info Transfer
+│   ├── transferUserInfo(_:)
+│   ├── Queued delivery
+│   ├── Guaranteed delivery (FIFO)
+│   ├── All transfers delivered
+│   └── Best for events/logs
+│
+├── Message (Live)
+│   ├── sendMessage(_:replyHandler:)
+│   ├── Requires reachability
+│   ├── Instant delivery
+│   ├── Optional reply handler
+│   └── Best for real-time
+│
+├── Message Data
+│   ├── sendMessageData(_:replyHandler:)
+│   ├── Raw Data type
+│   └── For binary data
+│
+├── File Transfer
+│   ├── transferFile(_:metadata:)
+│   ├── Large files
+│   ├── Background transfer
+│   └── Progress tracking
+│
+└── Complication User Info
+    ├── transferCurrentComplicationUserInfo(_:)
+    ├── High priority
+    ├── Budget limited
+    └── For complication updates</code></pre>
+<h2 id="delegate-methods">10.3 Delegate Methods</h2>
+<pre><code>WCSessionDelegate
+├── Session State
+│   ├── session(_:activationDidCompleteWith:error:)
+│   ├── sessionDidBecomeInactive(_:) - iOS only
+│   ├── sessionDidDeactivate(_:) - iOS only
+│   └── sessionReachabilityDidChange(_:)
+│
+├── Receiving Data
+│   ├── session(_:didReceiveMessage:)
+│   ├── session(_:didReceiveMessage:replyHandler:)
+│   ├── session(_:didReceiveMessageData:)
+│   ├── session(_:didReceiveApplicationContext:)
+│   ├── session(_:didReceiveUserInfo:)
+│   └── session(_:didReceive:) - files
+│
+├── Transfer Status
+│   ├── session(_:didFinish:error:) - user info
+│   ├── session(_:didFinish:error:) - files
+│   └── Outstanding transfers
+│
+└── Implementation Pattern
+    ├── Main thread for UI updates
+    ├── Background processing
+    ├── Error handling
+    └── Retry logic</code></pre>
+<h2 id="best-practices">10.4 Best Practices</h2>
+<pre><code>WatchConnectivity Patterns
+├── Activation
+│   ├── Activate early (app launch)
+│   ├── Check support first
+│   ├── Handle activation errors
+│   └── Persist delegate
+│
+├── Choosing Transfer Method
+│   ├── Real-time + reachable → sendMessage
+│   ├── State sync → applicationContext
+│   ├── Event log → userInfo
+│   ├── Large data → fileTransfer
+│   └── Complication → complicationUserInfo
+│
+├── Data Encoding
+│   ├── Dictionary [String: Any]
+│   ├── PropertyListSerialization
+│   ├── Codable to Data
+│   └── Size limits (~262KB message)
+│
+├── Error Handling
+│   ├── Not reachable errors
+│   ├── Transfer failures
+│   ├── Retry strategies
+│   └── Graceful degradation
+│
+└── Testing
+    ├── Test with real devices
+    ├── Simulate disconnection
+    ├── Background scenarios
+    └── App not running scenarios</code></pre>
+<hr />
+<h1 id="macos-development-menu-bar-apps">11. MACOS DEVELOPMENT (MENU BAR
+APPS)</h1>
+<blockquote>
+<p><strong>Best Resource:</strong> <a href="https://www.hackingwithswift.com/articles/215/the-ultimate-guide-to-macos-menu-bar-apps">Hacking
+with Swift - macOS tutorials</a> - “The Ultimate Guide to macOS Menu Bar
+Apps” covers NSStatusItem, popovers, and SwiftUI integration
+specifically.</p>
+</blockquote>
+<h2 id="macos-app-fundamentals">11.1 macOS App Fundamentals</h2>
+<pre><code>macOS Development
+├── App Types
+│   ├── Standard window app
+│   ├── Document-based app
+│   ├── Menu bar app (agent)
+│   └── Catalyst app
+│
+├── Key Differences from iOS
+│   ├── Mouse + keyboard input
+│   ├── Window management
+│   ├── Menu bar
+│   ├── Multiple windows
+│   └── More resources
+│
+├── SwiftUI on macOS
+│   ├── Same framework
+│   ├── Platform-specific modifiers
+│   ├── AppKit interop
+│   └── macOS-specific views
+│
+└── App Lifecycle
+    ├── NSApplicationDelegate
+    ├── applicationDidFinishLaunching
+    ├── applicationWillTerminate
+    └── App activation/deactivation</code></pre>
+<h2 id="menu-bar-apps">11.2 Menu Bar Apps</h2>
+<pre><code>Menu Bar (Status Bar) Apps
+├── NSStatusItem
+│   ├── System status bar
+│   ├── Icon or text
+│   ├── Click actions
+│   └── Visibility control
+│
+├── Creating Status Item
+│   ├── NSStatusBar.system
+│   ├── statusItem(withLength:)
+│   ├── .variableLength
+│   ├── .squareLength
+│   └── Button configuration
+│
+├── Status Item Button
+│   ├── item.button property
+│   ├── Image (SF Symbol or custom)
+│   ├── Title (text)
+│   ├── Action and target
+│   └── Highlight behavior
+│
+├── Menu
+│   ├── NSMenu
+│   ├── NSMenuItem
+│   ├── Submenus
+│   ├── Separators
+│   └── Key equivalents
+│
+├── Popover
+│   ├── NSPopover
+│   ├── Show from button
+│   ├── Content view controller
+│   ├── SwiftUI content
+│   └── Close behavior
+│
+└── Agent App Configuration
+    ├── LSUIElement = YES
+    ├── No dock icon
+    ├── No menu bar
+    └── Background only</code></pre>
+<h2 id="macos-context-access">11.3 macOS Context Access</h2>
+<pre><code>Accessing System Context
+├── Active Application
+│   ├── NSWorkspace.shared
+│   ├── frontmostApplication
+│   ├── runningApplications
+│   └── Bundle ID
+│
+├── Focus Mode (Do Not Disturb)
+│   ├── Not directly accessible
+│   ├── Observe notifications
+│   └── Private APIs (risky)
+│
+├── Screen Time
+│   ├── Not accessible to apps
+│   ├── User-controlled only
+│   └── Infer from app usage
+│
+├── Calendar (EventKit)
+│   ├── EKEventStore
+│   ├── Request access
+│   ├── Query events
+│   └── Calendar availability
+│
+└── Accessibility API
+    ├── AXUIElement
+    ├── Accessibility permission
+    ├── Window info
+    └── App state details</code></pre>
+<hr />
+<h1 id="background-processing-app-lifecycle">12. BACKGROUND PROCESSING
+&amp; APP LIFECYCLE</h1>
+<blockquote>
+<p><strong>Best Resource:</strong> <a href="https://developer.apple.com/videos/play/wwdc2020/10063/">WWDC20:
+Background execution demystified</a> + <a href="https://developer.apple.com/documentation/backgroundtasks">Apple
+BackgroundTasks Documentation</a> - Essential WWDC session explaining
+exactly how iOS handles background work.</p>
+</blockquote>
+<h2 id="ios-app-lifecycle">12.1 iOS App Lifecycle</h2>
+<pre><code>App Lifecycle
+├── App States
+│   ├── Not Running
+│   ├── Inactive (transitioning)
+│   ├── Active (foreground)
+│   ├── Background
+│   └── Suspended
+│
+├── SwiftUI Lifecycle
+│   ├── @main App struct
+│   ├── scenePhase environment
+│   │   ├── .active
+│   │   ├── .inactive
+│   │   └── .background
+│   │
+│   └── onChange(of: scenePhase)
+│
+├── Scene Delegate (UIKit)
+│   ├── sceneDidBecomeActive
+│   ├── sceneWillResignActive
+│   ├── sceneDidEnterBackground
+│   └── sceneWillEnterForeground
+│
+└── State Transitions
+    ├── Launch → Active
+    ├── Active → Inactive → Background
+    ├── Background → Suspended
+    ├── Suspended → Active (relaunch)
+    └── Handling each transition</code></pre>
+<h2 id="background-tasks-framework">12.2 Background Tasks Framework</h2>
+<pre><code>BGTaskScheduler
+├── Task Types
+│   ├── BGAppRefreshTask
+│   │   ├── Short background work
+│   │   ├── ~30 seconds
+│   │   └── Network/processing
+│   │
+│   └── BGProcessingTask
+│       ├── Long background work
+│       ├── Minutes of time
+│       ├── requiresNetworkConnectivity
+│       ├── requiresExternalPower
+│       └── Heavy processing
+│
+├── Registration
+│   ├── Info.plist identifiers
+│   ├── BGTaskScheduler.shared.register
+│   ├── Handler block
+│   └── Early registration required
+│
+├── Scheduling
+│   ├── BGAppRefreshTaskRequest
+│   ├── BGProcessingTaskRequest
+│   ├── earliestBeginDate
+│   ├── submit(request)
+│   └── System decides when
+│
+├── Task Execution
+│   ├── setTaskCompleted(success:)
+│   ├── expirationHandler
+│   ├── Handle expiration gracefully
+│   └── Reschedule if needed
+│
+└── Testing
+    ├── Debug commands
+    ├── e -l objc -- simulation commands
+    └── Difficult to test reliably</code></pre>
+<h2 id="background-modes">12.3 Background Modes</h2>
+<pre><code>Background Execution
+├── Audio
+│   ├── Continuous playback
+│   ├── Audio recording
+│   └── Stays active while playing
+│
+├── Location
+│   ├── Continuous location updates
+│   ├── Significant change only
+│   ├── Region monitoring
+│   └── Battery considerations
+│
+├── Background Fetch
+│   ├── Periodic refresh
+│   ├── System-determined timing
+│   └── setMinimumBackgroundFetchInterval
+│
+├── Remote Notifications
+│   ├── Silent push notifications
+│   ├── content-available flag
+│   └── Wake app briefly
+│
+├── Processing
+│   ├── BGProcessingTask support
+│   └── Heavy background work
+│
+└── HealthKit
+    ├── Background delivery
+    ├── Observer queries
+    └── Wake for new data</code></pre>
+<hr />
+<h1 id="widgets-complications">13. WIDGETS &amp; COMPLICATIONS</h1>
+<blockquote>
+<p><strong>Best Resource:</strong> <a href="https://developer.apple.com/videos/play/wwdc2020/10034/">WWDC20:
+Widgets Code-along</a> + <a href="https://developer.apple.com/videos/play/wwdc2020/10048/">WWDC20:
+Complications and widgets: Reloaded</a> - Hands-on Apple sessions
+covering both iOS widgets and watchOS complications.</p>
+</blockquote>
+<h2 id="widgetkit-ios">13.1 WidgetKit (iOS)</h2>
+<pre><code>WidgetKit Fundamentals
+├── Widget Structure
+│   ├── Widget protocol
+│   ├── WidgetConfiguration
+│   ├── TimelineProvider
+│   └── View for display
+│
+├── Timeline
+│   ├── TimelineEntry (date + data)
+│   ├── Timeline (entries + policy)
+│   ├── Reload policies
+│   │   ├── .atEnd
+│   │   ├── .after(date)
+│   │   └── .never
+│   │
+│   └── Snapshot for previews
+│
+├── TimelineProvider
+│   ├── placeholder(in:) - loading
+│   ├── getSnapshot(in:completion:)
+│   ├── getTimeline(in:completion:)
+│   └── Context (family, isPreview)
+│
+├── Widget Families
+│   ├── .systemSmall
+│   ├── .systemMedium
+│   ├── .systemLarge
+│   ├── .systemExtraLarge (iPad)
+│   ├── .accessoryCircular (Lock)
+│   ├── .accessoryRectangular
+│   └── .accessoryInline
+│
+├── Configuration
+│   ├── StaticConfiguration
+│   ├── IntentConfiguration
+│   └── User-configurable options
+│
+├── App Interaction
+│   ├── Link from widget
+│   ├── Deep linking URLs
+│   ├── App Groups for data
+│   └── WidgetCenter.shared.reloadTimelines
+│
+└── Best Practices
+    ├── Fast, lightweight views
+    ├── Pre-compute content
+    ├── Handle missing data
+    └── Update judiciously</code></pre>
+<h2 id="watchos-complications">13.2 watchOS Complications</h2>
+<pre><code>ClockKit Complications
+├── What are Complications?
+│   ├── Data on watch face
+│   ├── Glanceable info
+│   ├── Quick app launch
+│   └── Family-specific layouts
+│
+├── Complication Families
+│   ├── .circularSmall
+│   ├── .modularSmall
+│   ├── .modularLarge
+│   ├── .utilitarianSmall
+│   ├── .utilitarianSmallFlat
+│   ├── .utilitarianLarge
+│   ├── .extraLarge
+│   ├── .graphicCorner
+│   ├── .graphicCircular
+│   ├── .graphicRectangular
+│   ├── .graphicBezel
+│   └── .graphicExtraLarge
+│
+├── CLKComplicationDataSource
+│   ├── getCurrentTimelineEntry
+│   ├── getTimelineEntries (future)
+│   ├── Reload triggers
+│   └── Complication descriptors
+│
+├── Templates
+│   ├── Family-specific templates
+│   ├── Text providers
+│   ├── Image providers
+│   ├── Gauge providers
+│   └── Full-color support
+│
+├── Updating Complications
+│   ├── CLKComplicationServer
+│   ├── reloadTimeline(for:)
+│   ├── extendTimeline(for:)
+│   ├── Budget limits
+│   └── transferCurrentComplicationUserInfo
+│
+└── WidgetKit on watchOS
+    ├── iOS 14+ / watchOS 7+
+    ├── Unified approach
+    ├── accessory families
+    └── Same TimelineProvider</code></pre>
+<hr />
+<h1 id="biometrics-signal-processing-concepts">14. BIOMETRICS &amp;
+SIGNAL PROCESSING CONCEPTS</h1>
+<blockquote>
+<p><strong>Best Resource:</strong> <a href="https://elitehrv.com/what-is-heart-rate-variability">Elite HRV
+Knowledge Base</a> - Comprehensive, scientific yet accessible
+explanations of HRV, heart rate, and their interpretation. For signal
+processing basics: <a href="https://www.khanacademy.org/math/statistics-probability">Khan
+Academy - Statistics &amp; Probability</a></p>
+</blockquote>
+<h2 id="heart-rate-physiology">14.1 Heart Rate Physiology</h2>
+<pre><code>Heart Rate Basics
+├── What is Heart Rate?
+│   ├── Beats per minute (BPM)
+│   ├── Normal range: 60-100 BPM
+│   ├── Resting vs active
+│   └── Individual variation
+│
+├── Factors Affecting HR
+│   ├── Physical activity
+│   ├── Emotional state
+│   ├── Caffeine/substances
+│   ├── Temperature
+│   ├── Hydration
+│   └── Time of day
+│
+├── Heart Rate Zones
+│   ├── Resting (baseline)
+│   ├── Light activity (50-60% max)
+│   ├── Moderate (60-70% max)
+│   ├── Hard (70-85% max)
+│   ├── Maximum (85-100% max)
+│   └── Max HR formula: 220 - age
+│
+└── HR in Context
+    ├── Stress indicator
+    ├── Recovery indicator
+    ├── Fitness proxy
+    └── Not absolute - relative changes matter</code></pre>
+<h2 id="heart-rate-variability-hrv">14.2 Heart Rate Variability
+(HRV)</h2>
+<pre><code>HRV Fundamentals
+├── What is HRV?
+│   ├── Variation between heartbeats
+│   ├── R-R intervals (RRI)
+│   ├── Milliseconds measurement
+│   └── NOT heart rate!
+│
+├── HRV Metrics
+│   ├── SDNN (Standard Deviation of NN)
+│   │   ├── Most common metric
+│   │   ├── Higher = better
+│   │   └── Apple Watch uses this
+│   │
+│   ├── RMSSD
+│   │   ├── Root mean square successive differences
+│   │   └── Parasympathetic indicator
+│   │
+│   └── Other metrics
+│       ├── pNN50
+│       ├── Frequency domain (LF/HF)
+│       └── Research-focused
+│
+├── Interpreting HRV
+│   ├── Higher HRV = better
+│   │   ├── More adaptable
+│   │   ├── Better recovery
+│   │   └── Less stressed
+│   │
+│   ├── Lower HRV = concerning
+│   │   ├── Stressed
+│   │   ├── Fatigued
+│   │   └── Poor recovery
+│   │
+│   └── Individual baselines matter
+│       ├── Compare to YOUR normal
+│       ├── Daily variation normal
+│       └── Trends over time
+│
+├── Factors Affecting HRV
+│   ├── Sleep quality
+│   ├── Stress (acute and chronic)
+│   ├── Alcohol
+│   ├── Exercise (acute decrease, chronic increase)
+│   ├── Age (decreases with age)
+│   └── Fitness level
+│
+└── Using HRV for Music Selection
+    ├── Low HRV + high stress → calming music
+    ├── High HRV + good state → maintain
+    ├── Measure response to music
+    └── Track changes during listening</code></pre>
+<h2 id="signal-smoothing-analysis">14.3 Signal Smoothing &amp;
+Analysis</h2>
+<pre><code>Signal Processing Basics
+├── Why Process Signals?
+│   ├── Noisy sensor data
+│   ├── Outliers
+│   ├── Missing samples
+│   └── Trend extraction
+│
+├── Moving Average
+│   ├── Simple smoothing
+│   ├── Window size selection
+│   ├── Lag introduced
+│   └── Implementation
+│
+├── Exponential Moving Average
+│   ├── Recent values weighted more
+│   ├── Alpha parameter (0-1)
+│   ├── Less lag than simple MA
+│   └── new = alpha * current + (1-alpha) * previous
+│
+├── Outlier Detection
+│   ├── Statistical bounds (2-3 sigma)
+│   ├── Physiological bounds
+│   ├── Rate of change limits
+│   └── Interpolation strategies
+│
+├── Trend Analysis
+│   ├── Linear regression
+│   ├── Slope calculation
+│   ├── Increasing/decreasing detection
+│   └── Rate of change
+│
+└── Normalization
+    ├── Min-max scaling (0-1)
+    ├── Z-score normalization
+    ├── Personal baseline adjustment
+    └── Population percentiles</code></pre>
+<hr />
+<h1 id="algorithm-scoring-system-design">15. ALGORITHM &amp; SCORING
+SYSTEM DESIGN</h1>
+<blockquote>
+<p><strong>Best Resource:</strong> <a href="https://developers.google.com/machine-learning/crash-course/representation/feature-engineering">Google
+Machine Learning Crash Course - Feature Engineering</a> - Covers
+normalization, feature weighting, and scoring fundamentals. For ranking:
+<a href="https://www.microsoft.com/en-us/research/project/learning-to-rank/">Microsoft
+Research - Learning to Rank</a></p>
+</blockquote>
+<h2 id="scoring-system-basics">15.1 Scoring System Basics</h2>
+<pre><code>Scoring Fundamentals
+├── Purpose
+│   ├── Rank items objectively
+│   ├── Combine multiple factors
+│   ├── Make decisions transparent
+│   └── Enable tuning
+│
+├── Score Components
+│   ├── Individual factor scores
+│   ├── Normalized to common scale
+│   ├── Weighted combination
+│   └── Final composite score
+│
+├── Normalization
+│   ├── Why normalize?
+│   │   ├── Different scales
+│   │   ├── Fair comparison
+│   │   └── Intuitive weights
+│   │
+│   ├── Min-Max: (x - min) / (max - min)
+│   ├── Result: 0.0 to 1.0
+│   └── Handle edge cases
+│
+└── Weighted Combination
+    ├── score = Σ(weight_i * score_i)
+    ├── Weights sum to 1.0 (or not)
+    ├── Tunable parameters
+    └── User preferences</code></pre>
+<h2 id="distance-matching-algorithms">15.2 Distance &amp; Matching
+Algorithms</h2>
+<pre><code>Matching Algorithms
+├── Absolute Difference
+│   ├── |target - actual|
+│   ├── Simple and intuitive
+│   └── Convert to score: 1 - (diff / max_diff)
+│
+├── Euclidean Distance
+│   ├── Multi-dimensional
+│   ├── sqrt(Σ(a_i - b_i)²)
+│   └── State vector similarity
+│
+├── Cosine Similarity
+│   ├── Direction, not magnitude
+│   ├── dot(a,b) / (|a| * |b|)
+│   └── -1 to 1 range
+│
+└── Thresholds
+    ├── Hard cutoffs
+    ├── Soft penalties
+    └── Guard conditions</code></pre>
+<h2 id="learning-adaptation">15.3 Learning &amp; Adaptation</h2>
+<pre><code>Learning Systems
+├── Feedback Loops
+│   ├── Observation → Action → Result
+│   ├── Measure outcomes
+│   └── Adjust parameters
+│
+├── Exponential Moving Average Learning
+│   ├── new_score = (1-α) * old + α * observation
+│   ├── α = learning rate (0.1 - 0.3 typical)
+│   ├── Balances history and recency
+│   └── Simple and effective
+│
+├── Confidence Tracking
+│   ├── More observations → higher confidence
+│   ├── confidence = min(1.0, observations / threshold)
+│   ├── Blend with priors when uncertain
+│   └── Display to user
+│
+└── Penalty Systems
+    ├── Skip penalty
+    ├── Time-decay of penalties
+    ├── Contextual weighting
+    └── Recovery mechanisms</code></pre>
+<hr />
+<h1 id="testing-in-swift">16. TESTING IN SWIFT</h1>
+<blockquote>
+<p><strong>Best Resource:</strong> <a href="https://developer.apple.com/documentation/xctest">Apple XCTest
+Documentation</a> + <a href="https://www.pointfree.co/collections/testing">Point-Free -
+Testing</a> - Official docs for API reference; Point-Free for advanced
+testing patterns and test-driven development in Swift.</p>
+</blockquote>
+<h2 id="xctest-framework">16.1 XCTest Framework</h2>
+<pre><code>XCTest Basics
+├── Test Structure
+│   ├── XCTestCase subclass
+│   ├── test prefix for methods
+│   ├── setUp() / tearDown()
+│   └── setUpWithError() / tearDownWithError()
+│
+├── Assertions
+│   ├── XCTAssertTrue / False
+│   ├── XCTAssertEqual / NotEqual
+│   ├── XCTAssertNil / NotNil
+│   ├── XCTAssertThrows / NoThrow
+│   ├── XCTAssertGreaterThan / LessThan
+│   └── XCTFail
+│
+├── Running Tests
+│   ├── Cmd+U (all tests)
+│   ├── Click diamond in gutter
+│   ├── Test navigator
+│   └── Command line (xcodebuild)
+│
+└── Test Organization
+    ├── One test class per type
+    ├── Descriptive test names
+    ├── Arrange-Act-Assert pattern
+    └── Test one thing per test</code></pre>
+<h2 id="mocking-dependency-injection">16.2 Mocking &amp; Dependency
+Injection</h2>
+<pre><code>Mocking for Tests
+├── Why Mock?
+│   ├── Isolate unit under test
+│   ├── Control dependencies
+│   ├── Test edge cases
+│   └── Speed (no real I/O)
+│
+├── Protocol-Based Mocking
+│   ├── Define protocol
+│   ├── Real implementation
+│   ├── Mock implementation
+│   └── Inject via initializer
+│
+├── Mock Patterns
+│   ├── Stub - returns canned data
+│   ├── Spy - records calls
+│   ├── Fake - simplified implementation
+│   └── Mock - verifies interactions
+│
+└── Testing Async Code
+    ├── XCTestExpectation
+    ├── wait(for:timeout:)
+    ├── fulfill() in callback
+    └── async test methods</code></pre>
+<h2 id="testing-best-practices">16.3 Testing Best Practices</h2>
+<pre><code>Testing Strategies
+├── What to Test
+│   ├── Business logic
+│   ├── Data transformations
+│   ├── Edge cases
+│   ├── Error handling
+│   └── Integration points
+│
+├── What NOT to Test
+│   ├── Framework code (Apple&#39;s job)
+│   ├── Simple getters/setters
+│   ├── UI layout (unless critical)
+│   └── Third-party libraries
+│
+├── Test Naming
+│   ├── test_[unit]_[scenario]_[expectedResult]
+│   ├── Descriptive and readable
+│   └── Documents behavior
+│
+└── Code Coverage
+    ├── Enable in scheme
+    ├── Aim for meaningful coverage
+    ├── Don&#39;t chase 100% blindly
+    └── Focus on critical paths</code></pre>
+<hr />
+<h1 id="security-privacy-entitlements">17. SECURITY, PRIVACY &amp;
+ENTITLEMENTS</h1>
+<blockquote>
+<p><strong>Best Resource:</strong> <a href="https://developer.apple.com/documentation/security">Apple App
+Security Overview</a> + <a href="https://developer.apple.com/design/human-interface-guidelines/privacy">Human
+Interface Guidelines - Privacy</a> - Official security documentation and
+privacy design guidelines from Apple.</p>
+</blockquote>
+<h2 id="ios-security-model">17.1 iOS Security Model</h2>
+<pre><code>Security Fundamentals
+├── App Sandbox
+│   ├── Isolated file system
+│   ├── Limited system access
+│   ├── Entitlements grant permissions
+│   └── Cannot access other apps
+│
+├── Data Protection
+│   ├── Encryption at rest
+│   ├── Protection levels
+│   │   ├── Complete (locked)
+│   │   ├── CompleteUnlessOpen
+│   │   ├── CompleteUntilFirstAuth
+│   │   └── None
+│   │
+│   └── NSFileProtection attribute
+│
+├── Keychain
+│   ├── Secure credential storage
+│   ├── Encrypted by hardware
+│   ├── Access control policies
+│   └── Shared via App Groups
+│
+└── Transport Security
+    ├── App Transport Security (ATS)
+    ├── HTTPS required by default
+    ├── Exceptions must be justified
+    └── Certificate pinning (optional)</code></pre>
+<h2 id="privacy">17.2 Privacy</h2>
+<pre><code>Privacy Requirements
+├── Info.plist Usage Strings
+│   ├── Explain why access needed
+│   ├── User-facing text
+│   ├── Required for many APIs
+│   └── App Store rejection if missing
+│
+├── Common Privacy Keys
+│   ├── NSHealthShareUsageDescription
+│   ├── NSHealthUpdateUsageDescription
+│   ├── NSCalendarsUsageDescription
+│   ├── NSLocationUsageDescription
+│   ├── NSMicrophoneUsageDescription
+│   └── Many more...
+│
+├── App Privacy Details
+│   ├── App Store requirement
+│   ├── Data collection disclosure
+│   ├── Data usage disclosure
+│   ├── Data linked to user
+│   └── Update when practices change
+│
+└── Best Practices
+    ├── Minimize data collection
+    ├── On-device processing
+    ├── Explain value to user
+    ├── Respect denials gracefully
+    └── Provide data deletion</code></pre>
+<h2 id="entitlements">17.3 Entitlements</h2>
+<pre><code>Entitlements
+├── What are Entitlements?
+│   ├── Key-value pairs
+│   ├── Grant special capabilities
+│   ├── Signed into app
+│   └── Verified at runtime
+│
+├── Common Entitlements
+│   ├── com.apple.developer.healthkit
+│   ├── com.apple.developer.musickit
+│   ├── com.apple.security.application-groups
+│   ├── com.apple.developer.applesignin
+│   └── Push notifications
+│
+├── App Groups
+│   ├── Share data between apps
+│   ├── App + Extensions
+│   ├── App + Watch App
+│   ├── UserDefaults(suiteName:)
+│   └── Shared container
+│
+└── Configuration
+    ├── Xcode Signing &amp; Capabilities
+    ├── .entitlements file
+    ├── Must match App ID
+    └── Provisioning profile</code></pre>
+<hr />
+<h1 id="app-distribution-deployment">18. APP DISTRIBUTION &amp;
+DEPLOYMENT</h1>
+<blockquote>
+<p><strong>Best Resource:</strong> <a href="https://developer.apple.com/help/app-store-connect/">Apple App
+Store Connect Help</a> + <a href="https://developer.apple.com/app-store/review/guidelines/">App
+Store Review Guidelines</a> - Official and essential for understanding
+submission, review, and release processes.</p>
+</blockquote>
+<h2 id="app-store-connect">18.1 App Store Connect</h2>
+<pre><code>App Store Connect
+├── App Record
+│   ├── App Information
+│   ├── Pricing &amp; Availability
+│   ├── App Privacy
+│   └── App Store listing
+│
+├── Metadata
+│   ├── App name
+│   ├── Subtitle
+│   ├── Description
+│   ├── Keywords
+│   ├── Screenshots
+│   ├── App Preview (video)
+│   └── What&#39;s New
+│
+├── Screenshots Requirements
+│   ├── 6.7&quot; (iPhone 14 Pro Max)
+│   ├── 6.5&quot; (iPhone 11 Pro Max)
+│   ├── 5.5&quot; (iPhone 8 Plus)
+│   ├── iPad Pro sizes
+│   └── Watch screenshots
+│
+└── Pricing
+    ├── Pricing tiers
+    ├── Free apps
+    ├── Paid apps
+    └── In-app purchases</code></pre>
+<h2 id="testflight">18.2 TestFlight</h2>
+<pre><code>TestFlight
+├── Internal Testing
+│   ├── Team members only
+│   ├── Up to 100 testers
+│   ├── Immediate access
+│   └── No review needed
+│
+├── External Testing
+│   ├── Up to 10,000 testers
+│   ├── Requires Beta Review
+│   ├── Public link option
+│   └── Groups management
+│
+├── Build Management
+│   ├── Upload from Xcode
+│   ├── Build processing
+│   ├── Expire after 90 days
+│   └── Version strings
+│
+└── Feedback
+    ├── In-app feedback
+    ├── Crash reports
+    └── Tester feedback</code></pre>
+<h2 id="submission-process">18.3 Submission Process</h2>
+<pre><code>App Submission
+├── Pre-Submission
+│   ├── All metadata complete
+│   ├── Screenshots uploaded
+│   ├── Build selected
+│   ├── Privacy details
+│   └── Export compliance
+│
+├── App Review
+│   ├── Guidelines compliance
+│   ├── Functionality testing
+│   ├── Content review
+│   ├── Review times vary
+│   └── Expedited review option
+│
+├── Common Rejections
+│   ├── Crashes/bugs
+│   ├── Incomplete functionality
+│   ├── Privacy issues
+│   ├── Missing permissions
+│   └── Guideline violations
+│
+└── Post-Approval
+    ├── Release options
+    │   ├── Automatic
+    │   ├── Manual
+    │   └── Phased rollout
+    │
+    ├── Monitoring
+    │   ├── Crash reports
+    │   ├── Reviews
+    │   └── Analytics
+    │
+    └── Updates
+        ├── Same process
+        ├── What&#39;s New required
+        └── Version management</code></pre>
+<hr />
+<h1 id="recommended-learning-order">RECOMMENDED LEARNING ORDER</h1>
+<h2 id="beginner-path-if-new-to-ios">Beginner Path (If New to iOS)</h2>
+<ol type="1">
+<li>Swift Language Fundamentals (Section 1) - 2-3 weeks</li>
+<li>Xcode &amp; Development Environment (Section 2) - 1 week</li>
+<li>SwiftUI Framework (Section 3) - 2-3 weeks</li>
+<li>Swift Concurrency &amp; Combine (Section 4) - 1-2 weeks</li>
+<li>CoreData (Section 5) - 1-2 weeks</li>
+<li>iOS Architecture (Section 6) - 1 week</li>
+</ol>
+<h2 id="intermediate-path-some-ios-experience">Intermediate Path (Some
+iOS Experience)</h2>
+<ol type="1">
+<li>Review Swift advanced topics (1.4-1.8)</li>
+<li>SwiftUI State Management deep dive (3.3)</li>
+<li>Swift Concurrency (4.1)</li>
+<li>CoreData with SwiftUI (5.4)</li>
+<li>MusicKit (Section 7)</li>
+<li>HealthKit (Section 8)</li>
+</ol>
+<h2 id="project-specific-path-ready-to-build">Project-Specific Path
+(Ready to Build)</h2>
+<ol type="1">
+<li>MusicKit Framework (Section 7)</li>
+<li>HealthKit Framework (Section 8)</li>
+<li>watchOS Development (Section 9)</li>
+<li>WatchConnectivity (Section 10)</li>
+<li>Biometrics Concepts (Section 14)</li>
+<li>Algorithm Design (Section 15)</li>
+<li>Background Processing (Section 12)</li>
+<li>Widgets &amp; Complications (Section 13)</li>
+<li>macOS Menu Bar (Section 11)</li>
+</ol>
+<hr />
+<h1 id="resources">RESOURCES</h1>
+<h2 id="official-documentation">Official Documentation</h2>
+<ul>
+<li><a href="https://docs.swift.org/swift-book/">Swift Language
+Guide</a></li>
+<li><a href="https://developer.apple.com/documentation/swiftui">SwiftUI
+Documentation</a></li>
+<li><a href="https://developer.apple.com/documentation/musickit">MusicKit
+Documentation</a></li>
+<li><a href="https://developer.apple.com/documentation/healthkit">HealthKit
+Documentation</a></li>
+<li><a href="https://developer.apple.com/documentation/watchconnectivity">WatchConnectivity
+Documentation</a></li>
+<li><a href="https://developer.apple.com/documentation/coredata">CoreData
+Documentation</a></li>
+</ul>
+<h2 id="wwdc-sessions-recommended">WWDC Sessions (Recommended)</h2>
+<ul>
+<li>“Meet MusicKit” (WWDC21)</li>
+<li>“What’s new in HealthKit” (annual)</li>
+<li>“Build a workout app for Apple Watch” (WWDC21)</li>
+<li>“Complications and widgets: Reloaded” (WWDC20)</li>
+<li>“Design great widgets” (WWDC20)</li>
+<li>“Meet async/await in Swift” (WWDC21)</li>
+<li>“CoreData: Modern Swift” (WWDC21)</li>
+</ul>
+<h2 id="books">Books</h2>
+<ul>
+<li>“Swift Programming: The Big Nerd Ranch Guide”</li>
+<li>“SwiftUI by Tutorials” (Ray Wenderlich)</li>
+<li>“Combine: Asynchronous Programming with Swift” (Ray Wenderlich)</li>
+</ul>
+<hr />
+<p><em>End of Learning Guide</em></p>
+<p><em>Last Updated: 2026-02-06</em></p>
+</body>
+</html>
