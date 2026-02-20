@@ -23,7 +23,7 @@ struct NowPlayingView: View {
     // MARK: - Body
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack(spacing: 0) {
                 Spacer()
 
@@ -75,13 +75,8 @@ struct NowPlayingView: View {
             } else {
                 // Placeholder artwork
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(
-                        LinearGradient(
-                            colors: [.blue.opacity(0.4), .purple.opacity(0.4)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+                    .fill(.clear)
+                    .glassEffect(.regular, in: .rect(cornerRadius: 12))
                     .frame(
                         width: UIConstants.ArtworkSize.large,
                         height: UIConstants.ArtworkSize.large
@@ -180,6 +175,9 @@ struct NowPlayingView: View {
                     .foregroundStyle(.primary)
             }
         }
+        .padding(.horizontal, 32)
+        .padding(.vertical, 12)
+        .glassEffect(.regular, in: .capsule)
     }
 
     // MARK: - Active Playlist Bar
@@ -201,8 +199,7 @@ struct NowPlayingView: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
-                .background(Color(.secondarySystemBackground))
-                .cornerRadius(10)
+                .glassEffect(.regular, in: .rect(cornerRadius: 10))
                 .padding(.horizontal, 4)
                 .padding(.bottom, 8)
             }

@@ -22,7 +22,7 @@ struct PlaylistBrowserView: View {
     // MARK: - Body
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Group {
                 if viewModel.isLoading && viewModel.playlists.isEmpty {
                     loadingView
@@ -196,7 +196,8 @@ private struct PlaylistRow: View {
             ArtworkImage(artwork, width: UIConstants.ArtworkSize.small)
         } else {
             RoundedRectangle(cornerRadius: 6)
-                .fill(Color(.tertiarySystemFill))
+                .fill(.clear)
+                .glassEffect(.regular, in: .rect(cornerRadius: 6))
                 .overlay(
                     Image(systemName: "music.note.list")
                         .font(.system(size: 18))

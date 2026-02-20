@@ -117,7 +117,8 @@ struct PopoverView: View {
             } else {
                 ZStack {
                     RoundedRectangle(cornerRadius: 8)
-                        .fill(.quaternary)
+                        .fill(.clear)
+                        .glassEffect(.regular, in: .rect(cornerRadius: 8))
                         .frame(width: 50, height: 50)
                     Image(systemName: "music.note")
                         .font(.title3)

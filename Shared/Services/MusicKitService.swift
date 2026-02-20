@@ -29,14 +29,12 @@ public protocol MusicKitServiceProtocol: ObservableObject {
     // MARK: Library Access
 
     /// Fetches the user's playlists from their Apple Music library.
-    @available(iOS 16.0, *)
     func fetchUserPlaylists() async throws -> MusicItemCollection<MusicKit.Playlist>
 
     /// Fetches songs contained in a specific playlist.
     func fetchPlaylistSongs(for playlist: MusicKit.Playlist) async throws -> MusicItemCollection<MusicKit.Song>
 
     /// Fetches recently played items.
-    @available(iOS 16.0, *)
     func fetchRecentlyPlayed(limit: Int) async throws -> MusicItemCollection<MusicKit.RecentlyPlayedMusicItem>
 
     // MARK: Playback Control
@@ -192,7 +190,6 @@ public final class MusicKitService: MusicKitServiceProtocol {
 
     // MARK: - Library Access
 
-    @available(iOS 16.0, *)
     public func fetchUserPlaylists() async throws -> MusicItemCollection<MusicKit.Playlist> {
         guard authorizationStatus == .authorized else {
             logError("Cannot fetch playlists: not authorized", category: .musicKit)
@@ -245,7 +242,6 @@ public final class MusicKitService: MusicKitServiceProtocol {
         }
     }
 
-    @available(iOS 16.0, *)
     public func fetchRecentlyPlayed(limit: Int) async throws -> MusicItemCollection<MusicKit.RecentlyPlayedMusicItem> {
         guard authorizationStatus == .authorized else {
             logError("Cannot fetch recently played: not authorized", category: .musicKit)

@@ -61,7 +61,8 @@ struct WatchNowPlayingView: View {
             } else {
                 ZStack {
                     RoundedRectangle(cornerRadius: 10)
-                        .fill(Color.gray.opacity(0.3))
+                        .fill(.clear)
+                        .glassEffect(.regular, in: .rect(cornerRadius: 10))
                         .frame(width: 80, height: 80)
                     Image(systemName: "music.note")
                         .font(.title2)

@@ -81,13 +81,6 @@ final class PlaylistViewModel: ObservableObject {
         logInfo("Fetching user playlists", category: .musicKit)
 
         Task {
-            guard #available(iOS 16.0, *) else {
-                self.isLoading = false
-                self.errorMessage = "Playlist browsing requires iOS 16.0 or later."
-                logWarning("fetchUserPlaylists unavailable below iOS 16", category: .musicKit)
-                return
-            }
-
             do {
                 let musicPlaylists = try await musicService.fetchUserPlaylists()
 

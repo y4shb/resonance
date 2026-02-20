@@ -4,7 +4,8 @@
       "WebFetch(domain:fivebooks.com)",
       "WebFetch(domain:www.goodreads.com)",
       "Bash(pdflatex -interaction=nonstopmode the_last_resonance.tex)",
-      "Bash(apt list --installed)"
+      "Bash(apt list --installed)",
+      "WebSearch"
     ]
   }
 }

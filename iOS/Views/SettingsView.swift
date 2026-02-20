@@ -21,7 +21,7 @@ struct SettingsView: View {
     // MARK: - Body
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             List {
                 musicKitSection
                 healthKitSection
