@@ -33,7 +33,7 @@ public enum LogCategory: String, CaseIterable {
 // MARK: - Log Level
 
 /// Severity levels for log messages
-public enum LogLevel: Int, Comparable, CaseIterable {
+public enum LogLevel: Int, Comparable, CaseIterable, Sendable {
     case debug = 0
     case info = 1
     case warning = 2

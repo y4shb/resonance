@@ -23,14 +23,28 @@ struct ResonanceWidgetBundle: WidgetBundle {
 struct NowPlayingWidget: Widget {
     let kind: String = "NowPlayingWidget"
 
+    private var nowPlayingFamilies: [WidgetFamily] {
+        var families: [WidgetFamily] = [.systemSmall, .systemMedium]
+        if #available(iOS 16.0, *) {
+            families.append(.accessoryRectangular)
+        }
+        return families
+    }
+
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: NowPlayingProvider()) { entry in
-            NowPlayingWidgetView(entry: entry)
-                .containerBackground(.fill.tertiary, for: .widget)
+            if #available(iOS 17.0, *) {
+                NowPlayingWidgetView(entry: entry)
+                    .containerBackground(.fill.tertiary, for: .widget)
+            } else {
+                NowPlayingWidgetView(entry: entry)
+                    .padding()
+                    .background()
+            }
         }
         .configurationDisplayName("Now Playing")
         .description("Shows the currently playing song selected by AI DJ.")
-        .supportedFamilies([.systemSmall, .systemMedium, .accessoryRectangular])
+        .supportedFamilies(nowPlayingFamilies)
     }
 }
 
@@ -181,14 +195,28 @@ struct NowPlayingWidgetView: View {
 struct StateWidget: Widget {
     let kind: String = "StateWidget"
 
+    private var stateFamilies: [WidgetFamily] {
+        var families: [WidgetFamily] = [.systemSmall]
+        if #available(iOS 16.0, *) {
+            families.append(.accessoryCircular)
+        }
+        return families
+    }
+
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: StateProvider()) { entry in
-            StateWidgetView(entry: entry)
-                .containerBackground(.fill.tertiary, for: .widget)
+            if #available(iOS 17.0, *) {
+                StateWidgetView(entry: entry)
+                    .containerBackground(.fill.tertiary, for: .widget)
+            } else {
+                StateWidgetView(entry: entry)
+                    .padding()
+                    .background()
+            }
         }
         .configurationDisplayName("Current State")
         .description("Shows your current state as detected by AI DJ.")
-        .supportedFamilies([.systemSmall, .accessoryCircular])
+        .supportedFamilies(stateFamilies)
     }
 }
 
@@ -265,9 +293,15 @@ struct StateWidgetView: View {
         .padding()
     }
 
+    @ViewBuilder
     var circularView: some View {
-        ZStack {
-            AccessoryWidgetBackground()
+        if #available(iOS 16.0, *) {
+            ZStack {
+                AccessoryWidgetBackground()
+                Text(entry.stateEmoji)
+                    .font(.title)
+            }
+        } else {
             Text(entry.stateEmoji)
                 .font(.title)
         }
@@ -276,18 +310,21 @@ struct StateWidgetView: View {
 
 // MARK: - Previews
 
+@available(iOS 17.0, *)
 #Preview("Now Playing Small", as: .systemSmall) {
     NowPlayingWidget()
 } timeline: {
     NowPlayingEntry(date: Date(), songTitle: "Weightless", artistName: "Marconi Union", isPlaying: true)
 }
 
+@available(iOS 17.0, *)
 #Preview("Now Playing Medium", as: .systemMedium) {
     NowPlayingWidget()
 } timeline: {
     NowPlayingEntry(date: Date(), songTitle: "Clair de Lune", artistName: "Claude Debussy", isPlaying: true)
 }
 
+@available(iOS 17.0, *)
 #Preview("State Small", as: .systemSmall) {
     StateWidget()
 } timeline: {

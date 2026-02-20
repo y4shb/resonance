@@ -1,0 +1,1010 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0157D1CC9BBA2B61E3086C6A /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5486784FF7066093E97EB3E0 /* Constants.swift */; };
+		0DBD17308E2D7CC8A1F6C24B /* ContextSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7CEBC645377CAEEE4177E11 /* ContextSignal.swift */; };
+		10962499327021055EC510D9 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5486784FF7066093E97EB3E0 /* Constants.swift */; };
+		174E5C9B60C516716C46C08B /* Logging.swift in Sources */ = {isa = PBXBuildFile; fileRef = B691E2026B8610C50C4AAACB /* Logging.swift */; };
+		1C79194718E7864541DCE25C /* ContextSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7CEBC645377CAEEE4177E11 /* ContextSignal.swift */; };
+		23A0B6FA52559D49B7409080 /* SongScore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28FDD4C9EF07A4A8BB08634A /* SongScore.swift */; };
+		23C08DB06D89BEB5F7515607 /* StateVector.swift in Sources */ = {isa = PBXBuildFile; fileRef = F241DEEB8268A1779CC2935D /* StateVector.swift */; };
+		2FE732B56756A518D4C271B3 /* ContextSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7CEBC645377CAEEE4177E11 /* ContextSignal.swift */; };
+		3B2C991FFF5E1D57FB350129 /* Logging.swift in Sources */ = {isa = PBXBuildFile; fileRef = B691E2026B8610C50C4AAACB /* Logging.swift */; };
+		3B515791B418449660F92B8B /* Resonance.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = B01A0531B60ACDDE4F19AE8C /* Resonance.xcdatamodeld */; };
+		4378CA04318AAC40CA25A39B /* StateVector.swift in Sources */ = {isa = PBXBuildFile; fileRef = F241DEEB8268A1779CC2935D /* StateVector.swift */; };
+		57CA96BEC692840448CA7E8D /* UserPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAE93DA52394CFC35E670B7B /* UserPreferences.swift */; };
+		5A62F7EDB130926B3D7F5597 /* ResonanceWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = FF0F6F738D50081E6C82D4C5 /* ResonanceWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		653F995A47A5EC7E672B2312 /* DecisionContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = A936029DE841B8A646575612 /* DecisionContext.swift */; };
+		67389D3F9FA11CB656E8A5AD /* ResonanceApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D5307B2A9BD3DD16C6187A7 /* ResonanceApp.swift */; };
+		784362FB61D03A62C8E23D83 /* PersistenceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FF638D1478E3FB11FE0DACE /* PersistenceController.swift */; };
+		852EAF04DB38CEAB42C80A01 /* ResonanceWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = FED89198337B9AFF544E3999 /* ResonanceWatchApp.swift */; };
+		8661E02DCACDE6E4410DA79A /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5486784FF7066093E97EB3E0 /* Constants.swift */; };
+		8799C5CD675791093661A410 /* ResonanceMacApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98BE1008A5D5C16CBB084E94 /* ResonanceMacApp.swift */; };
+		89EE392686C101E239E75A2A /* SongFeatures.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBF58E4EFDE766336AB717B7 /* SongFeatures.swift */; };
+		8AD26BF523AB372A5B47F887 /* ContextSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7CEBC645377CAEEE4177E11 /* ContextSignal.swift */; };
+		8F300FC8BD2239DA69694F1A /* SongScore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28FDD4C9EF07A4A8BB08634A /* SongScore.swift */; };
+		90D570E24C009AA72B3B849A /* SongScore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28FDD4C9EF07A4A8BB08634A /* SongScore.swift */; };
+		940D52E5C8B5B049036C3B3A /* SongScore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28FDD4C9EF07A4A8BB08634A /* SongScore.swift */; };
+		A6940570512D73480A36D5D2 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5486784FF7066093E97EB3E0 /* Constants.swift */; };
+		A805F382D6543CD73055C3E1 /* UserPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAE93DA52394CFC35E670B7B /* UserPreferences.swift */; };
+		AF2A82AF2ED4046FD2A9F0A1 /* SongFeatures.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBF58E4EFDE766336AB717B7 /* SongFeatures.swift */; };
+		B666197A2E8D0F25E2E519F9 /* SongFeatures.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBF58E4EFDE766336AB717B7 /* SongFeatures.swift */; };
+		C03EA5716A0FBB54F27ED72D /* StateVector.swift in Sources */ = {isa = PBXBuildFile; fileRef = F241DEEB8268A1779CC2935D /* StateVector.swift */; };
+		CBDCA92D05EF0491FDF120D3 /* StateVector.swift in Sources */ = {isa = PBXBuildFile; fileRef = F241DEEB8268A1779CC2935D /* StateVector.swift */; };
+		CF628DFC609B46ADC4E31C23 /* DecisionContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = A936029DE841B8A646575612 /* DecisionContext.swift */; };
+		D1F50FB9682267F3DE2A5FB0 /* DecisionContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = A936029DE841B8A646575612 /* DecisionContext.swift */; };
+		D5BC48667B1332669E1DCE8F /* DecisionContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = A936029DE841B8A646575612 /* DecisionContext.swift */; };
+		D901A23E2985BC09E1D3B39D /* UserPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAE93DA52394CFC35E670B7B /* UserPreferences.swift */; };
+		DAD8FA89D3944F38EE3B6A2C /* UserPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAE93DA52394CFC35E670B7B /* UserPreferences.swift */; };
+		DC24926A7C818B1C123D80EB /* Logging.swift in Sources */ = {isa = PBXBuildFile; fileRef = B691E2026B8610C50C4AAACB /* Logging.swift */; };
+		E6CB4CB859DD7A0BDB95ABCF /* ResonanceWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67292D04BAE4DBA97DB2C4F0 /* ResonanceWidgets.swift */; };
+		E7637A8FC24899BC33CDC059 /* SongFeatures.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBF58E4EFDE766336AB717B7 /* SongFeatures.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		27D8CC9A8845A6617DF60750 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 82DD14A371CBBD071FC718E7 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0F3C53BD9D06691F17971225;
+			remoteInfo = Resonance;
+		};
+		3C2E3FB09FB375C8F551146C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 82DD14A371CBBD071FC718E7 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 9ADD061BE78C7F9A58426A5F;
+			remoteInfo = ResonanceWatch;
+		};
+		9C0D88D256F1D4583E74C86F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 82DD14A371CBBD071FC718E7 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D904743186D370ABC4670396;
+			remoteInfo = ResonanceWidgets;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		250B58582F85B3558F9B7D2B /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				5A62F7EDB130926B3D7F5597 /* ResonanceWidgets.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		02F8DB819528C4EA1B73CCF0 /* Resonance.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = Resonance.xcdatamodel; sourceTree = "<group>"; };
+		1D5307B2A9BD3DD16C6187A7 /* ResonanceApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResonanceApp.swift; sourceTree = "<group>"; };
+		2482AFE319C5939E80F05713 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		28FDD4C9EF07A4A8BB08634A /* SongScore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SongScore.swift; sourceTree = "<group>"; };
+		2EB4CA4C4E2F34CD33370492 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		4B3004AF8E3B77BE7F4AABF2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		5486784FF7066093E97EB3E0 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
+		67292D04BAE4DBA97DB2C4F0 /* ResonanceWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResonanceWidgets.swift; sourceTree = "<group>"; };
+		7E0B826229674100DEE2F127 /* ResonanceWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ResonanceWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		7FF638D1478E3FB11FE0DACE /* PersistenceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceController.swift; sourceTree = "<group>"; };
+		872196410405005EB0142CD1 /* ResonanceMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ResonanceMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		98BE1008A5D5C16CBB084E94 /* ResonanceMacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResonanceMacApp.swift; sourceTree = "<group>"; };
+		9C8A85DE5D8A96CFBE611351 /* ResonanceTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = ResonanceTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A008E26078DD1138835E98D9 /* Resonance.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Resonance.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1ED57DAEA3956431D6AF49C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		A936029DE841B8A646575612 /* DecisionContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecisionContext.swift; sourceTree = "<group>"; };
+		B691E2026B8610C50C4AAACB /* Logging.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logging.swift; sourceTree = "<group>"; };
+		B7CEBC645377CAEEE4177E11 /* ContextSignal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextSignal.swift; sourceTree = "<group>"; };
+		BAE93DA52394CFC35E670B7B /* UserPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserPreferences.swift; sourceTree = "<group>"; };
+		BBF58E4EFDE766336AB717B7 /* SongFeatures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SongFeatures.swift; sourceTree = "<group>"; };
+		F241DEEB8268A1779CC2935D /* StateVector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StateVector.swift; sourceTree = "<group>"; };
+		FED89198337B9AFF544E3999 /* ResonanceWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResonanceWatchApp.swift; sourceTree = "<group>"; };
+		FF0F6F738D50081E6C82D4C5 /* ResonanceWidgets.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = ResonanceWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		0E370A8CCC222E3B43B1F6DF /* Utilities */ = {
+			isa = PBXGroup;
+			children = (
+				B59FE8896373293BA0783182 /* Extensions */,
+				5486784FF7066093E97EB3E0 /* Constants.swift */,
+				B691E2026B8610C50C4AAACB /* Logging.swift */,
+			);
+			path = Utilities;
+			sourceTree = "<group>";
+		};
+		25CD41EBBA7DB01AD7C6D611 /* Brain */ = {
+			isa = PBXGroup;
+			children = (
+				D5973914397D83ECE6E0633B /* Features */,
+				CFD34B1929ED9EBE67EF7CA1 /* Historical */,
+				32494CCAAF8DFF98D8A64CAE /* Learning */,
+				58E7AF8D653E914A2DC4296B /* Ranking */,
+				64DC888E51F89EF2BB1FD17D /* State */,
+			);
+			path = Brain;
+			sourceTree = "<group>";
+		};
+		2A77AFB649B06CA0F74FF3FF /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A008E26078DD1138835E98D9 /* Resonance.app */,
+				872196410405005EB0142CD1 /* ResonanceMac.app */,
+				9C8A85DE5D8A96CFBE611351 /* ResonanceTests.xctest */,
+				7E0B826229674100DEE2F127 /* ResonanceWatch.app */,
+				FF0F6F738D50081E6C82D4C5 /* ResonanceWidgets.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		2D7F4D724A754E9B93429320 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		2F7C3242E72B10E5553EC52B /* Services */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		30BE0659BB5165DF432B484D /* ServiceTests */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = ServiceTests;
+			sourceTree = "<group>";
+		};
+		32494CCAAF8DFF98D8A64CAE /* Learning */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Learning;
+			sourceTree = "<group>";
+		};
+		428B1148219D96A991E85168 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		50C50B513DCD59FA2B0E4ED2 /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				E026086D49AE6CE74AA91BBC /* BrainTests */,
+				B20BCC05B6F7BD0942E84702 /* IntegrationTests */,
+				30BE0659BB5165DF432B484D /* ServiceTests */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		5856530606588F4F5ACE22DA /* Persistence */ = {
+			isa = PBXGroup;
+			children = (
+				CB00EBAAD0B78A190949997C /* Repositories */,
+				7FF638D1478E3FB11FE0DACE /* PersistenceController.swift */,
+				B01A0531B60ACDDE4F19AE8C /* Resonance.xcdatamodeld */,
+			);
+			path = Persistence;
+			sourceTree = "<group>";
+		};
+		58E7AF8D653E914A2DC4296B /* Ranking */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Ranking;
+			sourceTree = "<group>";
+		};
+		5AA221F5C9B29A9D23DC842D /* Services */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		5DFA0A7774438F344B950583 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				B7CEBC645377CAEEE4177E11 /* ContextSignal.swift */,
+				A936029DE841B8A646575612 /* DecisionContext.swift */,
+				BBF58E4EFDE766336AB717B7 /* SongFeatures.swift */,
+				28FDD4C9EF07A4A8BB08634A /* SongScore.swift */,
+				F241DEEB8268A1779CC2935D /* StateVector.swift */,
+				BAE93DA52394CFC35E670B7B /* UserPreferences.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		5E9BBF0386267E3723C11D94 /* macOS */ = {
+			isa = PBXGroup;
+			children = (
+				6BDF1269123FE4E3E5775C11 /* ContextProviders */,
+				6D560496731D69A27A277209 /* MenuBar */,
+				2F7C3242E72B10E5553EC52B /* Services */,
+				2482AFE319C5939E80F05713 /* Info.plist */,
+				98BE1008A5D5C16CBB084E94 /* ResonanceMacApp.swift */,
+			);
+			path = macOS;
+			sourceTree = "<group>";
+		};
+		64DC888E51F89EF2BB1FD17D /* State */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = State;
+			sourceTree = "<group>";
+		};
+		6BDF1269123FE4E3E5775C11 /* ContextProviders */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = ContextProviders;
+			sourceTree = "<group>";
+		};
+		6D560496731D69A27A277209 /* MenuBar */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = MenuBar;
+			sourceTree = "<group>";
+		};
+		6D6DF78E6A2F755F0C6F5D73 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		767D7001CBEA7CB689D0DD7D = {
+			isa = PBXGroup;
+			children = (
+				25CD41EBBA7DB01AD7C6D611 /* Brain */,
+				EBB18A2704C343B60597F76B /* iOS */,
+				5E9BBF0386267E3723C11D94 /* macOS */,
+				D6E31D09224E8FE90DC86623 /* Shared */,
+				50C50B513DCD59FA2B0E4ED2 /* Tests */,
+				ADBC45D1BDD0A628517C42AC /* Watch */,
+				7AFE0CD8C28AD57302DA64D3 /* Widgets */,
+				2A77AFB649B06CA0F74FF3FF /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		7AFE0CD8C28AD57302DA64D3 /* Widgets */ = {
+			isa = PBXGroup;
+			children = (
+				2EB4CA4C4E2F34CD33370492 /* Info.plist */,
+				67292D04BAE4DBA97DB2C4F0 /* ResonanceWidgets.swift */,
+			);
+			path = Widgets;
+			sourceTree = "<group>";
+		};
+		846909F3A2B8712B40EF41FD /* Complications */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Complications;
+			sourceTree = "<group>";
+		};
+		A433284F0FAE14F8A7810A28 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		AD36FF1761E3176448C15451 /* Coordinators */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Coordinators;
+			sourceTree = "<group>";
+		};
+		ADBC45D1BDD0A628517C42AC /* Watch */ = {
+			isa = PBXGroup;
+			children = (
+				846909F3A2B8712B40EF41FD /* Complications */,
+				D4BA42D552161DF009859158 /* Sensors */,
+				6D6DF78E6A2F755F0C6F5D73 /* Services */,
+				428B1148219D96A991E85168 /* Views */,
+				A1ED57DAEA3956431D6AF49C /* Info.plist */,
+				FED89198337B9AFF544E3999 /* ResonanceWatchApp.swift */,
+			);
+			path = Watch;
+			sourceTree = "<group>";
+		};
+		B20BCC05B6F7BD0942E84702 /* IntegrationTests */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = IntegrationTests;
+			sourceTree = "<group>";
+		};
+		B59FE8896373293BA0783182 /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Extensions;
+			sourceTree = "<group>";
+		};
+		CB00EBAAD0B78A190949997C /* Repositories */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Repositories;
+			sourceTree = "<group>";
+		};
+		CFD34B1929ED9EBE67EF7CA1 /* Historical */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Historical;
+			sourceTree = "<group>";
+		};
+		D4BA42D552161DF009859158 /* Sensors */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Sensors;
+			sourceTree = "<group>";
+		};
+		D5973914397D83ECE6E0633B /* Features */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		D6E31D09224E8FE90DC86623 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				5DFA0A7774438F344B950583 /* Models */,
+				5856530606588F4F5ACE22DA /* Persistence */,
+				5AA221F5C9B29A9D23DC842D /* Services */,
+				0E370A8CCC222E3B43B1F6DF /* Utilities */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		D95BDAB2310EBFEB432B37D5 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				A433284F0FAE14F8A7810A28 /* Components */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		E026086D49AE6CE74AA91BBC /* BrainTests */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = BrainTests;
+			sourceTree = "<group>";
+		};
+		EBB18A2704C343B60597F76B /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				AD36FF1761E3176448C15451 /* Coordinators */,
+				F482826BDCB42868FB24921C /* Services */,
+				2D7F4D724A754E9B93429320 /* ViewModels */,
+				D95BDAB2310EBFEB432B37D5 /* Views */,
+				4B3004AF8E3B77BE7F4AABF2 /* Info.plist */,
+				1D5307B2A9BD3DD16C6187A7 /* ResonanceApp.swift */,
+			);
+			path = iOS;
+			sourceTree = "<group>";
+		};
+		F482826BDCB42868FB24921C /* Services */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		0F3C53BD9D06691F17971225 /* Resonance */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 46738630589726F85648007C /* Build configuration list for PBXNativeTarget "Resonance" */;
+			buildPhases = (
+				884B4B7D1A23A13160D01E9F /* Sources */,
+				250B58582F85B3558F9B7D2B /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				57B951D836CB75B35B108714 /* PBXTargetDependency */,
+				34AA4EED3C40B77A8708F20C /* PBXTargetDependency */,
+			);
+			name = Resonance;
+			packageProductDependencies = (
+			);
+			productName = Resonance;
+			productReference = A008E26078DD1138835E98D9 /* Resonance.app */;
+			productType = "com.apple.product-type.application";
+		};
+		9ADD061BE78C7F9A58426A5F /* ResonanceWatch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 095CAE8D3A0DC14CFE5FE8EB /* Build configuration list for PBXNativeTarget "ResonanceWatch" */;
+			buildPhases = (
+				83F0FE1D519F09946C1633EF /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ResonanceWatch;
+			packageProductDependencies = (
+			);
+			productName = ResonanceWatch;
+			productReference = 7E0B826229674100DEE2F127 /* ResonanceWatch.app */;
+			productType = "com.apple.product-type.application";
+		};
+		CB32CBEA10D68D5906A9D302 /* ResonanceTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8131213D61FDB9493A894500 /* Build configuration list for PBXNativeTarget "ResonanceTests" */;
+			buildPhases = (
+				42A0BD195DDAC798DADD25D1 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				F398D75496F41559E5D557A9 /* PBXTargetDependency */,
+			);
+			name = ResonanceTests;
+			packageProductDependencies = (
+			);
+			productName = ResonanceTests;
+			productReference = 9C8A85DE5D8A96CFBE611351 /* ResonanceTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		D904743186D370ABC4670396 /* ResonanceWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2D767DE53C3135E615C6142B /* Build configuration list for PBXNativeTarget "ResonanceWidgets" */;
+			buildPhases = (
+				58B914D2A10BEEC76EF24CC2 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ResonanceWidgets;
+			packageProductDependencies = (
+			);
+			productName = ResonanceWidgets;
+			productReference = FF0F6F738D50081E6C82D4C5 /* ResonanceWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		FC9BD10EE4E404346585A4CA /* ResonanceMac */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 339C68ECB340EA6B03CCE6D4 /* Build configuration list for PBXNativeTarget "ResonanceMac" */;
+			buildPhases = (
+				5D59F53E87B47BFEBDAD031A /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ResonanceMac;
+			packageProductDependencies = (
+			);
+			productName = ResonanceMac;
+			productReference = 872196410405005EB0142CD1 /* ResonanceMac.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		82DD14A371CBBD071FC718E7 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					0F3C53BD9D06691F17971225 = {
+						DevelopmentTeam = 69YKR4K9LC;
+						ProvisioningStyle = Automatic;
+					};
+					9ADD061BE78C7F9A58426A5F = {
+						DevelopmentTeam = 69YKR4K9LC;
+						ProvisioningStyle = Automatic;
+					};
+					CB32CBEA10D68D5906A9D302 = {
+						DevelopmentTeam = 69YKR4K9LC;
+						ProvisioningStyle = Automatic;
+					};
+					D904743186D370ABC4670396 = {
+						DevelopmentTeam = 69YKR4K9LC;
+						ProvisioningStyle = Automatic;
+					};
+					FC9BD10EE4E404346585A4CA = {
+						DevelopmentTeam = 69YKR4K9LC;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = C644465E6EFCE85BFC3622D7 /* Build configuration list for PBXProject "Resonance" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 767D7001CBEA7CB689D0DD7D;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				0F3C53BD9D06691F17971225 /* Resonance */,
+				FC9BD10EE4E404346585A4CA /* ResonanceMac */,
+				CB32CBEA10D68D5906A9D302 /* ResonanceTests */,
+				9ADD061BE78C7F9A58426A5F /* ResonanceWatch */,
+				D904743186D370ABC4670396 /* ResonanceWidgets */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		42A0BD195DDAC798DADD25D1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		58B914D2A10BEEC76EF24CC2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A6940570512D73480A36D5D2 /* Constants.swift in Sources */,
+				8AD26BF523AB372A5B47F887 /* ContextSignal.swift in Sources */,
+				653F995A47A5EC7E672B2312 /* DecisionContext.swift in Sources */,
+				E6CB4CB859DD7A0BDB95ABCF /* ResonanceWidgets.swift in Sources */,
+				89EE392686C101E239E75A2A /* SongFeatures.swift in Sources */,
+				90D570E24C009AA72B3B849A /* SongScore.swift in Sources */,
+				4378CA04318AAC40CA25A39B /* StateVector.swift in Sources */,
+				D901A23E2985BC09E1D3B39D /* UserPreferences.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5D59F53E87B47BFEBDAD031A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				10962499327021055EC510D9 /* Constants.swift in Sources */,
+				2FE732B56756A518D4C271B3 /* ContextSignal.swift in Sources */,
+				CF628DFC609B46ADC4E31C23 /* DecisionContext.swift in Sources */,
+				174E5C9B60C516716C46C08B /* Logging.swift in Sources */,
+				8799C5CD675791093661A410 /* ResonanceMacApp.swift in Sources */,
+				B666197A2E8D0F25E2E519F9 /* SongFeatures.swift in Sources */,
+				23A0B6FA52559D49B7409080 /* SongScore.swift in Sources */,
+				C03EA5716A0FBB54F27ED72D /* StateVector.swift in Sources */,
+				57CA96BEC692840448CA7E8D /* UserPreferences.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		83F0FE1D519F09946C1633EF /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8661E02DCACDE6E4410DA79A /* Constants.swift in Sources */,
+				1C79194718E7864541DCE25C /* ContextSignal.swift in Sources */,
+				D1F50FB9682267F3DE2A5FB0 /* DecisionContext.swift in Sources */,
+				DC24926A7C818B1C123D80EB /* Logging.swift in Sources */,
+				852EAF04DB38CEAB42C80A01 /* ResonanceWatchApp.swift in Sources */,
+				AF2A82AF2ED4046FD2A9F0A1 /* SongFeatures.swift in Sources */,
+				940D52E5C8B5B049036C3B3A /* SongScore.swift in Sources */,
+				23C08DB06D89BEB5F7515607 /* StateVector.swift in Sources */,
+				DAD8FA89D3944F38EE3B6A2C /* UserPreferences.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		884B4B7D1A23A13160D01E9F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0157D1CC9BBA2B61E3086C6A /* Constants.swift in Sources */,
+				0DBD17308E2D7CC8A1F6C24B /* ContextSignal.swift in Sources */,
+				D5BC48667B1332669E1DCE8F /* DecisionContext.swift in Sources */,
+				3B2C991FFF5E1D57FB350129 /* Logging.swift in Sources */,
+				784362FB61D03A62C8E23D83 /* PersistenceController.swift in Sources */,
+				3B515791B418449660F92B8B /* Resonance.xcdatamodeld in Sources */,
+				67389D3F9FA11CB656E8A5AD /* ResonanceApp.swift in Sources */,
+				E7637A8FC24899BC33CDC059 /* SongFeatures.swift in Sources */,
+				8F300FC8BD2239DA69694F1A /* SongScore.swift in Sources */,
+				CBDCA92D05EF0491FDF120D3 /* StateVector.swift in Sources */,
+				A805F382D6543CD73055C3E1 /* UserPreferences.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		34AA4EED3C40B77A8708F20C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 9ADD061BE78C7F9A58426A5F /* ResonanceWatch */;
+			targetProxy = 3C2E3FB09FB375C8F551146C /* PBXContainerItemProxy */;
+		};
+		57B951D836CB75B35B108714 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D904743186D370ABC4670396 /* ResonanceWidgets */;
+			targetProxy = 9C0D88D256F1D4583E74C86F /* PBXContainerItemProxy */;
+		};
+		F398D75496F41559E5D557A9 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0F3C53BD9D06691F17971225 /* Resonance */;
+			targetProxy = 27D8CC9A8845A6617DF60750 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		1CAAB6EF1FC3A245492067D0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Watch/Entitlements/ResonanceWatch.entitlements;
+				INFOPLIST_FILE = Watch/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.y4sh.resonance.watchkitapp;
+				SDKROOT = watchos;
+				SKIP_INSTALL = NO;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 8.0;
+			};
+			name = Debug;
+		};
+		3474137AADEF029E4B933333 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = macOS/Entitlements/ResonanceMac.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = macOS/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.y4sh.resonance.macos;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		3DC8162205FB08B704E5E2D8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.y4sh.resonance.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Resonance.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Resonance";
+			};
+			name = Debug;
+		};
+		467560D75D51F27CE48A9FE5 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Widgets/ResonanceWidgets.entitlements;
+				INFOPLIST_FILE = Widgets/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.y4sh.resonance.ios.widgets;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		9023CB7C9E0B446362A1C0FF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 69YKR4K9LC;
+				ENABLE_BITCODE = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.9;
+				WATCHOS_DEPLOYMENT_TARGET = 8.0;
+			};
+			name = Debug;
+		};
+		CD318E8E073FCE759CF26A3A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = iOS/Entitlements/Resonance.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = iOS/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.y4sh.resonance.ios;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		D35D93EC7788EE103E74151F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = macOS/Entitlements/ResonanceMac.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = macOS/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.y4sh.resonance.macos;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		D8A5586F9ED7024C623C5F57 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 69YKR4K9LC;
+				ENABLE_BITCODE = NO;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.9;
+				WATCHOS_DEPLOYMENT_TARGET = 8.0;
+			};
+			name = Release;
+		};
+		DA8596FFA6F68BFB0295F1A3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Watch/Entitlements/ResonanceWatch.entitlements;
+				INFOPLIST_FILE = Watch/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.y4sh.resonance.watchkitapp;
+				SDKROOT = watchos;
+				SKIP_INSTALL = NO;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 8.0;
+			};
+			name = Release;
+		};
+		DE061398C488258BEBAFC71B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = iOS/Entitlements/Resonance.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = iOS/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.y4sh.resonance.ios;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		DF79AC936CE3D3D0E9BAD11B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.y4sh.resonance.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Resonance.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Resonance";
+			};
+			name = Release;
+		};
+		E2999EAA446FB7C5D7C5A059 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Widgets/ResonanceWidgets.entitlements;
+				INFOPLIST_FILE = Widgets/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.y4sh.resonance.ios.widgets;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		095CAE8D3A0DC14CFE5FE8EB /* Build configuration list for PBXNativeTarget "ResonanceWatch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1CAAB6EF1FC3A245492067D0 /* Debug */,
+				DA8596FFA6F68BFB0295F1A3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		2D767DE53C3135E615C6142B /* Build configuration list for PBXNativeTarget "ResonanceWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E2999EAA446FB7C5D7C5A059 /* Debug */,
+				467560D75D51F27CE48A9FE5 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		339C68ECB340EA6B03CCE6D4 /* Build configuration list for PBXNativeTarget "ResonanceMac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D35D93EC7788EE103E74151F /* Debug */,
+				3474137AADEF029E4B933333 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		46738630589726F85648007C /* Build configuration list for PBXNativeTarget "Resonance" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DE061398C488258BEBAFC71B /* Debug */,
+				CD318E8E073FCE759CF26A3A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		8131213D61FDB9493A894500 /* Build configuration list for PBXNativeTarget "ResonanceTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3DC8162205FB08B704E5E2D8 /* Debug */,
+				DF79AC936CE3D3D0E9BAD11B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C644465E6EFCE85BFC3622D7 /* Build configuration list for PBXProject "Resonance" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9023CB7C9E0B446362A1C0FF /* Debug */,
+				D8A5586F9ED7024C623C5F57 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCVersionGroup section */
+		B01A0531B60ACDDE4F19AE8C /* Resonance.xcdatamodeld */ = {
+			isa = XCVersionGroup;
+			children = (
+				02F8DB819528C4EA1B73CCF0 /* Resonance.xcdatamodel */,
+			);
+			currentVersion = 02F8DB819528C4EA1B73CCF0 /* Resonance.xcdatamodel */;
+			path = Resonance.xcdatamodeld;
+			sourceTree = "<group>";
+			versionGroupType = wrapper.xcdatamodel;
+		};
+/* End XCVersionGroup section */
+	};
+	rootObject = 82DD14A371CBBD071FC718E7 /* Project object */;
+}

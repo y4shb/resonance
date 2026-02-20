@@ -51,7 +51,7 @@ struct ResonanceApp: App {
 
 struct ContentView: View {
     var body: some View {
-        NavigationStack {
+        NavigationView {
             VStack(spacing: 20) {
                 Image(systemName: "music.note")
                     .font(.system(size: 60))
