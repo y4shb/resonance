@@ -9,6 +9,10 @@ import SwiftUI
 
 @main
 struct ResonanceWatchApp: App {
+    // MARK: - Services
+
+    @StateObject private var connectivityService = PhoneConnectivityService()
+
     // MARK: - Initialization
 
     init() {
@@ -19,26 +23,11 @@ struct ResonanceWatchApp: App {
 
     var body: some Scene {
         WindowGroup {
-            WatchContentView()
-        }
-    }
-}
-
-// MARK: - Watch Content View (Placeholder)
-
-struct WatchContentView: View {
-    var body: some View {
-        VStack(spacing: 10) {
-            Image(systemName: "music.note")
-                .font(.title)
-                .foregroundStyle(.blue)
-
-            Text("AI DJ")
-                .font(.headline)
-
-            Text("Ready")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            WatchNowPlayingView(connectivityService: connectivityService)
+                .onAppear {
+                    connectivityService.activate()
+                    logInfo("PhoneConnectivityService activated", category: .watchConnectivity)
+                }
         }
     }
 }
@@ -46,5 +35,6 @@ struct WatchContentView: View {
 // MARK: - Preview
 
 #Preview {
-    WatchContentView()
+    let service = PhoneConnectivityService()
+    WatchNowPlayingView(connectivityService: service)
 }

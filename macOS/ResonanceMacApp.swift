@@ -14,6 +14,10 @@ struct ResonanceMacApp: App {
 
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
+    // MARK: - State
+
+    @StateObject private var menuBarController = MenuBarController()
+
     // MARK: - Initialization
 
     init() {
@@ -25,14 +29,14 @@ struct ResonanceMacApp: App {
     var body: some Scene {
         // Menu bar apps don't have a main window
         // The MenuBarExtra is the primary UI
-        MenuBarExtra("AI DJ", systemImage: "music.note") {
-            MenuBarContentView()
+        MenuBarExtra("AI DJ", systemImage: menuBarController.menuBarIconName) {
+            PopoverView(controller: menuBarController)
         }
         .menuBarExtraStyle(.window)
 
         // Settings window (accessible via menu bar)
         Settings {
-            MacSettingsView()
+            MacSettingsView(controller: menuBarController)
         }
     }
 }
@@ -49,103 +53,164 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 }
 
-// MARK: - Menu Bar Content View
-
-struct MenuBarContentView: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Header
-            HStack {
-                Image(systemName: "music.note")
-                    .foregroundStyle(.blue)
-                Text("AI DJ")
-                    .font(.headline)
-                Spacer()
-            }
-
-            Divider()
-
-            // Status
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Status: Ready")
-                    .font(.subheadline)
-                Text("iPhone: Not Connected")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Divider()
-
-            // Context Info
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Context Sending:")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                HStack {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
-                        .font(.caption)
-                    Text("Focus Mode: Off")
-                        .font(.caption)
-                }
-                HStack {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
-                        .font(.caption)
-                    Text("Active App: Monitoring")
-                        .font(.caption)
-                }
-            }
-
-            Divider()
-
-            // Actions
-            Button("Open Settings...") {
-                NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-            }
-
-            Button("Quit AI DJ") {
-                NSApplication.shared.terminate(nil)
-            }
-        }
-        .padding()
-        .frame(width: 250)
-    }
-}
-
 // MARK: - Settings View
 
 struct MacSettingsView: View {
+    @ObservedObject var controller: MenuBarController
+
     var body: some View {
+        TabView {
+            connectionSettingsTab
+                .tabItem {
+                    Label("Connection", systemImage: "link")
+                }
+
+            contextSettingsTab
+                .tabItem {
+                    Label("Context", systemImage: "brain")
+                }
+
+            aboutTab
+                .tabItem {
+                    Label("About", systemImage: "info.circle")
+                }
+        }
+        .frame(width: 450, height: 300)
+    }
+
+    // MARK: - Connection Tab
+
+    private var connectionSettingsTab: some View {
         Form {
-            Section("Connection") {
-                Text("iPhone connection settings will appear here.")
-                    .foregroundStyle(.secondary)
+            Section("iPhone Connection") {
+                HStack {
+                    Text("Status:")
+                    Spacer()
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(statusColor)
+                            .frame(width: 8, height: 8)
+                        Text(controller.connectionStatus.rawValue)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                HStack {
+                    Text("Last Sync:")
+                    Spacer()
+                    Text(controller.lastSyncTimeString)
+                        .foregroundStyle(.secondary)
+                }
             }
 
-            Section("Context Providers") {
-                Toggle("Send Focus Mode", isOn: .constant(true))
-                Toggle("Send Active App", isOn: .constant(true))
-                Toggle("Send Calendar Events", isOn: .constant(true))
-            }
-
-            Section("About") {
-                Text("AI DJ for macOS")
-                Text("Version 1.0")
+            Section("Info") {
+                Text("The macOS companion connects to your iPhone via the local network to provide desktop context signals like focus mode and active application.")
+                    .font(.caption)
                     .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
-        .frame(width: 400, height: 300)
+    }
+
+    // MARK: - Context Tab
+
+    private var contextSettingsTab: some View {
+        Form {
+            Section("Context Providers") {
+                Toggle("Send Focus Mode", isOn: Binding(
+                    get: { controller.contextInfo.isFocusModeEnabled },
+                    set: { controller.contextInfo.isFocusModeEnabled = $0 }
+                ))
+
+                Toggle("Send Active App", isOn: Binding(
+                    get: { controller.contextInfo.isActiveAppEnabled },
+                    set: { controller.contextInfo.isActiveAppEnabled = $0 }
+                ))
+            }
+
+            Section("Current Context") {
+                HStack {
+                    Text("Focus Mode:")
+                    Spacer()
+                    Text(controller.contextInfo.focusMode)
+                        .foregroundStyle(.secondary)
+                }
+
+                HStack {
+                    Text("Active App:")
+                    Spacer()
+                    Text(controller.contextInfo.activeApp)
+                        .foregroundStyle(.secondary)
+                }
+
+                HStack {
+                    Text("Deep Work:")
+                    Spacer()
+                    Text(controller.contextInfo.isDeepWorkDetected ? "Detected" : "Not Detected")
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .formStyle(.grouped)
+    }
+
+    // MARK: - About Tab
+
+    private var aboutTab: some View {
+        Form {
+            Section("About") {
+                HStack {
+                    Image(systemName: "music.note")
+                        .font(.largeTitle)
+                        .foregroundStyle(.blue)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("AI DJ for macOS")
+                            .font(.headline)
+                        Text("Context-aware companion")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                HStack {
+                    Text("Version:")
+                    Spacer()
+                    Text("1.0.0")
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .formStyle(.grouped)
+    }
+
+    // MARK: - Helpers
+
+    private var statusColor: Color {
+        switch controller.connectionStatus {
+        case .connected: return .green
+        case .disconnected: return .red
+        case .syncing: return .orange
+        }
     }
 }
 
 // MARK: - Previews
 
-#Preview("Menu Bar") {
-    MenuBarContentView()
+#Preview("Popover") {
+    let controller = MenuBarController()
+    controller.connectionStatus = .connected
+    controller.nowPlayingInfo = MenuBarNowPlayingInfo(
+        songTitle: "Weightless",
+        artistName: "Marconi Union",
+        isPlaying: true,
+        progress: 0.45,
+        duration: 234,
+        explanation: nil,
+        artworkData: nil
+    )
+    return PopoverView(controller: controller)
 }
 
 #Preview("Settings") {
-    MacSettingsView()
+    MacSettingsView(controller: MenuBarController())
 }
