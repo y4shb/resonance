@@ -26,7 +26,7 @@ public enum LogCategory: String, CaseIterable {
 
     /// Returns the subsystem identifier for os_log
     var subsystem: String {
-        "com.aidj.\(rawValue.lowercased())"
+        "com.y4sh.resonance.\(rawValue.lowercased())"
     }
 }
 
@@ -82,7 +82,7 @@ public final class Logger: @unchecked Sendable {
     #if DEBUG
     private var inMemoryLogs: [LogEntry] = []
     private let maxInMemoryLogs = 1000
-    private let logQueue = DispatchQueue(label: "com.aidj.logger", qos: .utility)
+    private let logQueue = DispatchQueue(label: "com.y4sh.resonance.logger", qos: .utility)
     #endif
 
     // MARK: - Initialization

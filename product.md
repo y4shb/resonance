@@ -299,7 +299,7 @@ Energy ramp sequence begins automatically based on historical recovery curves.
 
 12. Repository Layout
 
-AIDJ/
+resonance/
  ├─ iOS
  ├─ Watch
  ├─ macOS

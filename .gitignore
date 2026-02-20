@@ -1,1 +1,24 @@
 .DS_Store
+
+# Xcode
+*.xcuserstate
+*.xcuserdatad
+xcuserdata/
+DerivedData/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+
+# Build artifacts
+build/
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Local config (if you add any)
+*.local.yml
+*.local.json
+Secrets.swift
+
+# CocoaPods / SPM
+Pods/
+.build/

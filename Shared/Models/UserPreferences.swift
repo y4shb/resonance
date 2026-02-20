@@ -167,7 +167,7 @@ extension UserPreferences {
 // MARK: - Persistence
 
 extension UserPreferences {
-    private static let userDefaultsKey = "com.aidj.userPreferences"
+    private static let userDefaultsKey = "com.y4sh.resonance.userPreferences"
 
     /// Saves preferences to UserDefaults
     public func save() throws {

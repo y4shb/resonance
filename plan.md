@@ -112,171 +112,164 @@ resonance/
 ├── product.md                    # Product specification (READ ONLY)
 ├── plan.md                       # This file
 ├── progress.md                   # Progress tracking
+├── project.yml                   # XcodeGen configuration
 │
-├── AIDJ/                         # Main Xcode Workspace
-│   ├── AIDJ.xcworkspace          # Workspace file
+├── Shared/                       # Shared code across all platforms
+│   ├── Models/                   # Data models
+│   │   ├── StateVector.swift
+│   │   ├── SongFeatures.swift
+│   │   ├── PlaylistMetadata.swift
+│   │   ├── HistoricalSession.swift
+│   │   ├── SongEffect.swift
+│   │   ├── ContextSignal.swift
+│   │   └── UserPreferences.swift
 │   │
-│   ├── Shared/                   # Shared code across all platforms
-│   │   ├── Models/               # Data models
-│   │   │   ├── StateVector.swift
-│   │   │   ├── SongFeatures.swift
-│   │   │   ├── PlaylistMetadata.swift
-│   │   │   ├── HistoricalSession.swift
-│   │   │   ├── SongEffect.swift
-│   │   │   ├── ContextSignal.swift
-│   │   │   └── UserPreferences.swift
-│   │   │
-│   │   ├── Persistence/          # CoreData / SQLite
-│   │   │   ├── PersistenceController.swift
-│   │   │   ├── AIDJ.xcdatamodeld/
-│   │   │   ├── Migrations/
-│   │   │   └── Repositories/
-│   │   │       ├── SongRepository.swift
-│   │   │       ├── PlaylistRepository.swift
-│   │   │       ├── SessionRepository.swift
-│   │   │       └── EffectRepository.swift
-│   │   │
-│   │   ├── Services/             # Business logic services
-│   │   │   ├── MusicKitService.swift
-│   │   │   ├── HealthKitService.swift
-│   │   │   └── SyncService.swift
-│   │   │
-│   │   └── Utilities/            # Helper functions
-│   │       ├── Constants.swift
-│   │       ├── Extensions/
-│   │       └── Logging.swift
+│   ├── Persistence/              # CoreData / SQLite
+│   │   ├── PersistenceController.swift
+│   │   ├── AIDJ.xcdatamodeld/
+│   │   ├── Migrations/
+│   │   └── Repositories/
+│   │       ├── SongRepository.swift
+│   │       ├── PlaylistRepository.swift
+│   │       ├── SessionRepository.swift
+│   │       └── EffectRepository.swift
 │   │
-│   ├── Brain/                    # Core Intelligence (iPhone)
-│   │   ├── Historical/           # Historical analysis engine
-│   │   │   ├── HistoricalEngine.swift
-│   │   │   ├── SessionReconstructor.swift
-│   │   │   ├── PlaylistImpactCalculator.swift
-│   │   │   └── SongImpactCalculator.swift
-│   │   │
-│   │   ├── State/                # Real-time state estimation
-│   │   │   ├── StateEngine.swift
-│   │   │   ├── BiometricProcessor.swift
-│   │   │   ├── ContextProcessor.swift
-│   │   │   └── StateVectorBuilder.swift
-│   │   │
-│   │   ├── Ranking/              # Song selection logic
-│   │   │   ├── DecisionEngine.swift
-│   │   │   ├── SongScorer.swift
-│   │   │   ├── TransitionController.swift
-│   │   │   ├── GuardFilters.swift
-│   │   │   └── ExplanationGenerator.swift
-│   │   │
-│   │   ├── Features/             # Song feature extraction
-│   │   │   ├── FeatureExtractor.swift
-│   │   │   ├── AudioAnalyzer.swift
-│   │   │   └── FeatureNormalizer.swift
-│   │   │
-│   │   └── Learning/             # Continuous learning
-│   │       ├── LearningStore.swift
-│   │       ├── SkipPenaltyCalculator.swift
-│   │       ├── ResponseCreditCalculator.swift
-│   │       └── SessionQualityScorer.swift
+│   ├── Services/                 # Business logic services
+│   │   ├── MusicKitService.swift
+│   │   ├── HealthKitService.swift
+│   │   └── SyncService.swift
 │   │
-│   ├── iOS/                      # iPhone App
-│   │   ├── AIDJApp.swift         # App entry point
-│   │   ├── Info.plist
-│   │   ├── Entitlements/
-│   │   │   └── AIDJ.entitlements
-│   │   │
-│   │   ├── Views/                # SwiftUI Views
-│   │   │   ├── MainView.swift
-│   │   │   ├── NowPlayingView.swift
-│   │   │   ├── PlaylistBrowserView.swift
-│   │   │   ├── StateDebugView.swift
-│   │   │   ├── ExplanationView.swift
-│   │   │   ├── SettingsView.swift
-│   │   │   └── Components/
-│   │   │       ├── MoodSlider.swift
-│   │   │       ├── StateIndicator.swift
-│   │   │       ├── SongCard.swift
-│   │   │       └── PlaylistCard.swift
-│   │   │
-│   │   ├── ViewModels/           # MVVM ViewModels
-│   │   │   ├── NowPlayingViewModel.swift
-│   │   │   ├── PlaylistViewModel.swift
-│   │   │   └── SettingsViewModel.swift
-│   │   │
-│   │   ├── Coordinators/         # Navigation
-│   │   │   └── AppCoordinator.swift
-│   │   │
-│   │   └── Services/             # iOS-specific services
-│   │       ├── WatchConnectivityManager.swift
-│   │       ├── BackgroundTaskManager.swift
-│   │       ├── NotificationManager.swift
-│   │       └── WidgetDataProvider.swift
-│   │
-│   ├── Watch/                    # watchOS App
-│   │   ├── AIDJWatchApp.swift    # App entry point
-│   │   ├── Info.plist
-│   │   ├── Entitlements/
-│   │   │
-│   │   ├── Views/
-│   │   │   ├── WatchNowPlayingView.swift
-│   │   │   ├── MoodInputView.swift
-│   │   │   └── CompactControlView.swift
-│   │   │
-│   │   ├── Complications/
-│   │   │   ├── ComplicationController.swift
-│   │   │   └── ComplicationViews.swift
-│   │   │
-│   │   ├── Sensors/
-│   │   │   ├── HeartRateSensor.swift
-│   │   │   ├── HRVSensor.swift
-│   │   │   ├── MotionSensor.swift
-│   │   │   └── WorkoutDetector.swift
-│   │   │
-│   │   └── Services/
-│   │       ├── PhoneConnectivityService.swift
-│   │       ├── CrownHandler.swift
-│   │       └── HapticFeedbackManager.swift
-│   │
-│   ├── macOS/                    # macOS Menu Bar App
-│   │   ├── AIDJMacApp.swift      # App entry point
-│   │   ├── Info.plist
-│   │   ├── Entitlements/
-│   │   │
-│   │   ├── MenuBar/
-│   │   │   ├── MenuBarController.swift
-│   │   │   ├── StatusItemView.swift
-│   │   │   └── PopoverView.swift
-│   │   │
-│   │   ├── ContextProviders/
-│   │   │   ├── FocusModeProvider.swift
-│   │   │   ├── ActiveAppProvider.swift
-│   │   │   ├── ScreenTimeProvider.swift
-│   │   │   └── CalendarProvider.swift
-│   │   │
-│   │   └── Services/
-│   │       ├── iPhoneConnector.swift
-│   │       └── ContextBroadcaster.swift
-│   │
-│   ├── Widgets/                  # iOS/watchOS Widgets
-│   │   ├── NowPlayingWidget.swift
-│   │   ├── StateWidget.swift
-│   │   └── WidgetBundle.swift
-│   │
-│   └── Tests/                    # Unit & Integration Tests
-│       ├── BrainTests/
-│       │   ├── StateEngineTests.swift
-│       │   ├── DecisionEngineTests.swift
-│       │   └── LearningStoreTests.swift
-│       │
-│       ├── ServiceTests/
-│       │   ├── MusicKitServiceTests.swift
-│       │   └── HealthKitServiceTests.swift
-│       │
-│       └── IntegrationTests/
-│           └── EndToEndTests.swift
+│   └── Utilities/                # Helper functions
+│       ├── Constants.swift
+│       ├── Extensions/
+│       └── Logging.swift
 │
-└── Documentation/                # Additional documentation
-    ├── API.md
-    ├── DataModels.md
-    └── Algorithms.md
+├── Brain/                        # Core Intelligence (iPhone)
+│   ├── Historical/               # Historical analysis engine
+│   │   ├── HistoricalEngine.swift
+│   │   ├── SessionReconstructor.swift
+│   │   ├── PlaylistImpactCalculator.swift
+│   │   └── SongImpactCalculator.swift
+│   │
+│   ├── State/                    # Real-time state estimation
+│   │   ├── StateEngine.swift
+│   │   ├── BiometricProcessor.swift
+│   │   ├── ContextProcessor.swift
+│   │   └── StateVectorBuilder.swift
+│   │
+│   ├── Ranking/                  # Song selection logic
+│   │   ├── DecisionEngine.swift
+│   │   ├── SongScorer.swift
+│   │   ├── TransitionController.swift
+│   │   ├── GuardFilters.swift
+│   │   └── ExplanationGenerator.swift
+│   │
+│   ├── Features/                 # Song feature extraction
+│   │   ├── FeatureExtractor.swift
+│   │   ├── AudioAnalyzer.swift
+│   │   └── FeatureNormalizer.swift
+│   │
+│   └── Learning/                 # Continuous learning
+│       ├── LearningStore.swift
+│       ├── SkipPenaltyCalculator.swift
+│       ├── ResponseCreditCalculator.swift
+│       └── SessionQualityScorer.swift
+│
+├── iOS/                          # iPhone App
+│   ├── ResonanceApp.swift        # App entry point
+│   ├── Info.plist
+│   ├── Entitlements/
+│   │   └── Resonance.entitlements
+│   │
+│   ├── Views/                    # SwiftUI Views
+│   │   ├── MainView.swift
+│   │   ├── NowPlayingView.swift
+│   │   ├── PlaylistBrowserView.swift
+│   │   ├── StateDebugView.swift
+│   │   ├── ExplanationView.swift
+│   │   ├── SettingsView.swift
+│   │   └── Components/
+│   │       ├── MoodSlider.swift
+│   │       ├── StateIndicator.swift
+│   │       ├── SongCard.swift
+│   │       └── PlaylistCard.swift
+│   │
+│   ├── ViewModels/               # MVVM ViewModels
+│   │   ├── NowPlayingViewModel.swift
+│   │   ├── PlaylistViewModel.swift
+│   │   └── SettingsViewModel.swift
+│   │
+│   ├── Coordinators/             # Navigation
+│   │   └── AppCoordinator.swift
+│   │
+│   └── Services/                 # iOS-specific services
+│       ├── WatchConnectivityManager.swift
+│       ├── BackgroundTaskManager.swift
+│       ├── NotificationManager.swift
+│       └── WidgetDataProvider.swift
+│
+├── Watch/                        # watchOS App
+│   ├── ResonanceWatchApp.swift   # App entry point
+│   ├── Info.plist
+│   ├── Entitlements/
+│   │
+│   ├── Views/
+│   │   ├── WatchNowPlayingView.swift
+│   │   ├── MoodInputView.swift
+│   │   └── CompactControlView.swift
+│   │
+│   ├── Complications/
+│   │   ├── ComplicationController.swift
+│   │   └── ComplicationViews.swift
+│   │
+│   ├── Sensors/
+│   │   ├── HeartRateSensor.swift
+│   │   ├── HRVSensor.swift
+│   │   ├── MotionSensor.swift
+│   │   └── WorkoutDetector.swift
+│   │
+│   └── Services/
+│       ├── PhoneConnectivityService.swift
+│       ├── CrownHandler.swift
+│       └── HapticFeedbackManager.swift
+│
+├── macOS/                        # macOS Menu Bar App
+│   ├── ResonanceMacApp.swift     # App entry point
+│   ├── Info.plist
+│   ├── Entitlements/
+│   │
+│   ├── MenuBar/
+│   │   ├── MenuBarController.swift
+│   │   ├── StatusItemView.swift
+│   │   └── PopoverView.swift
+│   │
+│   ├── ContextProviders/
+│   │   ├── FocusModeProvider.swift
+│   │   ├── ActiveAppProvider.swift
+│   │   ├── ScreenTimeProvider.swift
+│   │   └── CalendarProvider.swift
+│   │
+│   └── Services/
+│       ├── iPhoneConnector.swift
+│       └── ContextBroadcaster.swift
+│
+├── Widgets/                      # iOS/watchOS Widgets
+│   ├── NowPlayingWidget.swift
+│   ├── StateWidget.swift
+│   └── WidgetBundle.swift
+│
+└── Tests/                        # Unit & Integration Tests
+    ├── BrainTests/
+    │   ├── StateEngineTests.swift
+    │   ├── DecisionEngineTests.swift
+    │   └── LearningStoreTests.swift
+    │
+    ├── ServiceTests/
+    │   ├── MusicKitServiceTests.swift
+    │   └── HealthKitServiceTests.swift
+    │
+    └── IntegrationTests/
+        └── EndToEndTests.swift
 ```
 
 ---
@@ -2506,28 +2499,28 @@ Required disclosures:
 
 ```
 Targets:
-1. AIDJ (iOS App)
+1. Resonance (iOS App)
    - iOS 16.0+
    - Architectures: arm64
-   - Bundle ID: com.yourcompany.aidj
+   - Bundle ID: com.y4sh.resonance.ios
 
-2. AIDJ Watch App (watchOS App)
+2. ResonanceWatch (watchOS App)
    - watchOS 9.0+
-   - Bundle ID: com.yourcompany.aidj.watchkitapp
+   - Bundle ID: com.y4sh.resonance.watchkitapp
 
-3. AIDJ macOS (macOS App)
+3. ResonanceMac (macOS App)
    - macOS 13.0+
-   - Bundle ID: com.yourcompany.aidj.macos
+   - Bundle ID: com.y4sh.resonance.macos
 
-4. AIDJTests (Unit Tests)
-5. AIDJUITests (UI Tests)
-6. AIDJ Widgets (Widget Extension)
+4. ResonanceTests (Unit Tests)
+5. ResonanceUITests (UI Tests)
+6. ResonanceWidgets (Widget Extension)
 ```
 
 ### 11.1.2 App Groups
 
 ```
-App Group ID: group.com.yourcompany.aidj
+App Group ID: group.com.y4sh.resonance
 
 Shared between:
 - iOS App

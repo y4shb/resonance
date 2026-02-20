@@ -1,4 +1,4 @@
-# AI DJ - Resonance: Progress Tracker
+# Resonance: Progress Tracker
 
 ## Document Purpose
 This file tracks the current state of the project, completed work, and remaining tasks. **This file is append-only** - new entries are added at the bottom of each section as work progresses.
@@ -44,12 +44,12 @@ This file tracks the current state of the project, completed work, and remaining
 - [x] Configure workspace to include all targets
 
 ### 1.2 Bundle IDs and Signing
-- [x] Set iOS bundle ID: `com.aidj.ios`
-- [x] Set watchOS bundle ID: `com.aidj.watchkitapp`
-- [x] Set macOS bundle ID: `com.aidj.macos`
-- [x] Set Widget bundle ID: `com.aidj.ios.widgets`
+- [x] Set iOS bundle ID: `com.y4sh.resonance.ios`
+- [x] Set watchOS bundle ID: `com.y4sh.resonance.watchkitapp`
+- [x] Set macOS bundle ID: `com.y4sh.resonance.macos`
+- [x] Set Widget bundle ID: `com.y4sh.resonance.ios.widgets`
 - [x] Configure code signing for all targets (in project.yml)
-- [x] Create App Group: `group.com.aidj`
+- [x] Create App Group: `group.com.y4sh.resonance`
 
 ### 1.3 Entitlements Configuration
 - [x] Add HealthKit entitlement to iOS target
@@ -87,7 +87,7 @@ This file tracks the current state of the project, completed work, and remaining
 - [x] Create `macOS/ContextProviders/` directory
 
 ### 1.6 Core Data Setup
-- [x] Create AIDJ.xcdatamodeld file
+- [x] Create Resonance Core Data model (AIDJ.xcdatamodeld)
 - [x] Add Song entity with all attributes (see plan.md 4.1.1)
 - [x] Add Playlist entity with all attributes (see plan.md 4.1.2)
 - [x] Add HistoricalSession entity with all attributes (see plan.md 4.1.3)
@@ -145,7 +145,7 @@ This file tracks the current state of the project, completed work, and remaining
 - [ ] Test basic playback functionality
 
 ### 2.2 iOS Basic UI
-- [ ] Create AIDJApp.swift entry point
+- [ ] Create ResonanceApp.swift entry point
 - [ ] Create MainView.swift with tab navigation
 - [ ] Create NowPlayingView.swift skeleton (see plan.md 7.1.2)
 - [ ] Create PlaylistBrowserView.swift skeleton (see plan.md 7.1.3)
@@ -156,7 +156,7 @@ This file tracks the current state of the project, completed work, and remaining
 - [ ] Display playlist selection
 
 ### 2.3 watchOS Basic UI
-- [ ] Create AIDJWatchApp.swift entry point
+- [ ] Create ResonanceWatchApp.swift entry point
 - [ ] Create WatchNowPlayingView.swift (see plan.md 7.2.1)
 - [ ] Display current song info
 - [ ] Implement basic playback controls
@@ -172,7 +172,7 @@ This file tracks the current state of the project, completed work, and remaining
 - [ ] Test Watch → iPhone playback commands
 
 ### 2.5 macOS Basic UI
-- [ ] Create AIDJMacApp.swift entry point
+- [ ] Create ResonanceMacApp.swift entry point
 - [ ] Create MenuBarController.swift (see plan.md 7.3)
 - [ ] Create StatusItemView.swift for menu bar icon
 - [ ] Create PopoverView.swift for click action
@@ -696,7 +696,7 @@ Description of what was completed
 ### Progress Entries
 
 [2026-02-11] - Phase 1 - 1.5 Directory Structure
-Created complete AIDJ directory structure including:
+Created complete Resonance directory structure including:
 - Shared/ with Models/, Persistence/, Services/, Utilities/
 - Brain/ with Historical/, State/, Ranking/, Features/, Learning/
 - iOS/ with Views/, ViewModels/, Coordinators/, Services/, Entitlements/
@@ -729,10 +729,10 @@ Created PersistenceController.swift with App Group support and helper methods.
 
 [2026-02-11] - Phase 1 - 1.3 Entitlements Configuration
 Created entitlements files for all targets:
-- iOS/Entitlements/AIDJ.entitlements: HealthKit, MusicKit, App Groups, Background Delivery
-- Watch/Entitlements/AIDJWatch.entitlements: HealthKit, App Groups
-- macOS/Entitlements/AIDJMac.entitlements: App Groups, Sandbox, Network, Calendar
-- Widgets/AIDJWidgets.entitlements: App Groups
+- iOS/Entitlements/Resonance.entitlements: HealthKit, MusicKit, App Groups, Background Delivery
+- Watch/Entitlements/ResonanceWatch.entitlements: HealthKit, App Groups
+- macOS/Entitlements/ResonanceMac.entitlements: App Groups, Sandbox, Network, Calendar
+- Widgets/ResonanceWidgets.entitlements: App Groups
 
 [2026-02-11] - Phase 1 - 1.4 Info.plist Configuration
 Created Info.plist files for all targets with:
@@ -743,20 +743,20 @@ Created Info.plist files for all targets with:
 
 [2026-02-11] - Phase 1 - 1.1 Xcode Project Creation
 Created project.yml (XcodeGen configuration) defining:
-- iOS app target (AIDJ)
-- watchOS app target (AIDJWatch)
-- macOS menu bar app target (AIDJMac)
-- iOS widget extension target (AIDJWidgets)
-- Unit test target (AIDJTests)
+- iOS app target (Resonance)
+- watchOS app target (ResonanceWatch)
+- macOS menu bar app target (ResonanceMac)
+- iOS widget extension target (ResonanceWidgets)
+- Unit test target (ResonanceTests)
 - Schemes for each target and AllTargets scheme
 Created app entry points:
-- iOS/AIDJApp.swift with placeholder ContentView
-- Watch/AIDJWatchApp.swift with placeholder WatchContentView
-- macOS/AIDJMacApp.swift with menu bar implementation
-- Widgets/AIDJWidgets.swift with NowPlayingWidget and StateWidget
+- iOS/AIDJApp.swift with placeholder ContentView (to be renamed ResonanceApp.swift)
+- Watch/AIDJWatchApp.swift with placeholder WatchContentView (to be renamed ResonanceWatchApp.swift)
+- macOS/AIDJMacApp.swift with menu bar implementation (to be renamed ResonanceMacApp.swift)
+- Widgets/AIDJWidgets.swift with NowPlayingWidget and StateWidget (to be renamed ResonanceWidgets.swift)
 
 [2026-02-11] - Phase 1 - README
-Created AIDJ/README.md with:
+Created README.md with:
 - Prerequisites and setup instructions
 - XcodeGen generation steps
 - Manual Xcode setup alternative
@@ -769,7 +769,7 @@ Example entry format:
 Created new Xcode project with iOS target. Workspace initialized.
 
 [2026-02-07] - Phase 1 - 1.5 Directory Structure
-Created all required directories under AIDJ/ including Shared, Brain, iOS, Watch, and macOS folders.
+Created all required directories under resonance/ including Shared, Brain, iOS, Watch, and macOS folders.
 -->
 
 ---

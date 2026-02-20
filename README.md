@@ -1,4 +1,4 @@
-# AI DJ (Resonance)
+# Resonance
 
 An intelligent music selection system that picks songs from your Apple Music playlists based on biometrics, context, and historical effectiveness.
 
@@ -21,20 +21,19 @@ An intelligent music selection system that picks songs from your Apple Music pla
 
 2. Generate the project:
    ```bash
-   cd AIDJ
    xcodegen generate
    ```
 
-3. Open the generated workspace:
+3. Open the generated project:
    ```bash
-   open AIDJ.xcodeproj
+   open Resonance.xcodeproj
    ```
 
 ### Option 2: Manual Xcode Setup
 
 1. Open Xcode and create a new project
 2. Choose "App" template for iOS
-3. Set Product Name to "AIDJ"
+3. Set Product Name to "Resonance"
 4. Add watchOS and macOS targets manually
 5. Add the source files from this directory structure
 6. Configure entitlements and Info.plist as provided
@@ -43,10 +42,10 @@ An intelligent music selection system that picks songs from your Apple Music pla
 
 1. **Set Development Team**
    - Open `project.yml` and set your `DEVELOPMENT_TEAM`
-   - Or configure in Xcode: Project → Signing & Capabilities
+   - Or configure in Xcode: Project > Signing & Capabilities
 
 2. **Configure App Group**
-   - In Apple Developer Portal, create App Group: `group.com.aidj`
+   - In Apple Developer Portal, create App Group: `group.com.y4sh.resonance`
    - Enable App Groups capability for all targets
 
 3. **Enable Capabilities**
@@ -61,7 +60,7 @@ An intelligent music selection system that picks songs from your Apple Music pla
 ## Project Structure
 
 ```
-AIDJ/
+resonance/
 ├── Shared/                 # Cross-platform code
 │   ├── Models/             # Data models (StateVector, SongScore, etc.)
 │   ├── Persistence/        # Core Data stack
@@ -106,25 +105,25 @@ AIDJ/
 
 ## Running the App
 
-1. Select the `AIDJ` scheme in Xcode
+1. Select the `Resonance` scheme in Xcode
 2. Choose an iOS simulator or device
-3. Press ⌘R to build and run
+3. Press Cmd+R to build and run
 
 For Watch app:
-1. Select the `AIDJWatch` scheme
+1. Select the `ResonanceWatch` scheme
 2. Choose a Watch simulator paired with iOS simulator
-3. Press ⌘R to build and run
+3. Press Cmd+R to build and run
 
 ## Testing
 
-Run unit tests with ⌘U or:
+Run unit tests with Cmd+U or:
 ```bash
-xcodebuild test -scheme AIDJ -destination 'platform=iOS Simulator,name=iPhone 15'
+xcodebuild test -scheme Resonance -destination 'platform=iOS Simulator,name=iPhone 15'
 ```
 
 ## Documentation
 
-- `../product.md` - Product specification
-- `../plan.md` - Technical implementation plan
-- `../progress.md` - Progress tracker
-- `../learn-from/` - Learning resources
+- `product.md` - Product specification
+- `plan.md` - Technical implementation plan
+- `progress.md` - Progress tracker
+- `learn-from/` - Learning resources

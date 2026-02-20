@@ -11,22 +11,22 @@ import Foundation
 
 public enum AppConstants {
     /// App identifier
-    public static let appName = "AI DJ"
-    public static let appIdentifier = "com.aidj"
+    public static let appName = "Resonance"
+    public static let appIdentifier = "com.y4sh.resonance"
 
     /// Bundle identifiers
     public enum BundleID {
-        public static let iOS = "com.aidj.ios"
-        public static let watchOS = "com.aidj.watchkitapp"
-        public static let macOS = "com.aidj.macos"
-        public static let widgets = "com.aidj.widgets"
+        public static let iOS = "com.y4sh.resonance.ios"
+        public static let watchOS = "com.y4sh.resonance.watchkitapp"
+        public static let macOS = "com.y4sh.resonance.macos"
+        public static let widgets = "com.y4sh.resonance.ios.widgets"
     }
 
     /// App Group for shared data
-    public static let appGroupIdentifier = "group.com.aidj"
+    public static let appGroupIdentifier = "group.com.y4sh.resonance"
 
     /// Keychain access group
-    public static let keychainAccessGroup = "com.aidj.keychain"
+    public static let keychainAccessGroup = "com.y4sh.resonance.keychain"
 }
 
 // MARK: - State Engine Constants
@@ -153,9 +153,9 @@ public enum WatchConnectivityConstants {
 public enum BackgroundTaskConstants {
     /// Background task identifiers
     public enum TaskIdentifier {
-        public static let playlistSync = "com.aidj.playlistSync"
-        public static let historicalAnalysis = "com.aidj.historicalAnalysis"
-        public static let featureUpdate = "com.aidj.featureUpdate"
+        public static let playlistSync = "com.y4sh.resonance.playlistSync"
+        public static let historicalAnalysis = "com.y4sh.resonance.historicalAnalysis"
+        public static let featureUpdate = "com.y4sh.resonance.featureUpdate"
     }
 
     /// Playlist sync interval (hours)
