@@ -1,6 +1,6 @@
 //
 //  Logging.swift
-//  AIDJ
+//  Resonance
 //
 //  Unified logging utility for the AI DJ app
 //

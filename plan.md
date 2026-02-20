@@ -126,7 +126,7 @@ resonance/
 │   │
 │   ├── Persistence/              # CoreData / SQLite
 │   │   ├── PersistenceController.swift
-│   │   ├── AIDJ.xcdatamodeld/
+│   │   ├── Resonance.xcdatamodeld/
 │   │   ├── Migrations/
 │   │   └── Repositories/
 │   │       ├── SongRepository.swift

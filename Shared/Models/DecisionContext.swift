@@ -1,6 +1,6 @@
 //
 //  DecisionContext.swift
-//  AIDJ
+//  Resonance
 //
 //  All context needed to make a song selection decision
 //

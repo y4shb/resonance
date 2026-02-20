@@ -1,6 +1,6 @@
 //
-//  AIDJApp.swift
-//  AIDJ
+//  ResonanceApp.swift
+//  Resonance
 //
 //  Main entry point for the iOS app
 //
@@ -8,7 +8,7 @@
 import SwiftUI
 
 @main
-struct AIDJApp: App {
+struct ResonanceApp: App {
     // MARK: - State
 
     /// Persistence controller for Core Data
@@ -24,7 +24,7 @@ struct AIDJApp: App {
         Logger.shared.setMinimumLevel(.info)
         #endif
 
-        logInfo("AI DJ iOS app launching", category: .general)
+        logInfo("Resonance iOS app launching", category: .general)
 
         // Register background tasks
         registerBackgroundTasks()

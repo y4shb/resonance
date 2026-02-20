@@ -1,6 +1,6 @@
 //
 //  UserPreferences.swift
-//  AIDJ
+//  Resonance
 //
 //  User-configurable preferences for the AI DJ system
 //

@@ -1,6 +1,6 @@
 //
-//  AIDJWatchApp.swift
-//  AIDJ Watch
+//  ResonanceWatchApp.swift
+//  Resonance Watch
 //
 //  Main entry point for the watchOS app
 //
@@ -8,11 +8,11 @@
 import SwiftUI
 
 @main
-struct AIDJWatchApp: App {
+struct ResonanceWatchApp: App {
     // MARK: - Initialization
 
     init() {
-        logInfo("AI DJ Watch app launching", category: .general)
+        logInfo("Resonance Watch app launching", category: .general)
     }
 
     // MARK: - Body

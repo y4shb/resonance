@@ -1,6 +1,6 @@
 //
-//  AIDJMacApp.swift
-//  AIDJ Mac
+//  ResonanceMacApp.swift
+//  Resonance Mac
 //
 //  Main entry point for the macOS menu bar app
 //
@@ -9,7 +9,7 @@ import SwiftUI
 import AppKit
 
 @main
-struct AIDJMacApp: App {
+struct ResonanceMacApp: App {
     // MARK: - App Delegate
 
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
@@ -17,7 +17,7 @@ struct AIDJMacApp: App {
     // MARK: - Initialization
 
     init() {
-        logInfo("AI DJ Mac app launching", category: .general)
+        logInfo("Resonance Mac app launching", category: .general)
     }
 
     // MARK: - Body

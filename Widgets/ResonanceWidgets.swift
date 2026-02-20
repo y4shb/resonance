@@ -1,6 +1,6 @@
 //
-//  AIDJWidgets.swift
-//  AIDJ Widgets
+//  ResonanceWidgets.swift
+//  Resonance Widgets
 //
 //  Widget extension for iOS home screen and lock screen widgets
 //
@@ -11,7 +11,7 @@ import SwiftUI
 // MARK: - Widget Bundle
 
 @main
-struct AIDJWidgetBundle: WidgetBundle {
+struct ResonanceWidgetBundle: WidgetBundle {
     var body: some Widget {
         NowPlayingWidget()
         StateWidget()

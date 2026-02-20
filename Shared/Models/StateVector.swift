@@ -1,6 +1,6 @@
 //
 //  StateVector.swift
-//  AIDJ
+//  Resonance
 //
 //  Real-time state estimation of user's current condition
 //  Updated every 30 seconds by StateEngine

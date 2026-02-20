@@ -1,6 +1,6 @@
 //
 //  SongFeatures.swift
-//  AIDJ
+//  Resonance
 //
 //  Audio features and metadata for a song
 //

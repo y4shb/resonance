@@ -87,7 +87,7 @@ This file tracks the current state of the project, completed work, and remaining
 - [x] Create `macOS/ContextProviders/` directory
 
 ### 1.6 Core Data Setup
-- [x] Create Resonance Core Data model (AIDJ.xcdatamodeld)
+- [x] Create Resonance Core Data model (Resonance.xcdatamodeld)
 - [x] Add Song entity with all attributes (see plan.md 4.1.1)
 - [x] Add Playlist entity with all attributes (see plan.md 4.1.2)
 - [x] Add HistoricalSession entity with all attributes (see plan.md 4.1.3)
@@ -717,7 +717,7 @@ Created all base Swift model files:
 - Logging.swift: Unified logging utility with categories and performance measurement
 
 [2026-02-11] - Phase 1 - 1.6 Core Data Setup
-Created Core Data model (AIDJ.xcdatamodeld) with all 7 entities:
+Created Core Data model (Resonance.xcdatamodeld) with all 7 entities:
 - Song: 26 attributes including metadata, audio features, derived metrics, relationships
 - Playlist: 18 attributes including metadata, derived metrics, context associations
 - HistoricalSession: 33 attributes including biometrics, workout, sleep correlation
@@ -750,10 +750,10 @@ Created project.yml (XcodeGen configuration) defining:
 - Unit test target (ResonanceTests)
 - Schemes for each target and AllTargets scheme
 Created app entry points:
-- iOS/AIDJApp.swift with placeholder ContentView (to be renamed ResonanceApp.swift)
-- Watch/AIDJWatchApp.swift with placeholder WatchContentView (to be renamed ResonanceWatchApp.swift)
-- macOS/AIDJMacApp.swift with menu bar implementation (to be renamed ResonanceMacApp.swift)
-- Widgets/AIDJWidgets.swift with NowPlayingWidget and StateWidget (to be renamed ResonanceWidgets.swift)
+- iOS/ResonanceApp.swift with placeholder ContentView
+- Watch/ResonanceWatchApp.swift with placeholder WatchContentView
+- macOS/ResonanceMacApp.swift with menu bar implementation
+- Widgets/ResonanceWidgets.swift with NowPlayingWidget and StateWidget
 
 [2026-02-11] - Phase 1 - README
 Created README.md with:

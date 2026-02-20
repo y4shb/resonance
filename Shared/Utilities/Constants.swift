@@ -1,6 +1,6 @@
 //
 //  Constants.swift
-//  AIDJ
+//  Resonance
 //
 //  App-wide constants and configuration values
 //

@@ -1,6 +1,6 @@
 //
 //  ContextSignal.swift
-//  AIDJ
+//  Resonance
 //
 //  Context signals from various sources (macOS, calendar, location)
 //

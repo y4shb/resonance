@@ -1,6 +1,6 @@
 //
 //  PersistenceController.swift
-//  AIDJ
+//  Resonance
 //
 //  Core Data stack management with App Group support for cross-target access
 //
@@ -52,7 +52,7 @@ public final class PersistenceController: @unchecked Sendable {
         self.inMemory = inMemory
 
         // Create container with the model
-        container = NSPersistentContainer(name: "AIDJ")
+        container = NSPersistentContainer(name: "Resonance")
 
         // Configure store description
         if inMemory {
@@ -62,7 +62,7 @@ public final class PersistenceController: @unchecked Sendable {
             if let appGroupURL = FileManager.default.containerURL(
                 forSecurityApplicationGroupIdentifier: AppConstants.appGroupIdentifier
             ) {
-                let storeURL = appGroupURL.appendingPathComponent("AIDJ.sqlite")
+                let storeURL = appGroupURL.appendingPathComponent("Resonance.sqlite")
                 let description = NSPersistentStoreDescription(url: storeURL)
                 description.shouldMigrateStoreAutomatically = true
                 description.shouldInferMappingModelAutomatically = true

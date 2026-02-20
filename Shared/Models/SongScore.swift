@@ -1,6 +1,6 @@
 //
 //  SongScore.swift
-//  AIDJ
+//  Resonance
 //
 //  Ranking result for a song candidate
 //
