@@ -274,22 +274,3 @@ struct StateWidgetView: View {
     }
 }
 
-// MARK: - Previews
-
-#Preview("Now Playing Small", as: .systemSmall) {
-    NowPlayingWidget()
-} timeline: {
-    NowPlayingEntry(date: Date(), songTitle: "Weightless", artistName: "Marconi Union", isPlaying: true)
-}
-
-#Preview("Now Playing Medium", as: .systemMedium) {
-    NowPlayingWidget()
-} timeline: {
-    NowPlayingEntry(date: Date(), songTitle: "Clair de Lune", artistName: "Claude Debussy", isPlaying: true)
-}
-
-#Preview("State Small", as: .systemSmall) {
-    StateWidget()
-} timeline: {
-    StateEntry(date: Date(), stateEmoji: "🧘", stateName: "Calm", energy: 0.3)
-}

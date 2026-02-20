@@ -175,9 +175,6 @@ struct NowPlayingView: View {
                     .foregroundStyle(.primary)
             }
         }
-        .padding(.horizontal, 32)
-        .padding(.vertical, 12)
-        .glassEffect(.regular, in: .capsule)
     }
 
     // MARK: - Active Playlist Bar

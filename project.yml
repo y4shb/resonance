@@ -74,9 +74,12 @@ targets:
       path: Watch/Entitlements/ResonanceWatch.entitlements
     info:
       path: Watch/Info.plist
+      properties:
+        WKApplication: true
+        WKCompanionAppBundleIdentifier: com.y4sh.resonance.ios
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.y4sh.resonance.watchkitapp
+        PRODUCT_BUNDLE_IDENTIFIER: com.y4sh.resonance.ios.watchkitapp
         INFOPLIST_FILE: Watch/Info.plist
         CODE_SIGN_ENTITLEMENTS: Watch/Entitlements/ResonanceWatch.entitlements
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
@@ -112,7 +115,7 @@ targets:
   # iOS Widget Extension Target
   # ============================================
   ResonanceWidgets:
-    type: extensionkit-extension
+    type: app-extension
     platform: iOS
     deploymentTarget: "26.0"
     sources:
@@ -126,8 +129,8 @@ targets:
     info:
       path: Widgets/Info.plist
       properties:
-        EXAppExtensionAttributes:
-          EXExtensionPointIdentifier: com.apple.widgetkit-extension
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.y4sh.resonance.ios.widgets

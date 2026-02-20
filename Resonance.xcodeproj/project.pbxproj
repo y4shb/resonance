@@ -18,12 +18,12 @@
 		297EFED2B93BF6502FDE9E93 /* NowPlayingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19BA53DF712E3E2C0F0282D1 /* NowPlayingView.swift */; };
 		2CBDA478E078BA253CC6E64F /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B892372A1F6A5E1CD575155A /* SettingsView.swift */; };
 		2FE732B56756A518D4C271B3 /* ContextSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7CEBC645377CAEEE4177E11 /* ContextSignal.swift */; };
-		3085EE77E758D35EAF329958 /* ResonanceWidgets.appex in Embed ExtensionKit Extensions */ = {isa = PBXBuildFile; fileRef = FF0F6F738D50081E6C82D4C5 /* ResonanceWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		3B2C991FFF5E1D57FB350129 /* Logging.swift in Sources */ = {isa = PBXBuildFile; fileRef = B691E2026B8610C50C4AAACB /* Logging.swift */; };
 		3B515791B418449660F92B8B /* Resonance.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = B01A0531B60ACDDE4F19AE8C /* Resonance.xcdatamodeld */; };
 		4378CA04318AAC40CA25A39B /* StateVector.swift in Sources */ = {isa = PBXBuildFile; fileRef = F241DEEB8268A1779CC2935D /* StateVector.swift */; };
 		52A4FD530D1979F3662AD12B /* MusicKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC8908CCD706784EBE056C6F /* MusicKitService.swift */; };
 		57CA96BEC692840448CA7E8D /* UserPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAE93DA52394CFC35E670B7B /* UserPreferences.swift */; };
+		5A62F7EDB130926B3D7F5597 /* ResonanceWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = FF0F6F738D50081E6C82D4C5 /* ResonanceWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		653F995A47A5EC7E672B2312 /* DecisionContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = A936029DE841B8A646575612 /* DecisionContext.swift */; };
 		67389D3F9FA11CB656E8A5AD /* ResonanceApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D5307B2A9BD3DD16C6187A7 /* ResonanceApp.swift */; };
 		6AA79F8C7AAAF398B1AAB4D1 /* WatchMessages.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6540C50B867AE3A9DC75F79 /* WatchMessages.swift */; };
@@ -89,15 +89,15 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		BB0471692FFFECB94886E075 /* Embed ExtensionKit Extensions */ = {
+		250B58582F85B3558F9B7D2B /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = "$(EXTENSIONS_FOLDER_PATH)";
-			dstSubfolderSpec = 16;
+			dstPath = "";
+			dstSubfolderSpec = 13;
 			files = (
-				3085EE77E758D35EAF329958 /* ResonanceWidgets.appex in Embed ExtensionKit Extensions */,
+				5A62F7EDB130926B3D7F5597 /* ResonanceWidgets.appex in Embed Foundation Extensions */,
 			);
-			name = "Embed ExtensionKit Extensions";
+			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
@@ -139,7 +139,7 @@
 		EC8908CCD706784EBE056C6F /* MusicKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MusicKitService.swift; sourceTree = "<group>"; };
 		F241DEEB8268A1779CC2935D /* StateVector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StateVector.swift; sourceTree = "<group>"; };
 		FED89198337B9AFF544E3999 /* ResonanceWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResonanceWatchApp.swift; sourceTree = "<group>"; };
-		FF0F6F738D50081E6C82D4C5 /* ResonanceWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.extensionkit-extension"; includeInIndex = 0; path = ResonanceWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		FF0F6F738D50081E6C82D4C5 /* ResonanceWidgets.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = ResonanceWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -466,7 +466,7 @@
 			buildConfigurationList = 46738630589726F85648007C /* Build configuration list for PBXNativeTarget "Resonance" */;
 			buildPhases = (
 				884B4B7D1A23A13160D01E9F /* Sources */,
-				BB0471692FFFECB94886E075 /* Embed ExtensionKit Extensions */,
+				250B58582F85B3558F9B7D2B /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
@@ -531,7 +531,7 @@
 			);
 			productName = ResonanceWidgets;
 			productReference = FF0F6F738D50081E6C82D4C5 /* ResonanceWidgets.appex */;
-			productType = "com.apple.product-type.extensionkit-extension";
+			productType = "com.apple.product-type.app-extension";
 		};
 		FC9BD10EE4E404346585A4CA /* ResonanceMac */ = {
 			isa = PBXNativeTarget;
@@ -722,7 +722,7 @@
 				CODE_SIGN_ENTITLEMENTS = Watch/Entitlements/ResonanceWatch.entitlements;
 				INFOPLIST_FILE = Watch/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = com.y4sh.resonance.watchkitapp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.y4sh.resonance.ios.watchkitapp;
 				SDKROOT = watchos;
 				SKIP_INSTALL = NO;
 				TARGETED_DEVICE_FAMILY = 4;
@@ -942,7 +942,7 @@
 				CODE_SIGN_ENTITLEMENTS = Watch/Entitlements/ResonanceWatch.entitlements;
 				INFOPLIST_FILE = Watch/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = com.y4sh.resonance.watchkitapp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.y4sh.resonance.ios.watchkitapp;
 				SDKROOT = watchos;
 				SKIP_INSTALL = NO;
 				TARGETED_DEVICE_FAMILY = 4;
