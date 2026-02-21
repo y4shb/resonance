@@ -30,10 +30,12 @@ final class MotionSensor: ObservableObject {
 
     private let pedometer = CMPedometer()
     private var isMonitoring = false
+    private var queryTimer: Timer?
 
     // MARK: - Monitoring Control
 
-    /// Starts pedometer updates. Fires a rolling window check on each update.
+    /// Starts periodic pedometer queries. Each query covers the last sampleWindow
+    /// seconds to determine whether the user is stationary or in motion.
     func startMonitoring() {
         guard CMPedometer.isStepCountingAvailable() else {
             logWarning("Step counting not available on this device", category: .general)
@@ -47,36 +49,22 @@ final class MotionSensor: ObservableObject {
 
         isMonitoring = true
 
-        // Begin streaming updates from now. Each callback delivers cumulative
-        // steps since the start date, so we use a sliding start anchored to
-        // "now minus sampleWindow" on each tick to get a per-interval count.
-        let startDate = Date()
-        pedometer.startUpdates(from: startDate) { [weak self] pedometerData, error in
-            guard let self = self else { return }
-
-            if let error = error {
-                logError("Pedometer update error", error: error, category: .general)
-                return
-            }
-
-            guard let data = pedometerData else { return }
-
-            let steps = data.numberOfSteps.intValue
-            let stationary = steps <= MotionSensor.stationaryStepThreshold
-
-            logDebug("Pedometer update: \(steps) steps, stationary=\(stationary)", category: .general)
-
-            DispatchQueue.main.async { [weak self] in
-                self?.recentSteps = steps
-                self?.isStationary = stationary
-            }
+        // Query immediately and then periodically
+        queryRecentSteps()
+        queryTimer = Timer.scheduledTimer(
+            withTimeInterval: MotionSensor.sampleWindowSeconds,
+            repeats: true
+        ) { [weak self] _ in
+            self?.queryRecentSteps()
         }
 
         logInfo("MotionSensor monitoring started", category: .general)
     }
 
-    /// Stops pedometer updates and resets to a stationary baseline.
+    /// Stops pedometer queries and resets to a stationary baseline.
     func stopMonitoring() {
+        queryTimer?.invalidate()
+        queryTimer = nil
         pedometer.stopUpdates()
         isMonitoring = false
 
@@ -86,5 +74,27 @@ final class MotionSensor: ObservableObject {
         }
 
         logInfo("MotionSensor monitoring stopped", category: .general)
+    }
+
+    // MARK: - Private Helpers
+
+    /// Queries step count over the last sampleWindow seconds to determine stationarity.
+    private func queryRecentSteps() {
+        let now = Date()
+        let start = now.addingTimeInterval(-MotionSensor.sampleWindowSeconds)
+        pedometer.queryPedometerData(from: start, to: now) { [weak self] data, error in
+            guard let self = self else { return }
+            if let error = error {
+                logError("Pedometer query error", error: error, category: .general)
+                return
+            }
+            let steps = data?.numberOfSteps.intValue ?? 0
+            let stationary = steps <= MotionSensor.stationaryStepThreshold
+            logDebug("Pedometer query: \(steps) steps in window, stationary=\(stationary)", category: .general)
+            DispatchQueue.main.async { [weak self] in
+                self?.recentSteps = steps
+                self?.isStationary = stationary
+            }
+        }
     }
 }

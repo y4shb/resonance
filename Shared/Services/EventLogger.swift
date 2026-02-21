@@ -69,15 +69,22 @@ final class EventLogger: ObservableObject {
                 return
             }
 
-            let event = NSEntityDescription.insertNewObject(
+            guard let event = NSEntityDescription.insertNewObject(
                 forEntityName: "PlaybackEvent",
                 into: context
-            ) as! PlaybackEvent
+            ) as? PlaybackEvent else {
+                logError(
+                    "EventLogger: failed to create PlaybackEvent entity",
+                    error: NSError(domain: "EventLogger", code: 1, userInfo: [NSLocalizedDescriptionKey: "Entity cast failed"]),
+                    category: .persistence
+                )
+                return
+            }
 
             event.id = UUID()
             event.startedAt = Date()
             event.wasAISelected = wasAISelected
-            event.selectionScore = selectionScore ?? 0.0
+            event.selectionScore = selectionScore.map { NSNumber(value: $0) }
             event.selectionReason = selectionReason
             event.hrAtStart = currentHeartRate ?? 0.0
             event.hrvAtStart = currentHRV ?? 0.0
@@ -118,8 +125,8 @@ final class EventLogger: ObservableObject {
         activeEventObjectID = nil
 
         // Capture the hr/hrv values before entering the background task closure.
-        let hrAtEnd = currentHeartRate ?? 0.0
-        let hrvAtEnd = currentHRV ?? 0.0
+        let hrAtEnd = currentHeartRate
+        let hrvAtEnd = currentHRV
         let wasSkippedParam = wasSkipped
         let skipReasonParam = skipReason
 
@@ -138,7 +145,14 @@ final class EventLogger: ObservableObject {
                 let endedAt = Date()
                 event.endedAt = endedAt
 
-                let durationListened = endedAt.timeIntervalSince(event.startedAt)
+                guard let startedAt = event.startedAt else {
+                    logWarning(
+                        "EventLogger: PlaybackEvent has nil startedAt — cannot compute duration",
+                        category: .persistence
+                    )
+                    return
+                }
+                let durationListened = endedAt.timeIntervalSince(startedAt)
                 event.durationListened = durationListened
 
                 let songDuration = event.song?.durationSeconds ?? 0.0
@@ -154,10 +168,15 @@ final class EventLogger: ObservableObject {
                 event.wasSkipped = wasSkippedParam || listenPercentage < LearningConstants.minimumListenPercentage
                 event.skipReason = skipReasonParam
 
-                event.hrAtEnd = hrAtEnd
-                event.hrvAtEnd = hrvAtEnd
-                event.hrDelta = hrAtEnd - event.hrAtStart
-                event.hrvDelta = hrvAtEnd - event.hrvAtStart
+                event.hrAtEnd = hrAtEnd ?? 0.0
+                event.hrvAtEnd = hrvAtEnd ?? 0.0
+                // Only compute deltas when both values are meaningful (non-zero)
+                if let hr = hrAtEnd, event.hrAtStart > 0 {
+                    event.hrDelta = hr - event.hrAtStart
+                }
+                if let hrv = hrvAtEnd, event.hrvAtStart > 0 {
+                    event.hrvDelta = hrv - event.hrvAtStart
+                }
 
                 if context.hasChanges {
                     try context.save()
@@ -194,6 +213,7 @@ final class EventLogger: ObservableObject {
         isObservingNowPlaying = true
 
         publisher
+            .receive(on: DispatchQueue.main)
             .sink { [weak self] entry in
                 guard let self = self else { return }
 

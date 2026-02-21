@@ -28,6 +28,7 @@ final class SensorCoordinator: ObservableObject {
 
     private var sampleBuffer: [BiometricPacket] = []
     private var batchTimer: Timer?
+    private var isRunning = false
 
     // MARK: - Combine
 
@@ -45,6 +46,11 @@ final class SensorCoordinator: ObservableObject {
 
     /// Starts all three sensors and the batching timer.
     func startAllSensors() {
+        guard !isRunning else {
+            logDebug("SensorCoordinator already running", category: .healthKit)
+            return
+        }
+        isRunning = true
         heartRateSensor.startMonitoring()
         motionSensor.startMonitoring()
         workoutDetector.startObserving()
@@ -55,6 +61,8 @@ final class SensorCoordinator: ObservableObject {
     /// Stops all three sensors and the batching timer, flushing any remaining
     /// buffered packets before shutting down.
     func stopAllSensors() {
+        guard isRunning else { return }
+        isRunning = false
         heartRateSensor.stopMonitoring()
         motionSensor.stopMonitoring()
         workoutDetector.stopObserving()
@@ -111,21 +119,22 @@ final class SensorCoordinator: ObservableObject {
     // MARK: - Batch Timer
 
     private func startBatchTimer() {
-        // Ensure we are on the main run-loop so the timer fires reliably.
-        let interval = WatchConnectivityConstants.biometricBatchIntervalSeconds
-        batchTimer = Timer.scheduledTimer(
-            withTimeInterval: interval,
-            repeats: true
-        ) { [weak self] _ in
+        DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-            // On each tick: take a fresh snapshot and then flush.
-            self.collectAndBuffer()
-            self.flushBuffer()
+            let interval = WatchConnectivityConstants.biometricBatchIntervalSeconds
+            self.batchTimer = Timer.scheduledTimer(
+                withTimeInterval: interval,
+                repeats: true
+            ) { [weak self] _ in
+                guard let self = self else { return }
+                self.collectAndBuffer()
+                self.flushBuffer()
+            }
+            logDebug(
+                "Batch timer started with interval \(interval)s",
+                category: .healthKit
+            )
         }
-        logDebug(
-            "Batch timer started with interval \(interval)s",
-            category: .healthKit
-        )
     }
 
     private func stopBatchTimer() {
@@ -169,21 +178,18 @@ final class SensorCoordinator: ObservableObject {
 
     // MARK: - Buffer Flush
 
-    /// Sends every packet in the buffer to the phone via the connectivity
-    /// service and then clears the buffer.
+    /// Sends the latest buffered packet to the phone via the connectivity
+    /// service and then clears the buffer, discarding intermediate samples.
     private func flushBuffer() {
-        guard !sampleBuffer.isEmpty else { return }
-
-        let packets = sampleBuffer
+        guard let latestPacket = sampleBuffer.last else { return }
+        let count = sampleBuffer.count
         sampleBuffer.removeAll()
 
         logInfo(
-            "Flushing \(packets.count) biometric packet(s) to phone",
+            "Flushing latest biometric packet to phone (discarding \(count - 1) intermediate samples)",
             category: .watchConnectivity
         )
 
-        for packet in packets {
-            connectivityService.sendBiometricUpdate(packet)
-        }
+        connectivityService.sendBiometricUpdate(latestPacket)
     }
 }

@@ -22,7 +22,5 @@
 	<true/>
 	<key>WKCompanionAppBundleIdentifier</key>
 	<string>com.y4sh.resonance.ios</string>
-	<key>NSHealthShareUsageDescription</key>
-	<string>Resonance reads heart rate and HRV data from your Apple Watch to understand your current state and adapt music selection.</string>
 </dict>
 </plist>

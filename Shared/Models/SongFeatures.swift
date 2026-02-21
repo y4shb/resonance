@@ -202,7 +202,8 @@ extension SongFeatures {
     /// Common genre categories for mapping
     public static let genreCategories: [String: [String]] = [
         "electronic": ["electronic", "edm", "house", "techno", "trance", "dubstep", "drum and bass"],
-        "rock": ["rock", "alternative", "indie", "metal", "punk", "grunge"],
+        "rock": ["rock", "alternative", "indie", "punk", "grunge"],
+        "metal": ["metal", "metalcore", "death metal", "black metal", "heavy metal", "thrash", "doom"],
         "pop": ["pop", "dance pop", "synth pop", "electropop"],
         "hip-hop": ["hip-hop", "rap", "trap", "r&b"],
         "classical": ["classical", "orchestra", "symphony", "piano"],

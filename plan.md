@@ -3155,10 +3155,10 @@ Phase 3 built the data pipeline: playlists and songs are ingested from MusicKit 
 Phase 4 transforms raw event data into the learned knowledge that Phase 5 (StateEngine) and Phase 6 (DecisionEngine) require:
 
 1. **Session Reconstruction** — Group PlaybackEvents into HistoricalSession entities using the 30-minute gap rule, populate biometric summaries per session, and correlate with next-night sleep data.
-2. **Song Impact Calculation** — Compute per-song, per-context effectiveness (calm/energy/focus scores) from biometric response and listening behavior, stored as SongEffect entities.
+2. **Song Impact Calculation** — Compute per-song, per-context effectiveness (calm/energy/focus/moodLift scores) from biometric response and listening behavior, stored as SongEffect entities.
 3. **Playlist Impact Calculation** — Aggregate SongEffect scores across playlists, populate `avgCalmEffect`, `avgFocusEffect`, `avgEnergyEffect`, `effectConfidence`, and `contextAssociations`.
 4. **HealthKit Historical Import** — Add sleep analysis and workout queries to HealthKitService for session context enrichment.
-5. **Backfill Orchestration** — A BackfillManager that runs the full pipeline as a BGProcessingTask, supports incremental runs, and publishes progress for the Settings UI.
+5. **Backfill Orchestration** — A HistoricalEngine that runs the full pipeline as a BGProcessingTask, supports incremental runs via per-step watermarks, and publishes progress for the Settings UI.
 
 ### What Phase 4 Does NOT Do
 
@@ -3203,6 +3203,70 @@ PlaybackEvents (Phase 3)     HealthKit History
 
 ---
 
+## 12.0.1 Step 0: Fix Info.plist BGTask Identifiers (BLOCKING PREREQUISITE)
+
+**CRITICAL**: The iOS `Info.plist` is missing `BGTaskSchedulerPermittedIdentifiers` and `UIBackgroundModes`. Without these entries, `BGTaskScheduler.shared.register()` crashes at runtime. The existing Phase 3 BGTasks (`playlistSync`, `featureUpdate`) are also affected — they silently fail. Neither `Info.plist` nor `project.yml` contain these entries.
+
+**File**: `iOS/Info.plist`
+
+Add inside `<dict>`:
+```xml
+<key>NSHealthShareUsageDescription</key>
+<string>Resonance reads heart rate and HRV data to understand your current state and select the right music for you.</string>
+<key>NSAppleMusicUsageDescription</key>
+<string>Resonance accesses your Apple Music library to play songs from your playlists.</string>
+<key>UIBackgroundModes</key>
+<array>
+    <string>audio</string>
+    <string>fetch</string>
+    <string>processing</string>
+</array>
+<key>BGTaskSchedulerPermittedIdentifiers</key>
+<array>
+    <string>com.y4sh.resonance.playlistSync</string>
+    <string>com.y4sh.resonance.historicalAnalysis</string>
+    <string>com.y4sh.resonance.featureUpdate</string>
+</array>
+```
+
+**File**: `iOS/ResonanceApp.swift`
+
+Add static guard against double-registration crashes:
+```swift
+private static var hasRegisteredTasks = false
+
+private func registerBackgroundTasks() {
+    guard !Self.hasRegisteredTasks else { return }
+    Self.hasRegisteredTasks = true
+    // ... existing registrations
+}
+```
+
+**File**: `Shared/Utilities/Constants.swift`
+
+Add new constants section:
+```swift
+public enum BackfillConstants {
+    public static let eventBatchSize: Int = 100
+    public static let sessionSaveBatchSize: Int = 50
+
+    public enum WatermarkKey {
+        public static let sessionReconstruction = "com.y4sh.resonance.backfill.sessionWatermark"
+        public static let songImpact = "com.y4sh.resonance.backfill.songImpactWatermark"
+        public static let lastFullBackfill = "com.y4sh.resonance.backfill.lastFullBackfillDate"
+    }
+
+    /// Cold-start learning rate for first N observations
+    public static let coldStartLearningRate: Double = 0.4
+    public static let coldStartThreshold: Int = 5
+
+    /// Maximum confidence for behavior-only impacts (no biometric data)
+    public static let behaviorOnlyMaxConfidence: Double = 0.7
+}
+```
+
+---
+
 ## 12.1 Step 1: HealthKit Historical Queries (Sleep + Workouts)
 
 ### 12.1.1 Add Sleep and Workout Types to HealthKitService
@@ -3214,6 +3278,7 @@ The protocol already declares `fetchHeartRateHistory` and `fetchHRVHistory` (ful
 **Add to `HealthKitServiceProtocol`:**
 ```swift
 /// Returns sleep analysis sessions in the given date range.
+/// Overlapping samples from multiple sources are merged into contiguous sessions.
 func fetchSleepAnalysis(from: Date, to: Date) async throws -> [SleepSession]
 
 /// Returns workout sessions in the given date range.
@@ -3232,6 +3297,16 @@ struct SleepSession {
     var durationHours: Double {
         endDate.timeIntervalSince(startDate) / 3600.0
     }
+
+    /// True if this sample represents deep sleep stage.
+    var isDeepSleep: Bool {
+        value == .asleepDeep
+    }
+
+    /// True if this sample represents REM sleep stage.
+    var isREMSleep: Bool {
+        value == .asleepREM
+    }
 }
 
 /// Represents a workout session from HealthKit.
@@ -3241,15 +3316,29 @@ struct WorkoutSession {
     let endDate: Date
     let totalEnergyBurned: Double  // kcal
     let durationMinutes: Double
+
+    /// Human-readable activity name for logging/debug.
+    var activityName: String {
+        switch activityType {
+        case .running:          return "Running"
+        case .walking:          return "Walking"
+        case .cycling:          return "Cycling"
+        case .yoga:             return "Yoga"
+        case .functionalStrengthTraining: return "Strength"
+        case .highIntensityIntervalTraining: return "HIIT"
+        default:                return "Workout"
+        }
+    }
 }
 ```
 
 **Implementation details:**
 
 `fetchSleepAnalysis(from:to:)`:
-- Query `HKCategoryType(.sleepAnalysis)` using `HKSampleQuery`
+- Use a private `fetchCategorySamples(type:predicate:)` helper (see below) to query `HKCategoryType(.sleepAnalysis)`
 - Use `HKQuery.predicateForSamples(withStart: from, end: to, options: .strictStartDate)`
 - Filter for `HKCategoryValueSleepAnalysis.asleepUnspecified`, `.asleepCore`, `.asleepDeep`, `.asleepREM` (not `.inBed` or `.awake`)
+- **Overlapping source merging**: Multiple sources (Apple Watch, iPhone, third-party apps) may report overlapping sleep intervals. Sort all samples by `startDate`, then merge any samples whose `startDate` falls within a prior sample's `endDate` range, keeping the more specific sleep stage (deep > REM > core > unspecified).
 - Map each `HKCategorySample` to a `SleepSession`
 - Sort by `startDate` ascending
 
@@ -3258,11 +3347,23 @@ struct WorkoutSession {
 - Map each `HKWorkout` to `WorkoutSession` extracting `workoutActivityType`, `startDate`, `endDate`, `totalEnergyBurned`
 - Sort by `startDate` ascending
 
+**Private helper** (reuses the continuation pattern from existing `fetchHeartRateHistory`):
+```swift
+/// Generic helper for fetching HKCategorySample arrays via async/await.
+private func fetchCategorySamples(
+    type: HKCategoryType,
+    predicate: NSPredicate,
+    limit: Int = HKObjectQueryNoLimit,
+    sortDescriptors: [NSSortDescriptor] = [NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)]
+) async throws -> [HKCategorySample]
+```
+
 **Also add HealthKit chunked pagination helper:**
 ```swift
 /// Fetches heart rate samples in chunks to handle large date ranges.
-/// Splits the range into daily chunks, fetches each with processingBatchSize limit,
-/// and yields results incrementally.
+/// Splits the range into weekly chunks, fetches each with historicalQueryLimit,
+/// and yields results incrementally. Includes `Task.sleep(nanoseconds:)` between
+/// chunks to avoid overwhelming HealthKit.
 func fetchHeartRateHistoryChunked(
     from: Date,
     to: Date,
@@ -3270,7 +3371,7 @@ func fetchHeartRateHistoryChunked(
 ) -> AsyncStream<[(value: Double, date: Date)]>
 ```
 
-This addresses the gap where `historicalQueryLimit` (10,000) may be insufficient for users with years of Apple Watch data.
+This addresses the gap where `historicalQueryLimit` (10,000) may be insufficient for users with years of Apple Watch data. Each chunk pauses for 50ms via `try? await Task.sleep(nanoseconds: 50_000_000)` to yield to cooperative scheduling.
 
 ### 12.1.2 Add readTypes for Sleep
 
@@ -3303,30 +3404,79 @@ struct ImpactScore {
     /// (high listen percentage)
     let focus: Double
 
+    /// Mood lift effect: composite of calm, energy, and engagement
+    let moodLift: Double
+
     /// Whether the song was skipped
     let wasSkipped: Bool
+
+    /// Whether this score was computed with biometric data (HR/HRV).
+    /// When false, only behavioral signals (skip, listen%) were used,
+    /// and confidence should be capped at `BackfillConstants.behaviorOnlyMaxConfidence`.
+    let hasBiometricData: Bool
+
+    /// Clamps a value to [0.0, 1.0].
+    private static func clamp(_ value: Double) -> Double {
+        min(max(value, 0.0), 1.0)
+    }
 }
 ```
 
-**Calculation formula** (from plan.md §5.3.1):
+**Calculation formula** (enhanced from plan.md §5.3.1):
 ```swift
 static func calculate(from event: PlaybackEvent) -> ImpactScore {
+    let hasHR = event.hrDelta != 0.0
+    let hasHRV = event.hrvDelta != 0.0
+    let hasBiometric = hasHR || hasHRV
+
     let hrvImpact = event.hrvDelta / LearningConstants.hrvNormalizationFactor  // 10.0
     let hrImpact = event.hrDelta / LearningConstants.hrNormalizationFactor      // 10.0
 
-    let skipPenalty: Double = event.wasSkipped ? -LearningConstants.skipPenaltyMultiplier : 0.0  // -0.3
+    // Two-tier skip penalty: early skip (<15% listened) is harsher than late skip
+    let skipPenalty: Double
+    if event.wasSkipped {
+        skipPenalty = event.listenPercentage < 0.15
+            ? -0.3   // Strong rejection signal
+            : -0.15  // Mild — user heard most of the song
+    } else {
+        skipPenalty = 0.0
+    }
 
     let completionBonus = (event.listenPercentage - LearningConstants.completionBonusThreshold) * 0.2  // (pct - 0.5) * 0.2
 
-    let calmRaw = 0.5 + (hrvImpact * 0.5) + (-hrImpact * 0.3) + completionBonus + skipPenalty
-    let energyRaw = 0.5 + (hrImpact * 0.3) + completionBonus + skipPenalty
+    // Biometric signal redistribution:
+    // When only HR is available, redistribute HRV weight to HR.
+    // When only HRV is available, redistribute HR weight to HRV.
+    // When neither is available, use only behavioral signals.
+    var calmRaw: Double
+    var energyRaw: Double
+    if hasHR && hasHRV {
+        calmRaw = 0.5 + (hrvImpact * 0.5) + (-hrImpact * 0.3) + completionBonus + skipPenalty
+        energyRaw = 0.5 + (hrImpact * 0.3) + completionBonus + skipPenalty
+    } else if hasHRV {
+        // HRV only — redistribute HR weight to HRV
+        calmRaw = 0.5 + (hrvImpact * 0.8) + completionBonus + skipPenalty
+        energyRaw = 0.5 + completionBonus + skipPenalty
+    } else if hasHR {
+        // HR only — redistribute HRV weight to HR
+        calmRaw = 0.5 + (-hrImpact * 0.8) + completionBonus + skipPenalty
+        energyRaw = 0.5 + (hrImpact * 0.6) + completionBonus + skipPenalty
+    } else {
+        // Behavior only
+        calmRaw = 0.5 + completionBonus + skipPenalty
+        energyRaw = 0.5 + completionBonus + skipPenalty
+    }
+
     let focusRaw = 0.5 + completionBonus
+    let moodLiftRaw = (calmRaw * 0.4 + energyRaw * 0.3 + focusRaw * 0.3)
 
     return ImpactScore(
-        calm: min(max(calmRaw, 0.0), 1.0),
-        energy: min(max(energyRaw, 0.0), 1.0),
-        focus: min(max(focusRaw, 0.0), 1.0),
-        wasSkipped: event.wasSkipped
+        calm: clamp(calmRaw),
+        energy: clamp(energyRaw),
+        focus: clamp(focusRaw),
+        moodLift: clamp(moodLiftRaw),
+        wasSkipped: event.wasSkipped,
+        hasBiometricData: hasBiometric
     )
 }
 ```
@@ -3346,11 +3496,12 @@ static func calculate(from event: PlaybackEvent) -> ImpactScore {
 5. For each session:
    a. Create a `HistoricalSession` Core Data entity
    b. Link all grouped PlaybackEvents to it
-   c. Populate biometric summaries (HR, HRV) from HealthKit data within the session window ± 5 minutes
+   c. Populate biometric summaries (HR, HRV) from HealthKit data within the session window +/- 5 minutes
    d. Populate session metadata (contextType, timeOfDaySlot, dayOfWeek, totalSongsPlayed, totalSkips, skipRate, avgListenPercentage)
    e. Correlate with next-night sleep (within `SessionConstants.sleepCorrelationWindowHours` hours = 12h)
    f. Calculate `overallImpactScore` using `scoreSession()` formula from plan.md §5.3.3
    g. Link to playlist if all songs share the same playlist
+6. Support cooperative cancellation via `Task.checkCancellation()` between session batches
 
 ### 12.3.2 Interface
 
@@ -3377,6 +3528,7 @@ final class SessionReconstructor {
 
     /// Reconstructs sessions from all unprocessed PlaybackEvents.
     /// Returns the number of sessions created.
+    /// Throws `CancellationError` if the parent task is cancelled.
     @discardableResult
     func reconstructSessions() async throws -> Int
 
@@ -3388,12 +3540,14 @@ final class SessionReconstructor {
     // MARK: - Session Building (Private)
 
     /// Fetches PlaybackEvents without a session, sorted by startedAt ascending.
+    /// Batched by `BackfillConstants.eventBatchSize` (100) to limit memory.
     private func fetchUnprocessedEvents(
         since: Date?,
         in context: NSManagedObjectContext
     ) throws -> [PlaybackEvent]
 
     /// Groups events into session clusters using the gap rule.
+    /// Uses `endedAt ?? startedAt + songDuration` for gap calculation.
     private func groupIntoSessions(
         _ events: [PlaybackEvent]
     ) -> [[PlaybackEvent]]
@@ -3423,17 +3577,19 @@ final class SessionReconstructor {
 
     /// Calculates a normalized sleep score from sleep sessions.
     /// Score based on total duration and deep sleep percentage.
+    /// Filters out naps (< 3 hours) for the "substantial sleep" metric.
     private func calculateSleepScore(
         _ sleepSessions: [SleepSession]
     ) -> (score: Double, duration: Double, deepPct: Double)
 
     // MARK: - Context Inference
 
-    /// Infers ActivityContext from time of day and workout state.
+    /// Infers ActivityContext from time of day, day of week, and workout state.
+    /// Weekend-aware: weekday 9-17 maps to `.work`, weekend 9-17 maps to `.relaxation`.
     private func inferContext(
         startTime: Date,
         events: [PlaybackEvent]
-    ) -> String  // Returns ActivityContext.rawValue
+    ) async -> String  // Returns ActivityContext.rawValue
 
     /// Maps hour to TimeSlot.rawValue.
     private func getTimeSlot(for date: Date) -> String
@@ -3449,7 +3605,7 @@ final class SessionReconstructor {
 
 ### 12.3.3 Key Implementation Details
 
-**Gap rule grouping:**
+**Gap rule grouping** (uses `endedAt ?? startedAt + songDuration` for accurate gap calculation):
 ```swift
 private func groupIntoSessions(_ events: [PlaybackEvent]) -> [[PlaybackEvent]] {
     guard !events.isEmpty else { return [] }
@@ -3458,7 +3614,9 @@ private func groupIntoSessions(_ events: [PlaybackEvent]) -> [[PlaybackEvent]] {
     var currentGroup: [PlaybackEvent] = [events[0]]
 
     for i in 1..<events.count {
-        let previousEnd = events[i-1].endedAt ?? events[i-1].startedAt
+        // Use endedAt if available, otherwise estimate from song duration
+        let previousEnd = events[i-1].endedAt
+            ?? events[i-1].startedAt.addingTimeInterval(events[i-1].song?.durationSeconds ?? 180)
         let gap = events[i].startedAt.timeIntervalSince(previousEnd)
 
         if gap > Double(SessionConstants.sessionGapMinutes) * 60 {
@@ -3473,12 +3631,27 @@ private func groupIntoSessions(_ events: [PlaybackEvent]) -> [[PlaybackEvent]] {
 
     // Filter out sessions shorter than minimum duration
     return groups.filter { group in
-        guard let first = group.first?.startedAt,
-              let last = group.last?.endedAt ?? group.last?.startedAt.addingTimeInterval(180) else {
-            return false
-        }
-        let durationMinutes = last.timeIntervalSince(first) / 60.0
+        guard let first = group.first?.startedAt else { return false }
+        let lastEnd = group.last?.endedAt
+            ?? group.last?.startedAt.addingTimeInterval(group.last?.song?.durationSeconds ?? 180)
+            ?? first.addingTimeInterval(180)
+        let durationMinutes = lastEnd.timeIntervalSince(first) / 60.0
         return durationMinutes >= Double(SessionConstants.minimumSessionMinutes)
+    }
+}
+```
+
+**Cooperative cancellation** between session batches:
+```swift
+// Inside reconstructSessions():
+for (index, group) in sessionGroups.enumerated() {
+    try Task.checkCancellation()  // Bail if BGTask expired
+    let session = try await buildSession(from: group, in: context)
+    sessionsCreated += 1
+
+    // Save in batches to avoid memory pressure
+    if index % BackfillConstants.sessionSaveBatchSize == 0 {
+        try context.save()
     }
 }
 ```
@@ -3493,12 +3666,19 @@ private func groupIntoSessions(_ events: [PlaybackEvent]) -> [[PlaybackEvent]] {
 - `deltaHeartRate` = ending - starting
 - Same pattern for HRV
 
-**Sleep correlation:**
+**Sleep correlation** (with 3-hour minimum for substantial sleep):
 - After session ends, look for sleep data within `SessionConstants.sleepCorrelationWindowHours` (12h)
 - `fetchSleepAnalysis(from: sessionEndTime, to: sessionEndTime + 12h)`
-- Calculate: `nextNightSleepDuration` = total hours of asleep sessions
-- `nextNightDeepSleepPct` = deep sleep hours / total sleep hours
-- `nextNightSleepScore` = normalized composite: `min(1.0, totalSleepHours / 8.0) * 0.6 + deepSleepPct * 0.4`
+- **Filter out naps**: Only consider sleep sessions totaling >= 3 hours for the "next night" metric
+- Calculate: `nextNightSleepDuration` = total hours of qualifying asleep sessions
+- `nextNightDeepSleepPct` = deep sleep hours / total sleep hours, **normalized by 0.25** (i.e., `deepSleepHours / totalSleepHours / 0.25` clamped to 1.0, since 25% deep sleep is considered ideal)
+- Use `NSNumber(value:)` for sleep score fields:
+  ```swift
+  session.nextNightSleepDuration = NSNumber(value: totalSleepHours)
+  session.nextNightDeepSleepPct = NSNumber(value: deepPct)
+  session.nextNightSleepScore = NSNumber(value: sleepScore)
+  ```
+- `nextNightSleepScore` = normalized composite: `min(1.0, totalSleepHours / 8.0) * 0.6 + normalizedDeepPct * 0.4`
 
 **Session scoring** (plan.md §5.3.3):
 ```swift
@@ -3515,17 +3695,33 @@ private func scoreSession(_ session: HistoricalSession) -> Double {
 }
 ```
 
-**Context inference:**
+**Context inference** (weekend-aware, with HealthKit workout detection):
 ```swift
-private func inferContext(startTime: Date, events: [PlaybackEvent]) -> String {
-    // Check if any events were during a workout (via BiometricSample.isStationary == false)
-    // For now, infer from time of day
-    let hour = Calendar.current.component(.hour, from: startTime)
+private func inferContext(startTime: Date, events: [PlaybackEvent]) async -> String {
+    let calendar = Calendar.current
+    let hour = calendar.component(.hour, from: startTime)
+    let isWeekend = calendar.isDateInWeekend(startTime)
+
+    // Check HealthKit for a workout overlapping this session
+    let sessionEnd = events.last?.endedAt ?? startTime.addingTimeInterval(3600)
+    if let workouts = try? await healthKitService.fetchWorkouts(
+        from: startTime.addingTimeInterval(-300),
+        to: sessionEnd.addingTimeInterval(300)
+    ), !workouts.isEmpty {
+        return StateVector.ActivityContext.workout.rawValue
+    }
+
     switch hour {
     case 5..<7:   return StateVector.ActivityContext.morning.rawValue
-    case 7..<9:   return StateVector.ActivityContext.commute.rawValue
-    case 9..<17:  return StateVector.ActivityContext.work.rawValue
-    case 17..<19: return StateVector.ActivityContext.commute.rawValue
+    case 7..<9:   return isWeekend
+                    ? StateVector.ActivityContext.morning.rawValue
+                    : StateVector.ActivityContext.commute.rawValue
+    case 9..<17:  return isWeekend
+                    ? StateVector.ActivityContext.relaxation.rawValue
+                    : StateVector.ActivityContext.work.rawValue
+    case 17..<19: return isWeekend
+                    ? StateVector.ActivityContext.relaxation.rawValue
+                    : StateVector.ActivityContext.commute.rawValue
     case 19..<22: return StateVector.ActivityContext.relaxation.rawValue
     case 22..<24, 0..<5: return StateVector.ActivityContext.preSleep.rawValue
     default:      return StateVector.ActivityContext.unknown.rawValue
@@ -3543,9 +3739,13 @@ private func inferContext(startTime: Date, events: [PlaybackEvent]) -> String {
 
 1. Iterate all PlaybackEvents that have a linked HistoricalSession
 2. For each event, compute an `ImpactScore`
-3. Find-or-create a `SongEffect` entity for the (song, contextType, timeOfDaySlot) triple
-4. EMA-update the effect scores (plan.md §5.3.2)
-5. Update the Song entity's aggregate scores (`calmScore`, `focusScore`, `activationScore`, `familiarityScore`, `confidenceLevel`)
+3. Find-or-create a `SongEffect` entity for the **(song, contextType) pair** (not a triple — `timeOfDaySlot` is no longer part of the lookup key to avoid sparse matrices)
+4. EMA-update the effect scores using two-tier alpha (plan.md §5.3.2):
+   - **Cold start** (first `BackfillConstants.coldStartThreshold` = 5 plays): alpha = `BackfillConstants.coldStartLearningRate` (0.4)
+   - **Steady state** (6+ plays): alpha = `LearningConstants.defaultLearningRate` (0.2)
+5. Cap confidence at `BackfillConstants.behaviorOnlyMaxConfidence` (0.7) when `ImpactScore.hasBiometricData == false`
+6. Update the Song entity's aggregate scores (`calmScore`, `focusScore`, `activationScore`, `familiarityScore`, `confidenceLevel`)
+7. **Batch save** every `BackfillConstants.eventBatchSize` (100) events to avoid memory pressure
 
 ### 12.4.2 Interface
 
@@ -3585,18 +3785,17 @@ final class SongImpactCalculator {
 
     // MARK: - SongEffect CRUD
 
-    /// Finds or creates a SongEffect for the given (song, contextType, timeOfDaySlot).
+    /// Finds or creates a SongEffect for the given (song, contextType) pair.
     private func findOrCreateEffect(
         for song: Song,
         contextType: String,
-        timeOfDaySlot: String,
         in context: NSManagedObjectContext
     ) throws -> SongEffect
 
     // MARK: - EMA Update
 
     /// Updates a SongEffect using exponential moving average.
-    /// alpha = LearningConstants.defaultLearningRate (0.2)
+    /// Two-tier alpha: 0.4 for cold start (first 5 plays), 0.2 for steady state.
     private func updateEffect(
         _ effect: SongEffect,
         with impact: ImpactScore
@@ -3615,8 +3814,8 @@ final class SongImpactCalculator {
 
     // MARK: - Familiarity
 
-    /// Updates familiarityScore based on play/skip ratio and total plays.
-    /// Formula: familiarityScore = min(1.0, totalPlayCount / 10.0) * (1.0 - skipRate * 0.5)
+    /// Updates familiarityScore based on total play count only.
+    /// Formula: familiarityScore = min(1.0, totalPlayCount / 10.0)
     private func updateFamiliarity(_ song: Song)
 }
 
@@ -3625,18 +3824,17 @@ final class SongImpactCalculator {
 
 ### 12.4.3 Key Implementation Details
 
-**SongEffect find-or-create:**
+**SongEffect find-or-create** (keyed by (song, contextType) pair):
 ```swift
 private func findOrCreateEffect(
     for song: Song,
     contextType: String,
-    timeOfDaySlot: String,
     in context: NSManagedObjectContext
 ) throws -> SongEffect {
     let request = NSFetchRequest<SongEffect>(entityName: "SongEffect")
     request.predicate = NSPredicate(
-        format: "song == %@ AND contextType == %@ AND timeOfDaySlot == %@",
-        song, contextType, timeOfDaySlot
+        format: "song == %@ AND contextType == %@",
+        song, contextType
     )
     request.fetchLimit = 1
 
@@ -3651,7 +3849,6 @@ private func findOrCreateEffect(
     effect.id = UUID()
     effect.song = song
     effect.contextType = contextType
-    effect.timeOfDaySlot = timeOfDaySlot
     effect.calmScore = 0.5
     effect.focusScore = 0.5
     effect.energyScore = 0.5
@@ -3665,23 +3862,44 @@ private func findOrCreateEffect(
 }
 ```
 
-**EMA update** (plan.md §5.3.2):
+**EMA update** (two-tier alpha, plan.md §5.3.2):
 ```swift
 private func updateEffect(_ effect: SongEffect, with impact: ImpactScore) {
-    let alpha = LearningConstants.defaultLearningRate  // 0.2
+    // Two-tier alpha: faster learning for cold start
+    let alpha: Double = effect.sampleCount < BackfillConstants.coldStartThreshold
+        ? BackfillConstants.coldStartLearningRate   // 0.4
+        : LearningConstants.defaultLearningRate     // 0.2
 
     effect.calmScore = (1.0 - alpha) * effect.calmScore + alpha * impact.calm
     effect.energyScore = (1.0 - alpha) * effect.energyScore + alpha * impact.energy
     effect.focusScore = (1.0 - alpha) * effect.focusScore + alpha * impact.focus
-
-    // moodLiftScore: composite of calm and energy
-    let moodImpact = (impact.calm * 0.4 + impact.energy * 0.3 + impact.focus * 0.3)
-    effect.moodLiftScore = (1.0 - alpha) * effect.moodLiftScore + alpha * moodImpact
+    effect.moodLiftScore = (1.0 - alpha) * effect.moodLiftScore + alpha * impact.moodLift
 
     effect.sampleCount += 1
-    effect.confidenceLevel = min(1.0, Double(effect.sampleCount) / Double(DecisionEngineConstants.fullConfidenceSampleCount))  // 20
+
+    // Confidence: cap at 0.7 if no biometric data for this observation
+    let rawConfidence = min(1.0, Double(effect.sampleCount) / Double(DecisionEngineConstants.fullConfidenceSampleCount))  // 20
+    if !impact.hasBiometricData {
+        effect.confidenceLevel = min(rawConfidence, BackfillConstants.behaviorOnlyMaxConfidence)  // 0.7
+    } else {
+        effect.confidenceLevel = rawConfidence
+    }
     effect.lastUpdatedAt = Date()
 }
+```
+
+**Batch save** (every 100 events):
+```swift
+// Inside calculateImpacts():
+for (index, event) in events.enumerated() {
+    try Task.checkCancellation()
+    try processEvent(event, in: context)
+
+    if index % BackfillConstants.eventBatchSize == 0, index > 0 {
+        try context.save()
+    }
+}
+try context.save()  // Final save for remaining events
 ```
 
 **Song aggregate update:**
@@ -3708,6 +3926,13 @@ private func updateSongAggregates(_ song: Song, in context: NSManagedObjectConte
 }
 ```
 
+**Familiarity update** (based on play count only):
+```swift
+private func updateFamiliarity(_ song: Song) {
+    song.familiarityScore = min(1.0, Double(song.totalPlayCount) / 10.0)
+}
+```
+
 ---
 
 ## 12.5 Step 5: PlaylistImpactCalculator
@@ -3716,10 +3941,10 @@ private func updateSongAggregates(_ song: Song, in context: NSManagedObjectConte
 
 ### 12.5.1 Responsibilities
 
-1. For each Playlist that has sessions, aggregate song-level effect scores
+1. For each Playlist that has sessions, aggregate song-level effect scores using **confidence-weighted averaging**
 2. Compute `avgCalmEffect`, `avgFocusEffect`, `avgEnergyEffect`
 3. Compute `effectConfidence` from session count and song effect confidence
-4. Build `contextAssociations` — a JSON blob mapping activity contexts to usage frequency
+4. Build `contextAssociations` — a JSON blob mapping activity contexts to usage frequency **and per-context average effect scores**
 
 ### 12.5.2 Interface
 
@@ -3746,7 +3971,7 @@ final class PlaylistImpactCalculator {
 
     // MARK: - Per-Playlist Processing
 
-    /// Updates effect metrics for a single playlist.
+    /// Updates effect metrics for a single playlist using confidence-weighted averaging.
     private func processPlaylist(
         _ playlist: Playlist,
         in context: NSManagedObjectContext
@@ -3754,11 +3979,14 @@ final class PlaylistImpactCalculator {
 
     // MARK: - Context Associations
 
-    /// Builds a context association map: { "workout": 0.4, "focus": 0.3, ... }
-    /// Based on how often the playlist's sessions occur in each context.
+    /// Builds a context association map with per-context effect scores:
+    /// { "workout": { "frequency": 0.4, "avgCalm": 0.3, "avgEnergy": 0.8, ... }, ... }
+    /// Based on how often the playlist's sessions occur in each context
+    /// and the average effect scores for songs played in that context.
     private func buildContextAssociations(
-        from sessions: [HistoricalSession]
-    ) -> [String: Double]
+        from sessions: [HistoricalSession],
+        songs: [Song]
+    ) -> [String: [String: Double]]
 }
 
 #endif
@@ -3766,42 +3994,49 @@ final class PlaylistImpactCalculator {
 
 ### 12.5.3 Key Implementation Details
 
-**Playlist effect aggregation:**
+**Playlist effect aggregation** (confidence-weighted):
 ```swift
 private func processPlaylist(_ playlist: Playlist, in context: NSManagedObjectContext) throws {
     let songs = (playlist.songs?.allObjects as? [Song]) ?? []
     guard !songs.isEmpty else { return }
 
-    // Average effect scores across all songs with effects
-    var totalCalm = 0.0, totalFocus = 0.0, totalEnergy = 0.0
-    var totalConfidence = 0.0
-    var songCount = 0
+    // Confidence-weighted average effect scores across all songs with effects
+    var weightedCalm = 0.0, weightedFocus = 0.0, weightedEnergy = 0.0
+    var totalWeight = 0.0
 
     for song in songs {
         guard let effects = song.effects?.allObjects as? [SongEffect], !effects.isEmpty else { continue }
-        // Use the "any" context effect or average across all contexts
-        let avgCalm = effects.reduce(0.0) { $0 + $1.calmScore } / Double(effects.count)
-        let avgFocus = effects.reduce(0.0) { $0 + $1.focusScore } / Double(effects.count)
-        let avgEnergy = effects.reduce(0.0) { $0 + $1.energyScore } / Double(effects.count)
-        let avgConf = effects.reduce(0.0) { $0 + $1.confidenceLevel } / Double(effects.count)
 
-        totalCalm += avgCalm
-        totalFocus += avgFocus
-        totalEnergy += avgEnergy
-        totalConfidence += avgConf
-        songCount += 1
+        // Per-song: confidence-weighted average across contexts
+        let songTotalConf = effects.reduce(0.0) { $0 + $1.confidenceLevel }
+        guard songTotalConf > 0 else { continue }
+
+        var songCalm = 0.0, songFocus = 0.0, songEnergy = 0.0
+        for effect in effects {
+            let w = effect.confidenceLevel / songTotalConf
+            songCalm += effect.calmScore * w
+            songFocus += effect.focusScore * w
+            songEnergy += effect.energyScore * w
+        }
+
+        // Weight this song by its average confidence
+        let songWeight = songTotalConf / Double(effects.count)
+        weightedCalm += songCalm * songWeight
+        weightedFocus += songFocus * songWeight
+        weightedEnergy += songEnergy * songWeight
+        totalWeight += songWeight
     }
 
-    guard songCount > 0 else { return }
+    guard totalWeight > 0 else { return }
 
-    playlist.avgCalmEffect = totalCalm / Double(songCount)
-    playlist.avgFocusEffect = totalFocus / Double(songCount)
-    playlist.avgEnergyEffect = totalEnergy / Double(songCount)
-    playlist.effectConfidence = totalConfidence / Double(songCount)
+    playlist.avgCalmEffect = weightedCalm / totalWeight
+    playlist.avgFocusEffect = weightedFocus / totalWeight
+    playlist.avgEnergyEffect = weightedEnergy / totalWeight
+    playlist.effectConfidence = min(1.0, totalWeight / Double(songs.count))
 
-    // Build context associations from sessions
+    // Build context associations from sessions with per-context effect scores
     if let sessions = playlist.sessions?.allObjects as? [HistoricalSession], !sessions.isEmpty {
-        let associations = buildContextAssociations(from: sessions)
+        let associations = buildContextAssociations(from: sessions, songs: songs)
         playlist.contextAssociations = try? JSONSerialization.data(
             withJSONObject: associations, options: []
         )
@@ -3809,16 +4044,42 @@ private func processPlaylist(_ playlist: Playlist, in context: NSManagedObjectCo
 }
 ```
 
-**Context associations:**
+**Context associations** (with per-context effect scores):
 ```swift
-private func buildContextAssociations(from sessions: [HistoricalSession]) -> [String: Double] {
+private func buildContextAssociations(
+    from sessions: [HistoricalSession],
+    songs: [Song]
+) -> [String: [String: Double]] {
     var contextCounts: [String: Int] = [:]
     for session in sessions {
         let ctx = session.contextType
         contextCounts[ctx, default: 0] += 1
     }
     let total = Double(sessions.count)
-    return contextCounts.mapValues { Double($0) / total }
+
+    var result: [String: [String: Double]] = [:]
+    for (ctx, count) in contextCounts {
+        // Per-context average effect scores from songs that have effects for this context
+        var calmSum = 0.0, energySum = 0.0, focusSum = 0.0
+        var matchCount = 0
+        for song in songs {
+            guard let effects = song.effects?.allObjects as? [SongEffect] else { continue }
+            if let ctxEffect = effects.first(where: { $0.contextType == ctx }) {
+                calmSum += ctxEffect.calmScore
+                energySum += ctxEffect.energyScore
+                focusSum += ctxEffect.focusScore
+                matchCount += 1
+            }
+        }
+        var entry: [String: Double] = ["frequency": Double(count) / total]
+        if matchCount > 0 {
+            entry["avgCalm"] = calmSum / Double(matchCount)
+            entry["avgEnergy"] = energySum / Double(matchCount)
+            entry["avgFocus"] = focusSum / Double(matchCount)
+        }
+        result[ctx] = entry
+    }
+    return result
 }
 ```
 
@@ -3831,10 +4092,12 @@ private func buildContextAssociations(from sessions: [HistoricalSession]) -> [St
 ### 12.6.1 Responsibilities
 
 1. Orchestrates the full backfill pipeline in the correct order
-2. Manages incremental watermark (last backfill date) via UserDefaults
+2. Manages **per-step watermarks** via UserDefaults (session reconstruction, song impact, last full backfill)
 3. Publishes progress for Settings UI consumption
 4. Called by `BGProcessingTask` handler in ResonanceApp.swift
 5. Called manually from Settings "Run Backfill Now" button
+6. **Atomic `isRunning` guard** via `@MainActor` to prevent concurrent runs
+7. **Cooperative cancellation support** — propagates `CancellationError` cleanly
 
 ### 12.6.2 Interface
 
@@ -3847,6 +4110,7 @@ import Combine
 /// Orchestrates the full historical backfill pipeline.
 /// Coordinates SessionReconstructor, SongImpactCalculator, and PlaylistImpactCalculator
 /// in sequence, tracks progress, and supports incremental runs.
+@MainActor
 final class HistoricalEngine: ObservableObject {
 
     // MARK: - Published State
@@ -3870,20 +4134,41 @@ final class HistoricalEngine: ObservableObject {
     private let playlistImpactCalculator: PlaylistImpactCalculator
     private let persistence: PersistenceController
 
-    // MARK: - Watermark
+    // MARK: - Per-Step Watermarks
 
-    /// Key for storing the last backfill completion date in UserDefaults.
-    private static let lastBackfillKey = "com.y4sh.resonance.lastBackfillDate"
-
-    /// The date from which to start the next incremental backfill.
-    var lastBackfillDate: Date? {
+    /// Watermark for session reconstruction step.
+    var sessionWatermark: Date? {
         get {
             let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier) ?? .standard
-            return defaults.object(forKey: Self.lastBackfillKey) as? Date
+            return defaults.object(forKey: BackfillConstants.WatermarkKey.sessionReconstruction) as? Date
         }
         set {
             let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier) ?? .standard
-            defaults.set(newValue, forKey: Self.lastBackfillKey)
+            defaults.set(newValue, forKey: BackfillConstants.WatermarkKey.sessionReconstruction)
+        }
+    }
+
+    /// Watermark for song impact calculation step.
+    var songImpactWatermark: Date? {
+        get {
+            let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier) ?? .standard
+            return defaults.object(forKey: BackfillConstants.WatermarkKey.songImpact) as? Date
+        }
+        set {
+            let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier) ?? .standard
+            defaults.set(newValue, forKey: BackfillConstants.WatermarkKey.songImpact)
+        }
+    }
+
+    /// Date of last full backfill completion (all steps succeeded).
+    var lastBackfillDate: Date? {
+        get {
+            let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier) ?? .standard
+            return defaults.object(forKey: BackfillConstants.WatermarkKey.lastFullBackfill) as? Date
+        }
+        set {
+            let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier) ?? .standard
+            defaults.set(newValue, forKey: BackfillConstants.WatermarkKey.lastFullBackfill)
         }
     }
 
@@ -3922,46 +4207,50 @@ final class HistoricalEngine: ObservableObject {
     // MARK: - Pipeline
 
     private func runBackfill(since: Date?) async {
-        await MainActor.run { isRunning = true }
+        isRunning = true
 
         do {
-            // Step 1: Reconstruct sessions
-            await MainActor.run { progress = .reconstructingSessions(processed: 0, total: 0) }
-            let sessionsCreated = try await sessionReconstructor.reconstructSessions(since: since ?? .distantPast)
+            // Step 1: Reconstruct sessions (uses per-step watermark for incremental)
+            progress = .reconstructingSessions(processed: 0, total: 0)
+            let sessionSince = since ?? sessionWatermark ?? .distantPast
+            let sessionsCreated = try await sessionReconstructor.reconstructSessions(since: sessionSince)
+            sessionWatermark = Date()
             logInfo("HistoricalEngine: created \(sessionsCreated) sessions", category: .background)
 
             // Step 2: Calculate song impacts
-            await MainActor.run { progress = .calculatingSongImpacts(processed: 0, total: 0) }
-            let eventsProcessed = try await songImpactCalculator.calculateImpacts(since: since ?? .distantPast)
+            progress = .calculatingSongImpacts(processed: 0, total: 0)
+            let songSince = since ?? songImpactWatermark ?? .distantPast
+            let eventsProcessed = try await songImpactCalculator.calculateImpacts(since: songSince)
+            songImpactWatermark = Date()
             logInfo("HistoricalEngine: processed \(eventsProcessed) events for song impacts", category: .background)
 
-            // Step 3: Calculate playlist impacts
-            await MainActor.run { progress = .calculatingPlaylistImpacts(processed: 0, total: 0) }
+            // Step 3: Calculate playlist impacts (always full — it's fast)
+            progress = .calculatingPlaylistImpacts(processed: 0, total: 0)
             let playlistsUpdated = try await playlistImpactCalculator.calculatePlaylistImpacts()
             logInfo("HistoricalEngine: updated \(playlistsUpdated) playlists", category: .background)
 
-            // Update watermark
+            // Update full-run watermark
             lastBackfillDate = Date()
 
-            await MainActor.run {
-                progress = .completed(
-                    sessionsCreated: sessionsCreated,
-                    eventsProcessed: eventsProcessed,
-                    playlistsUpdated: playlistsUpdated
-                )
-                isRunning = false
-            }
+            progress = .completed(
+                sessionsCreated: sessionsCreated,
+                eventsProcessed: eventsProcessed,
+                playlistsUpdated: playlistsUpdated
+            )
+            isRunning = false
 
             logInfo(
                 "HistoricalEngine: backfill complete — " +
                 "\(sessionsCreated) sessions, \(eventsProcessed) events, \(playlistsUpdated) playlists",
                 category: .background
             )
+        } catch is CancellationError {
+            progress = .failed("Cancelled by system")
+            isRunning = false
+            logInfo("HistoricalEngine: backfill cancelled (BGTask expired or user cancelled)", category: .background)
         } catch {
-            await MainActor.run {
-                progress = .failed(error.localizedDescription)
-                isRunning = false
-            }
+            progress = .failed(error.localizedDescription)
+            isRunning = false
             logError("HistoricalEngine: backfill failed", error: error, category: .background)
         }
     }
@@ -3993,29 +4282,42 @@ Pass to SettingsView for the "Run Backfill" button and progress display.
 
 **File**: `iOS/ResonanceApp.swift`
 
-Add to `registerBackgroundTasks()`:
+Add the `hasRegisteredTasks` guard (from Step 0) and the historical analysis registration to `registerBackgroundTasks()`:
 ```swift
-BGTaskScheduler.shared.register(
-    forTaskWithIdentifier: BackgroundTaskConstants.TaskIdentifier.historicalAnalysis,
-    using: nil
-) { task in
-    guard let processingTask = task as? BGProcessingTask else {
-        task.setTaskCompleted(success: false)
-        return
-    }
-    self.handleHistoricalAnalysis(task: processingTask)
-}
+private static var hasRegisteredTasks = false
 
-scheduleHistoricalAnalysis()
+private func registerBackgroundTasks() {
+    guard !Self.hasRegisteredTasks else { return }
+    Self.hasRegisteredTasks = true
+
+    // ... existing playlistSync and featureUpdate registrations ...
+
+    BGTaskScheduler.shared.register(
+        forTaskWithIdentifier: BackgroundTaskConstants.TaskIdentifier.historicalAnalysis,
+        using: nil
+    ) { task in
+        guard let processingTask = task as? BGProcessingTask else {
+            task.setTaskCompleted(success: false)
+            return
+        }
+        self.handleHistoricalAnalysis(task: processingTask)
+    }
+
+    scheduleHistoricalAnalysis()
+}
 ```
 
-Add handler:
+Add handler with cooperative cancellation:
 ```swift
 private func handleHistoricalAnalysis(task: BGProcessingTask) {
     let analysisTask = Task {
         await historicalEngine.runIncrementalBackfill()
     }
-    task.expirationHandler = { analysisTask.cancel() }
+    task.expirationHandler = {
+        // Cancelling the task triggers CancellationError in SessionReconstructor
+        // and SongImpactCalculator via Task.checkCancellation()
+        analysisTask.cancel()
+    }
     Task {
         await analysisTask.value
         task.setTaskCompleted(success: true)
@@ -4104,15 +4406,17 @@ Section("Historical Analysis") {
 | `Brain/Historical/SessionReconstructor.swift` | Groups PlaybackEvents into HistoricalSessions, enriches with biometrics |
 | `Brain/Historical/SongImpactCalculator.swift` | Per-song per-context EMA effect scoring, SongEffect CRUD |
 | `Brain/Historical/PlaylistImpactCalculator.swift` | Playlist-level effect aggregation + context associations |
-| `Brain/Historical/HistoricalEngine.swift` | Orchestrator: pipeline sequencing, progress, watermark |
+| `Brain/Historical/HistoricalEngine.swift` | Orchestrator: pipeline sequencing, progress, per-step watermarks |
 
-### Modified Files (4)
+### Modified Files (6)
 
 | File | Changes |
 |---|---|
-| `Shared/Services/HealthKitService.swift` | Add `fetchSleepAnalysis()`, `fetchWorkouts()`, `SleepSession`, `WorkoutSession` types, chunked pagination helper |
+| `iOS/Info.plist` | Add `UIBackgroundModes` (audio, fetch, processing), `BGTaskSchedulerPermittedIdentifiers` (playlistSync, historicalAnalysis, featureUpdate), usage description strings |
+| `Shared/Utilities/Constants.swift` | Add `BackfillConstants` enum with batch sizes, watermark keys, cold-start thresholds, behavior-only confidence cap |
+| `Shared/Services/HealthKitService.swift` | Add `fetchSleepAnalysis()`, `fetchWorkouts()`, `SleepSession`, `WorkoutSession` types, `fetchCategorySamples()` helper, chunked pagination helper |
 | `Shared/Services/EventLogger.swift` | Add `fetchEventsWithoutSession()` query |
-| `iOS/ResonanceApp.swift` | Add `HistoricalEngine` StateObject, register `historicalAnalysis` BGProcessingTask, add handler + scheduler |
+| `iOS/ResonanceApp.swift` | Add `HistoricalEngine` StateObject, `hasRegisteredTasks` guard, register `historicalAnalysis` BGProcessingTask, add handler with cooperative cancellation + scheduler |
 | `iOS/Views/SettingsView.swift` | Add Historical Analysis section with progress display and manual trigger |
 
 ---
@@ -4122,59 +4426,77 @@ Section("Historical Analysis") {
 ### Dependency Graph
 
 ```
-            ┌──────────────┐
-            │  Step 1       │  HealthKit sleep/workout queries
-            │ (HealthKit)   │
-            └──────┬───────┘
-                   │
-     ┌─────────────┼──────────────┐
-     │             │              │
-     ▼             ▼              ▼
-┌──────────┐ ┌──────────┐ ┌──────────────┐
-│  Step 2  │ │  Step 3  │ │ Step 7a      │
-│ Impact   │ │ Session  │ │ EventLogger  │
-│ Score    │ │ Recon    │ │ query        │
-└────┬─────┘ └────┬─────┘ └──────────────┘
-     │            │
-     ▼            │
-┌──────────┐      │
-│  Step 4  │◀─────┘
-│ Song     │
-│ Impact   │
-└────┬─────┘
+┌──────────────┐
+│  Step 0       │  Info.plist + Constants.swift (BLOCKING)
+│ (Prerequisite)│
+└──────┬───────┘
+       │
+       ▼
+┌──────────────┐
+│  Step 1       │  HealthKit sleep/workout queries
+│ (HealthKit)   │
+└──────┬───────┘
+       │
+       ├──────────────────┐
+       │                  │
+       ▼                  ▼
+┌──────────┐       ┌──────────────┐
+│  Step 2  │       │ Step 7a      │
+│ Impact   │       │ EventLogger  │
+│ Score    │       │ query        │
+└────┬─────┘       └──────────────┘
      │
      ▼
 ┌──────────┐
-│  Step 5  │
-│ Playlist │
-│ Impact   │
+│  Step 3  │
+│ Session  │
+│ Recon    │
 └────┬─────┘
      │
-     ▼
-┌──────────┐
-│  Step 6  │
-│ Historical│
-│ Engine   │
-└────┬─────┘
-     │
-     ▼
-┌──────────┐
-│  Step 7  │
-│ Wiring + │
-│ Settings │
-└──────────┘
+     ├──────────────────┐
+     │                  │
+     ▼                  ▼
+┌──────────┐     ┌──────────────┐
+│  Step 4  │     │  Step 5      │
+│ Song     │     │ Playlist     │
+│ Impact   │     │ Impact       │
+└────┬─────┘     └──────┬───────┘
+     │                  │
+     └────────┬─────────┘
+              │
+              ▼
+       ┌──────────┐
+       │  Step 6  │
+       │ Historical│
+       │ Engine   │
+       └────┬─────┘
+            │
+            ▼
+       ┌──────────┐
+       │  Step 7  │
+       │ Wiring + │
+       │ Settings │
+       └──────────┘
 ```
 
-### Wave 1: Two parallel agents (SPAWN 2 AGENTS IN PARALLEL)
+### Wave 0: Prerequisite (MUST COMPLETE FIRST)
+
+| Agent | Steps | Files Modified |
+|-------|-------|-----------------------|
+| **Agent P** | Step 0 (Info.plist + Constants) | `iOS/Info.plist`, `Shared/Utilities/Constants.swift` |
+
+**Why first:** Without `BGTaskSchedulerPermittedIdentifiers` in Info.plist, all BGTask registrations crash. Without `BackfillConstants`, Steps 3-6 cannot reference batch sizes and watermark keys. This is a blocking prerequisite.
+
+### Wave 1: Sequential agents
+
+After Wave 0 completes:
 
 | Agent | Steps | Files Created/Modified |
 |-------|-------|-----------------------|
 | **Agent A** | Step 1 (HealthKit queries) + Step 2 (ImpactScore) + Step 7a (EventLogger query) | `Shared/Services/HealthKitService.swift`, `Brain/Historical/ImpactScore.swift`, `Shared/Services/EventLogger.swift` |
-| **Agent B** | Step 3 (SessionReconstructor) | `Brain/Historical/SessionReconstructor.swift` |
+| **Agent B** | Step 3 (SessionReconstructor) — **after Agent A completes** | `Brain/Historical/SessionReconstructor.swift` |
 
-**Why parallel:** Agent A works on HealthKit and the ImpactScore type (no dependency on SessionReconstructor). Agent B creates SessionReconstructor which depends on HealthKit types but not on their implementation — it just calls the existing protocol methods. No file conflicts.
-
-**Note:** Agent B's SessionReconstructor uses `SleepSession` type from Agent A. Instruct Agent B to define a minimal forward reference or placeholder, OR sequence Agent A before Agent B. Given the tight coupling, **Agent A should complete first** unless SessionReconstructor is written to accept HealthKit results as parameters rather than calling HealthKit directly. The recommended approach: **make Wave 1 sequential — Agent A first, then Agent B.**
+**Why sequential:** Agent B's SessionReconstructor uses `SleepSession` and `WorkoutSession` types defined by Agent A. Agent A must complete first so these types exist.
 
 ### Wave 2: Two parallel agents (SPAWN 2 AGENTS IN PARALLEL)
 
@@ -4200,13 +4522,14 @@ After Wave 2 completes:
 ### Execution Timeline
 
 ```
-Time →
-Wave 1: [Agent A: Steps 1+2+7a] → [Agent B: Step 3]  ← sequential
-Wave 2:                            [Agent C: Step 4] [Agent D: Step 5]  ← 2 parallel
-Wave 3:                                               [Agent E: Steps 6+7]
+Time -->
+Wave 0: [Agent P: Step 0 (Info.plist + Constants)]
+Wave 1: [Agent A: Steps 1+2+7a] --> [Agent B: Step 3]    <-- sequential
+Wave 2:                              [Agent C: Step 4] [Agent D: Step 5]  <-- 2 parallel
+Wave 3:                                                [Agent E: Steps 6+7]
 ```
 
-Total: 3 waves, 5 agents, with 2 parallel in Wave 2.
+Total: 4 waves, 6 agents, with 2 parallel in Wave 2.
 
 ---
 
@@ -4254,5 +4577,5 @@ Total: 3 waves, 5 agents, with 2 parallel in Wave 2.
 
 *End of Plan Document*
 
-*Version: 1.2*
-*Last Updated: 2026-02-20*
+*Version: 1.3*
+*Last Updated: 2026-02-21*

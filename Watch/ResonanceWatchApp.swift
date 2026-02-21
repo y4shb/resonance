@@ -14,6 +14,7 @@ struct ResonanceWatchApp: App {
 
     @StateObject private var connectivityService: PhoneConnectivityService
     @StateObject private var sensorCoordinator: SensorCoordinator
+    @Environment(\.scenePhase) private var scenePhase
 
     // MARK: - Initialization
 
@@ -39,11 +40,26 @@ struct ResonanceWatchApp: App {
                         let types: Set<HKObjectType> = [
                             HKQuantityType(.heartRate),
                             HKQuantityType(.heartRateVariabilitySDNN),
-                            HKQuantityType(.stepCount)
+                            HKQuantityType(.stepCount),
+                            HKObjectType.workoutType()
                         ]
                         try? await store.requestAuthorization(toShare: [], read: types)
                         sensorCoordinator.startAllSensors()
                         logInfo("Watch sensors started", category: .healthKit)
+                    }
+                }
+                .onChange(of: scenePhase) { _, newPhase in
+                    switch newPhase {
+                    case .active:
+                        sensorCoordinator.startAllSensors()
+                        logInfo("Watch became active — sensors started", category: .healthKit)
+                    case .background:
+                        sensorCoordinator.stopAllSensors()
+                        logInfo("Watch entered background — sensors stopped", category: .healthKit)
+                    case .inactive:
+                        break
+                    @unknown default:
+                        break
                     }
                 }
         }

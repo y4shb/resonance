@@ -33,12 +33,15 @@ final class HeartRateSensor: ObservableObject {
             return
         }
 
+        guard !isActive else {
+            logDebug("HeartRateSensor already monitoring", category: .healthKit)
+            return
+        }
+
+        isActive = true
+
         startHeartRateQuery()
         startHRVQuery()
-
-        DispatchQueue.main.async { [weak self] in
-            self?.isActive = true
-        }
         logInfo("HeartRateSensor monitoring started", category: .healthKit)
     }
 
@@ -53,9 +56,7 @@ final class HeartRateSensor: ObservableObject {
             hrvQuery = nil
         }
 
-        DispatchQueue.main.async { [weak self] in
-            self?.isActive = false
-        }
+        isActive = false
         logInfo("HeartRateSensor monitoring stopped", category: .healthKit)
     }
 

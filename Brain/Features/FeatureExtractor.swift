@@ -167,7 +167,10 @@ final class FeatureExtractor {
 
     private func estimateEnergy(genreCategory: String?, bpm: Double) -> Double {
         guard let category = genreCategory else { return 0.5 }
-        return FeatureExtractor.genreEnergy[category] ?? 0.5
+        let genreEnergy = FeatureExtractor.genreEnergy[category] ?? 0.5
+        // Factor in BPM: higher BPM tends to increase perceived energy
+        let bpmFactor = min(max((bpm - 60.0) / 140.0, 0.0), 1.0)
+        return genreEnergy * 0.7 + bpmFactor * 0.3
     }
 
     private func estimateValence(genreCategory: String?) -> Double {

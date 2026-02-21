@@ -197,8 +197,8 @@ final class PlaylistRepository {
     func recalculateAggregates(for playlist: Playlist) async {
         let objectID = playlist.objectID
 
-        await persistence.performBackgroundTask { context in
-            do {
+        do {
+            try await persistence.performBackgroundTask { context in
                 guard let backgroundPlaylist = try context.existingObject(with: objectID) as? Playlist else {
                     logWarning(
                         "recalculateAggregates: could not find playlist in background context",
@@ -230,13 +230,13 @@ final class PlaylistRepository {
                     "Recalculated aggregates for '\(backgroundPlaylist.name)': avgBPM=\(String(format: "%.1f", avgBPM)), songCount=\(songs.count)",
                     category: .persistence
                 )
-            } catch {
-                logError(
-                    "Failed to recalculate aggregates for playlist",
-                    error: error,
-                    category: .persistence
-                )
             }
+        } catch {
+            logError(
+                "Failed to recalculate aggregates for playlist",
+                error: error,
+                category: .persistence
+            )
         }
     }
 }
