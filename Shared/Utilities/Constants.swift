@@ -17,7 +17,7 @@ public enum AppConstants {
     /// Bundle identifiers
     public enum BundleID {
         public static let iOS = "com.y4sh.resonance.ios"
-        public static let watchOS = "com.y4sh.resonance.watchkitapp"
+        public static let watchOS = "com.y4sh.resonance.ios.watchkitapp"
         public static let macOS = "com.y4sh.resonance.macos"
         public static let widgets = "com.y4sh.resonance.ios.widgets"
     }
@@ -180,11 +180,11 @@ public enum UIConstants {
 
     /// Album artwork sizes
     public enum ArtworkSize {
-        public static let small: CGFloat = 50
-        public static let medium: CGFloat = 150
-        public static let large: CGFloat = 300
-        public static let watchCompact: CGFloat = 40
-        public static let watchLarge: CGFloat = 80
+        public static let small: Double = 50
+        public static let medium: Double = 150
+        public static let large: Double = 300
+        public static let watchCompact: Double = 40
+        public static let watchLarge: Double = 80
     }
 
     /// State indicator colors (as hex strings for cross-platform)

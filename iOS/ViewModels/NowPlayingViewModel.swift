@@ -60,6 +60,9 @@ final class NowPlayingViewModel: ObservableObject {
 
     private let musicService: MusicKitService
     private var watchConnectivityManager: WatchConnectivityManager?
+
+    /// Logs playback events (skip, previous) to Core Data. Set externally after init.
+    var eventLogger: EventLogger?
     private var cancellables = Set<AnyCancellable>()
     private var progressTimer: Timer?
 
@@ -240,6 +243,7 @@ final class NowPlayingViewModel: ObservableObject {
     func skip() {
         Task {
             do {
+                eventLogger?.logPlaybackEnd(wasSkipped: true, skipReason: "manual_skip", currentHeartRate: nil, currentHRV: nil)
                 try await musicService.skipToNext()
             } catch {
                 logError("Skip failed", error: error, category: .musicKit)
@@ -252,6 +256,7 @@ final class NowPlayingViewModel: ObservableObject {
     func previous() {
         Task {
             do {
+                eventLogger?.logPlaybackEnd(wasSkipped: true, skipReason: "manual_previous", currentHeartRate: nil, currentHRV: nil)
                 try await musicService.skipToPrevious()
             } catch {
                 logError("Previous failed", error: error, category: .musicKit)

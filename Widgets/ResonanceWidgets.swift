@@ -29,7 +29,7 @@ struct NowPlayingWidget: Widget {
                 .containerBackground(.fill.tertiary, for: .widget)
         }
         .configurationDisplayName("Now Playing")
-        .description("Shows the currently playing song selected by AI DJ.")
+        .description("Shows the currently playing song selected by Resonance.")
         .supportedFamilies([.systemSmall, .systemMedium, .accessoryRectangular])
     }
 }
@@ -61,7 +61,7 @@ struct NowPlayingProvider: TimelineProvider {
         let entry = NowPlayingEntry(
             date: Date(),
             songTitle: "No song playing",
-            artistName: "Open AI DJ to start",
+            artistName: "Open Resonance to start",
             isPlaying: false
         )
 
@@ -103,7 +103,7 @@ struct NowPlayingWidgetView: View {
             HStack {
                 Image(systemName: entry.isPlaying ? "music.note" : "pause.fill")
                     .foregroundStyle(.blue)
-                Text("AI DJ")
+                Text("Resonance")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
@@ -138,7 +138,7 @@ struct NowPlayingWidgetView: View {
                 HStack {
                     Image(systemName: entry.isPlaying ? "play.fill" : "pause.fill")
                         .foregroundStyle(.blue)
-                    Text("AI DJ")
+                    Text("Resonance")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -187,7 +187,7 @@ struct StateWidget: Widget {
                 .containerBackground(.fill.tertiary, for: .widget)
         }
         .configurationDisplayName("Current State")
-        .description("Shows your current state as detected by AI DJ.")
+        .description("Shows your current state as detected by Resonance.")
         .supportedFamilies([.systemSmall, .accessoryCircular])
     }
 }

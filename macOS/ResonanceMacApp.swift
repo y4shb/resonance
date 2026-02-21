@@ -29,7 +29,7 @@ struct ResonanceMacApp: App {
     var body: some Scene {
         // Menu bar apps don't have a main window
         // The MenuBarExtra is the primary UI
-        MenuBarExtra("AI DJ", systemImage: menuBarController.menuBarIconName) {
+        MenuBarExtra("Resonance", systemImage: menuBarController.menuBarIconName) {
             PopoverView(controller: menuBarController)
         }
         .menuBarExtraStyle(.window)
@@ -164,7 +164,7 @@ struct MacSettingsView: View {
                         .font(.largeTitle)
                         .foregroundStyle(.blue)
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("AI DJ for macOS")
+                        Text("Resonance for macOS")
                             .font(.headline)
                         Text("Context-aware companion")
                             .font(.caption)

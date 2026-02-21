@@ -44,7 +44,7 @@ struct WatchNowPlayingView: View {
             }
             .padding(.horizontal, 4)
         }
-        .navigationTitle("AI DJ")
+        .navigationTitle("Resonance")
     }
 
     // MARK: - Album Art
@@ -176,7 +176,7 @@ struct WatchNowPlayingView: View {
                 .font(.largeTitle)
                 .foregroundStyle(.blue)
 
-            Text("AI DJ")
+            Text("Resonance")
                 .font(.headline)
 
             if connectivityService.isPhoneReachable {
@@ -194,7 +194,7 @@ struct WatchNowPlayingView: View {
                 }
             }
         }
-        .navigationTitle("AI DJ")
+        .navigationTitle("Resonance")
     }
 
     // MARK: - Helpers

@@ -49,7 +49,7 @@ struct PopoverView: View {
         HStack {
             Image(systemName: "music.note")
                 .foregroundStyle(.blue)
-            Text("AI DJ")
+            Text("Resonance")
                 .font(.headline)
             Spacer()
             Button {
@@ -91,7 +91,7 @@ struct PopoverView: View {
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
 
-                    Text("Open AI DJ on iPhone to start")
+                    Text("Open Resonance on iPhone to start")
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                 }
@@ -251,7 +251,7 @@ struct PopoverView: View {
                 NSApplication.shared.terminate(nil)
             } label: {
                 HStack {
-                    Text("Quit AI DJ")
+                    Text("Quit Resonance")
                         .font(.caption)
                     Spacer()
                 }

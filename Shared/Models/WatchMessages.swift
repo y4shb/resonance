@@ -87,9 +87,6 @@ extension WatchMessage {
     /// Encode to dictionary for WCSession transport
     func toDictionary() throws -> [String: Any] {
         let data = try JSONEncoder().encode(self)
-        guard let dict = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            throw WatchMessageError.encodingFailed
-        }
         return ["watchMessage": data]
     }
 

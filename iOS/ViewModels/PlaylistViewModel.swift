@@ -108,6 +108,12 @@ final class PlaylistViewModel: ObservableObject {
                 self.isLoading = false
 
                 logInfo("Loaded \(displayPlaylists.count) playlists for display", category: .ui)
+
+                // Persist playlists to Core Data
+                Task.detached(priority: .utility) {
+                    let repo = PlaylistRepository()
+                    try? await repo.syncPlaylists(from: musicPlaylists)
+                }
             } catch {
                 self.isLoading = false
                 self.errorMessage = error.localizedDescription
@@ -130,6 +136,32 @@ final class PlaylistViewModel: ObservableObject {
             } catch {
                 errorMessage = error.localizedDescription
                 logError("Failed to set queue from playlist '\(playlistInfo.name)'", error: error, category: .musicKit)
+            }
+        }
+
+        // Find Core Data playlist on main thread (viewContext is main-queue only)
+        let playlistRepo = PlaylistRepository()
+        let cdPlaylist = playlistRepo.findByAppleMusicId(playlistInfo.id.rawValue)
+
+        // Sync songs in background
+        Task.detached(priority: .utility) {
+            if let detailedPlaylist = try? await playlistInfo.playlist.with([.tracks]),
+               let tracks = detailedPlaylist.tracks {
+                // Convert Track items to Song items for Core Data sync
+                var songs: [MusicKit.Song] = []
+                for track in tracks {
+                    switch track {
+                    case .song(let song):
+                        songs.append(song)
+                    default:
+                        break
+                    }
+                }
+                let songCollection = MusicItemCollection(songs)
+                if let cdPlaylist = cdPlaylist {
+                    let songRepo = SongRepository()
+                    try? await songRepo.syncSongs(songCollection, for: cdPlaylist)
+                }
             }
         }
     }

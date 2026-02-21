@@ -45,7 +45,7 @@ struct NowPlayingView: View {
                 activePlaylistBar
             }
             .padding(.horizontal)
-            .navigationTitle("AI DJ")
+            .navigationTitle("Resonance")
             .navigationBarTitleDisplayMode(.inline)
             .alert("Playback Error", isPresented: showErrorBinding) {
                 Button("OK") { viewModel.errorMessage = nil }

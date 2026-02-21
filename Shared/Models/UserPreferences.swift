@@ -169,16 +169,19 @@ extension UserPreferences {
 extension UserPreferences {
     private static let userDefaultsKey = "com.y4sh.resonance.userPreferences"
 
-    /// Saves preferences to UserDefaults
+    /// App Group UserDefaults suite for cross-target access (widgets, watch)
+    private static let defaults: UserDefaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier) ?? .standard
+
+    /// Saves preferences to App Group UserDefaults
     public func save() throws {
         let encoder = JSONEncoder()
         let data = try encoder.encode(self)
-        UserDefaults.standard.set(data, forKey: Self.userDefaultsKey)
+        Self.defaults.set(data, forKey: Self.userDefaultsKey)
     }
 
-    /// Loads preferences from UserDefaults
+    /// Loads preferences from App Group UserDefaults
     public static func load() -> UserPreferences {
-        guard let data = UserDefaults.standard.data(forKey: userDefaultsKey) else {
+        guard let data = defaults.data(forKey: userDefaultsKey) else {
             return .default
         }
 
@@ -192,7 +195,7 @@ extension UserPreferences {
 
     /// Resets preferences to defaults
     public static func reset() {
-        UserDefaults.standard.removeObject(forKey: userDefaultsKey)
+        defaults.removeObject(forKey: userDefaultsKey)
     }
 }
 
