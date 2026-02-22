@@ -24,6 +24,9 @@ jobs:
       - name: Print Xcode version
         run: xcodebuild -version
 
+      - name: Install iOS Simulator runtime
+        run: xcodebuild -downloadPlatform iOS
+
       - name: Install XcodeGen
         run: brew install xcodegen
 
@@ -31,21 +34,25 @@ jobs:
         run: xcodegen generate
 
       - name: List available simulators
-        run: xcrun simctl list devices available | grep iPhone | head -5
+        run: xcrun simctl list devices available | grep iPhone | head -10
 
       - name: Build
         run: |
+          DEVICE=$(xcrun simctl list devices available | grep "iPhone" | head -1 | sed 's/(.*//' | xargs)
+          echo "Using simulator: $DEVICE"
           xcodebuild build-for-testing \
             -scheme Resonance \
-            -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+            -destination "platform=iOS Simulator,name=$DEVICE" \
             -skipPackagePluginValidation \
             -quiet
 
       - name: Test
         run: |
+          DEVICE=$(xcrun simctl list devices available | grep "iPhone" | head -1 | sed 's/(.*//' | xargs)
+          echo "Using simulator: $DEVICE"
           xcodebuild test \
             -scheme Resonance \
-            -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+            -destination "platform=iOS Simulator,name=$DEVICE" \
             -skipPackagePluginValidation \
             -resultBundlePath TestResults.xcresult \
             -quiet
