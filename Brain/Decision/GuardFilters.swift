@@ -19,6 +19,8 @@ enum FilterReason: String {
     case playedRecently = "Played too recently"
     case sameArtistLimit = "Too many songs from same artist in a row"
     case bpmTooHighForTime = "BPM too high for current time of day"
+    case bpmTooHighForState = "BPM too high for current biometric state"
+    case energyMismatch = "Energy level mismatched for guard adjustment"
     case noValidId = "Song has no valid identifier"
 }
 
@@ -104,6 +106,51 @@ final class GuardFilters {
             rejected: rejected,
             totalCandidates: candidates.count
         )
+    }
+
+    // MARK: - Guard Adjustment Filtering
+
+    /// Apply guard adjustment filters on top of standard filters.
+    /// Called when RealTimeGuardAdjuster has active adjustments.
+    func applyWithGuardAdjustments(
+        candidates: [Song],
+        context: DecisionContext,
+        recentArtists: [String] = [],
+        bpmAdjustment: Double = 0.0
+    ) -> FilterResult {
+        // First apply standard filters
+        var result = apply(candidates: candidates, context: context, recentArtists: recentArtists)
+
+        // If no BPM adjustment, return standard result
+        guard bpmAdjustment < -5.0 else { return result }
+
+        // Additional filtering: if guard says lower BPM, filter songs above adjusted cap
+        let currentNeed = context.stateVector.inferredNeed
+        guard currentNeed == .calm || currentNeed == .focus else { return result }
+
+        let adjustedMaxBPM = (context.preferences.nightMaxBPM + 30) + bpmAdjustment
+
+        var stillAccepted: [Song] = []
+        var newRejected = result.rejected
+
+        for song in result.accepted {
+            if song.bpm > adjustedMaxBPM && song.bpm > 0 {
+                newRejected.append((song: song, reason: .bpmTooHighForState))
+            } else {
+                stillAccepted.append(song)
+            }
+        }
+
+        // Only apply if we still have enough candidates (don't filter to empty)
+        if stillAccepted.count >= 3 {
+            return FilterResult(
+                accepted: stillAccepted,
+                rejected: newRejected,
+                totalCandidates: result.totalCandidates
+            )
+        }
+
+        return result  // Fall back to unmodified result if too aggressive
     }
 
     // MARK: - Same-Artist Filter

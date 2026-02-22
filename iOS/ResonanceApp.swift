@@ -10,6 +10,7 @@ import SwiftUI
 import MusicKit
 import HealthKit
 import BackgroundTasks
+import Combine
 
 @main
 struct ResonanceApp: App {
@@ -44,6 +45,12 @@ struct ResonanceApp: App {
 
     /// AI DJ decision engine
     @StateObject private var decisionEngine: DecisionEngine
+
+    /// Real-time learning store
+    @StateObject private var learningStore: LearningStore
+
+    /// Real-time guard adjuster
+    @StateObject private var guardAdjuster: RealTimeGuardAdjuster
 
     /// WatchConnectivity manager for iPhone <-> Watch communication
     private let watchConnectivityManager = WatchConnectivityManager.shared
@@ -96,6 +103,20 @@ struct ResonanceApp: App {
         nowPlaying.decisionEngine = decisionEngine
         nowPlaying.stateEngine = stateEngine
 
+        // Create and wire learning store + guard adjuster
+        let learningStore = LearningStore()
+        _learningStore = StateObject(wrappedValue: learningStore)
+
+        let guardAdjuster = RealTimeGuardAdjuster()
+        _guardAdjuster = StateObject(wrappedValue: guardAdjuster)
+
+        // Wire learning store to NowPlayingViewModel
+        nowPlaying.connectLearningStore(learningStore, eventLogger: eventLogger)
+        nowPlaying.guardAdjuster = guardAdjuster
+
+        // Wire guard adjuster to DecisionEngine
+        decisionEngine.guardAdjuster = guardAdjuster
+
         // Wire mood input from Watch → StateEngine
         contextCollector.onMoodInput = { [weak stateEngine] packet in
             let energy = Double(packet.energyLevel) / 5.0
@@ -139,6 +160,15 @@ struct ResonanceApp: App {
                 eventLogger.observeNowPlaying(musicService.nowPlayingPublisher)
                 stateEngine.startUpdating()
 
+                // Wire biometric updates to guard adjuster for real-time filtering
+                Self.biometricCancellable = watchConnectivityManager.biometricUpdates
+                    .receive(on: DispatchQueue.main)
+                    .sink { [weak guardAdjuster, weak stateEngine] packet in
+                        if let hr = packet.heartRate {
+                            guardAdjuster?.recordHeartRate(hr, currentNeed: stateEngine?.currentState.inferredNeed)
+                        }
+                    }
+
                 // Wire EventLogger active event to ContextCollector for biometric tagging
                 contextCollector.observeEventLogger(eventLogger)
             }
@@ -171,6 +201,9 @@ struct ResonanceApp: App {
     }
 
     // MARK: - Background Tasks
+
+    /// Holds the biometric-to-guard-adjuster subscription across struct copies.
+    private static var biometricCancellable: AnyCancellable?
 
     /// Guard against double-registration crash (BGTaskScheduler crashes if register() called twice for same ID)
     private static var hasRegisteredTasks = false

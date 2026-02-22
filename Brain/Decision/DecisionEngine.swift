@@ -55,6 +55,9 @@ final class DecisionEngine: ObservableObject {
     private let transitionController: TransitionController
     private let explanationGenerator: ExplanationGenerator
 
+    /// Real-time guard adjuster for biometric-aware filtering
+    var guardAdjuster: RealTimeGuardAdjuster?
+
     // MARK: - Session Tracking
 
     /// Songs played in the current session (ordered, most recent last).
@@ -139,11 +142,24 @@ final class DecisionEngine: ObservableObject {
         )
 
         // 2. Apply guard filters
-        let filterResult = guardFilters.apply(
-            candidates: candidates,
-            context: decisionContext,
-            recentArtists: sessionArtists
-        )
+        let filterResult: FilterResult
+        if let adjuster = guardAdjuster, adjuster.hasActiveAdjustments {
+            filterResult = guardFilters.applyWithGuardAdjustments(
+                candidates: candidates,
+                context: decisionContext,
+                recentArtists: sessionArtists,
+                bpmAdjustment: adjuster.bpmAdjustment
+            )
+            logInfo("Guard adjustments active: BPM adj=\(String(format: "%.0f", adjuster.bpmAdjustment)), "
+                    + "familiarity boost=\(String(format: "%.2f", adjuster.familiarityBoost))",
+                    category: .decisionEngine)
+        } else {
+            filterResult = guardFilters.apply(
+                candidates: candidates,
+                context: decisionContext,
+                recentArtists: sessionArtists
+            )
+        }
 
         guard !filterResult.accepted.isEmpty else {
             logWarning(

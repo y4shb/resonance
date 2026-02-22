@@ -68,6 +68,12 @@ final class NowPlayingViewModel: ObservableObject {
     /// Decision engine for AI song selection. Set externally after init.
     var decisionEngine: DecisionEngine?
 
+    /// Learning store for real-time song effect updates. Set externally after init.
+    var learningStore: LearningStore?
+
+    /// Real-time guard adjuster for biometric-aware filtering. Set externally after init.
+    var guardAdjuster: RealTimeGuardAdjuster?
+
     /// State engine for current user state. Set externally after init.
     var stateEngine: StateEngine?
 
@@ -117,6 +123,21 @@ final class NowPlayingViewModel: ObservableObject {
                 self?.stateEngine?.applyCrownAdjustment(adjustment)
             }
             .store(in: &cancellables)
+    }
+
+    /// Connects the LearningStore for real-time feedback loop.
+    func connectLearningStore(_ store: LearningStore, eventLogger: EventLogger) {
+        self.learningStore = store
+
+        // Subscribe to completed playback events
+        eventLogger.playbackEndEvents
+            .receive(on: DispatchQueue.main)
+            .sink { [weak store] eventObjectID in
+                store?.processPlaybackEvent(eventObjectID: eventObjectID)
+            }
+            .store(in: &cancellables)
+
+        logInfo("LearningStore connected to NowPlayingViewModel", category: .stateEngine)
     }
 
     private func handleWatchPlaybackCommand(_ command: PlaybackCommand) {
@@ -270,6 +291,7 @@ final class NowPlayingViewModel: ObservableObject {
 
             // Log natural end of current playback event
             eventLogger?.logPlaybackEnd(wasSkipped: false, skipReason: nil, currentHeartRate: nil, currentHRV: nil)
+            guardAdjuster?.recordFullListen()
 
             logInfo("Auto-advance triggered at \(String(format: "%.1f%%", playbackProgress * 100)) progress", category: .decisionEngine)
             requestAISelection()
@@ -300,6 +322,7 @@ final class NowPlayingViewModel: ObservableObject {
         Task {
             do {
                 eventLogger?.logPlaybackEnd(wasSkipped: true, skipReason: "manual_skip", currentHeartRate: nil, currentHRV: nil)
+                guardAdjuster?.recordSkip()
                 try await musicService.skipToNext()
             } catch {
                 logError("Skip failed", error: error, category: .musicKit)
@@ -314,6 +337,7 @@ final class NowPlayingViewModel: ObservableObject {
         Task {
             do {
                 eventLogger?.logPlaybackEnd(wasSkipped: true, skipReason: "manual_previous", currentHeartRate: nil, currentHRV: nil)
+                guardAdjuster?.recordSkip()
                 try await musicService.skipToPrevious()
             } catch {
                 logError("Previous failed", error: error, category: .musicKit)

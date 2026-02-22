@@ -29,6 +29,12 @@ final class EventLogger: ObservableObject {
     /// The object ID of the currently active PlaybackEvent (nil if nothing playing).
     @Published private(set) var activeEventObjectID: NSManagedObjectID?
 
+    /// Publisher for completed playback events (fires after logPlaybackEnd saves)
+    private let playbackEndSubject = PassthroughSubject<NSManagedObjectID, Never>()
+    var playbackEndEvents: AnyPublisher<NSManagedObjectID, Never> {
+        playbackEndSubject.eraseToAnyPublisher()
+    }
+
     // MARK: - Initialization
 
     init(persistence: PersistenceController = .shared) {
@@ -191,6 +197,12 @@ final class EventLogger: ObservableObject {
                 // Update playback stats on the song.
                 if let song = event.song {
                     self.songRepository.updatePlaybackStats(for: song, event: event)
+                }
+
+                // Publish the completed event for real-time learning
+                let permanentID = event.objectID
+                DispatchQueue.main.async { [weak self] in
+                    self?.playbackEndSubject.send(permanentID)
                 }
 
             } catch {
