@@ -59,6 +59,7 @@ targets:
           - com.y4sh.resonance.playlistSync
           - com.y4sh.resonance.featureUpdate
           - com.y4sh.resonance.historicalAnalysis
+        UILaunchScreen: {}
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.y4sh.resonance.ios

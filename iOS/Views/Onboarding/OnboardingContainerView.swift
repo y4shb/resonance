@@ -37,33 +37,37 @@ struct OnboardingContainerView: View {
             )
             .ignoresSafeArea()
 
-            VStack(spacing: 0) {
-                // Page content
-                TabView(selection: $currentPage) {
-                    WelcomePage()
-                        .tag(0)
+            GeometryReader { geo in
+                VStack(spacing: 0) {
+                    // Page content
+                    TabView(selection: $currentPage) {
+                        WelcomePage(pageHeight: geo.size.height - bottomControlsHeight)
+                            .tag(0)
 
-                    ValuePropositionPage()
-                        .tag(1)
+                        ValuePropositionPage(pageHeight: geo.size.height - bottomControlsHeight)
+                            .tag(1)
 
-                    MusicKitPermissionPage(
-                        musicService: musicService,
-                        isAuthorized: $musicKitAuthorized
-                    )
-                    .tag(2)
+                        MusicKitPermissionPage(
+                            musicService: musicService,
+                            isAuthorized: $musicKitAuthorized,
+                            pageHeight: geo.size.height - bottomControlsHeight
+                        )
+                        .tag(2)
 
-                    HealthKitPermissionPage(
-                        healthKitRequested: $healthKitRequested
-                    )
-                    .tag(3)
+                        HealthKitPermissionPage(
+                            healthKitRequested: $healthKitRequested,
+                            pageHeight: geo.size.height - bottomControlsHeight
+                        )
+                        .tag(3)
+                    }
+                    .tabViewStyle(.page(indexDisplayMode: .never))
+                    .animation(.easeInOut(duration: UIConstants.Animation.standard), value: currentPage)
+
+                    // Bottom controls
+                    bottomControls
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, 16)
                 }
-                .tabViewStyle(.page(indexDisplayMode: .never))
-                .animation(.easeInOut(duration: UIConstants.Animation.standard), value: currentPage)
-
-                // Bottom controls
-                bottomControls
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 16)
             }
         }
         .onAppear {
@@ -75,6 +79,11 @@ struct OnboardingContainerView: View {
             musicKitAuthorized = newStatus == .authorized
         }
     }
+
+    // MARK: - Constants
+
+    /// Approximate height of bottom controls (dots + button + padding)
+    private var bottomControlsHeight: CGFloat { 100 }
 
     // MARK: - Bottom Controls
 

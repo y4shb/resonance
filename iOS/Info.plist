@@ -30,5 +30,7 @@
 	<string>Resonance reads heart rate and HRV data to personalize music selection.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>Resonance records workout context to improve music recommendations.</string>
+	<key>UILaunchScreen</key>
+	<dict/>
 </dict>
 </plist>

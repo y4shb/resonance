@@ -23,7 +23,7 @@ struct SettingsView: View {
     @State private var preferences = UserPreferences.load()
 
     // HealthKit
-    @State private var healthAuthStatus: HKAuthorizationStatus = .notDetermined
+    @State private var healthReadAccessVerified: Bool = false
     @State private var isRequestingHealthAuth: Bool = false
     @State private var healthAuthRequested: Bool = false
 
@@ -132,7 +132,7 @@ struct SettingsView: View {
                 healthAuthStatusBadge
             }
 
-            if !healthAuthRequested && healthAuthStatus == .notDetermined {
+            if !healthAuthRequested && !healthReadAccessVerified {
                 Button {
                     requestHealthAuthorization()
                 } label: {
@@ -147,7 +147,7 @@ struct SettingsView: View {
                 .disabled(isRequestingHealthAuth)
             }
 
-            if healthAuthRequested || healthAuthStatus == .sharingAuthorized {
+            if healthAuthRequested || healthReadAccessVerified {
                 Label("Heart Rate: Available", systemImage: "waveform.path.ecg")
                     .font(.subheadline)
                     .foregroundStyle(.green)
@@ -155,12 +155,6 @@ struct SettingsView: View {
                 Label("HRV: Available", systemImage: "chart.line.uptrend.xyaxis")
                     .font(.subheadline)
                     .foregroundStyle(.green)
-            }
-
-            if healthAuthStatus == .sharingDenied {
-                Text("Health access was denied. Please enable HealthKit in Settings > Privacy & Security > Health > Resonance.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
         } header: {
             Text("Health Integration")
@@ -174,18 +168,13 @@ struct SettingsView: View {
 
     @ViewBuilder
     private var healthAuthStatusBadge: some View {
-        if healthAuthRequested || healthAuthStatus == .sharingAuthorized {
-            Label("Authorized", systemImage: "checkmark.circle.fill")
+        if healthAuthRequested || healthReadAccessVerified {
+            Label("Connected", systemImage: "checkmark.circle.fill")
                 .font(.caption)
                 .foregroundStyle(.green)
                 .labelStyle(.titleAndIcon)
-        } else if healthAuthStatus == .sharingDenied {
-            Label("Denied", systemImage: "xmark.circle.fill")
-                .font(.caption)
-                .foregroundStyle(.red)
-                .labelStyle(.titleAndIcon)
         } else {
-            Label("Not Determined", systemImage: "questionmark.circle")
+            Label("Not Set Up", systemImage: "questionmark.circle")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .labelStyle(.titleAndIcon)
@@ -629,11 +618,27 @@ struct SettingsView: View {
     private func checkHealthAuthorizationStatus() {
         guard HKHealthStore.isHealthDataAvailable() else { return }
 
+        // HealthKit doesn't expose read authorization status directly.
+        // The only way to check is to attempt a query and see if data comes back.
         let healthStore = HKHealthStore()
         guard let heartRateType = HKQuantityType.quantityType(forIdentifier: .heartRate) else { return }
 
-        let status = healthStore.authorizationStatus(for: heartRateType)
-        healthAuthStatus = status
+        let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
+        let query = HKSampleQuery(
+            sampleType: heartRateType,
+            predicate: nil,
+            limit: 1,
+            sortDescriptors: [sortDescriptor]
+        ) { _, samples, error in
+            DispatchQueue.main.async {
+                // If we get samples back (even empty array with no error), read access was granted.
+                // A nil samples with an error means access was denied.
+                if error == nil {
+                    self.healthReadAccessVerified = true
+                }
+            }
+        }
+        healthStore.execute(query)
     }
 
     private func savePreferences() {

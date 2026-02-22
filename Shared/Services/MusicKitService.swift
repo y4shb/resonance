@@ -135,6 +135,7 @@ public final class MusicKitService: MusicKitServiceProtocol {
     private let player = ApplicationMusicPlayer.shared
     private var cancellables = Set<AnyCancellable>()
     private var stateObservationTask: Task<Void, Never>?
+    private var queueObservationTask: Task<Void, Never>?
 
     // MARK: - Computed Properties
 
@@ -158,6 +159,7 @@ public final class MusicKitService: MusicKitServiceProtocol {
 
     deinit {
         stateObservationTask?.cancel()
+        queueObservationTask?.cancel()
     }
 
     // MARK: - Authorization
@@ -365,12 +367,13 @@ public final class MusicKitService: MusicKitServiceProtocol {
     // MARK: - State Observation
 
     private func observePlayerState() {
+        logDebug("Starting player state observation", category: .musicKit)
+
+        // Observe playback status changes and also check for entry changes.
+        // State changes fire after queue changes settle, so entry.item is resolved.
         stateObservationTask = Task { [weak self] in
             guard let self = self else { return }
 
-            logDebug("Starting player state observation", category: .musicKit)
-
-            // Observe playback state using the player's objectWillChange
             for await _ in self.player.state.objectWillChange.values {
                 guard !Task.isCancelled else { break }
 
@@ -386,7 +389,33 @@ public final class MusicKitService: MusicKitServiceProtocol {
                     if self.nowPlayingEntry?.id != newEntry?.id {
                         self.nowPlayingEntry = newEntry
                         if let entry = newEntry {
-                            logDebug("Now playing entry changed: \(entry.title)", category: .musicKit)
+                            logDebug("Now playing entry changed (via state): \(entry.title)", category: .musicKit)
+                        } else {
+                            logDebug("Now playing entry cleared", category: .musicKit)
+                        }
+                    }
+                }
+            }
+        }
+
+        // Observe queue changes for faster song transition detection.
+        // Uses Task.yield() to let the change commit before reading currentEntry.
+        queueObservationTask = Task { [weak self] in
+            guard let self = self else { return }
+
+            for await _ in self.player.queue.objectWillChange.values {
+                guard !Task.isCancelled else { break }
+
+                // Yield to allow the property change to commit
+                await Task.yield()
+
+                let newEntry = self.player.queue.currentEntry
+
+                await MainActor.run {
+                    if self.nowPlayingEntry?.id != newEntry?.id {
+                        self.nowPlayingEntry = newEntry
+                        if let entry = newEntry {
+                            logDebug("Now playing entry changed (via queue): \(entry.title)", category: .musicKit)
                         } else {
                             logDebug("Now playing entry cleared", category: .musicKit)
                         }

@@ -14,6 +14,8 @@ import HealthKit
 // MARK: - Welcome Page
 
 struct WelcomePage: View {
+    let pageHeight: CGFloat
+
     var body: some View {
         VStack(spacing: 24) {
             Spacer()
@@ -43,8 +45,8 @@ struct WelcomePage: View {
                 .foregroundStyle(.secondary)
 
             Spacer()
-            Spacer()
         }
+        .frame(height: pageHeight)
         .padding(.horizontal, 32)
     }
 }
@@ -52,41 +54,47 @@ struct WelcomePage: View {
 // MARK: - Value Proposition Page
 
 struct ValuePropositionPage: View {
+    let pageHeight: CGFloat
+
     var body: some View {
-        VStack(spacing: 24) {
-            Spacer()
+        ScrollView {
+            VStack(spacing: 0) {
+                Spacer(minLength: 20)
 
-            Text("How It Works")
-                .font(.largeTitle)
-                .fontWeight(.bold)
+                Text("How It Works")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                    .padding(.bottom, 24)
 
-            VStack(spacing: 20) {
-                FeatureCard(
-                    icon: "heart.fill",
-                    iconColor: .red,
-                    title: "Biometric Sensing",
-                    description: "Reads your heart rate and activity to understand how you feel right now."
-                )
+                VStack(spacing: 20) {
+                    FeatureCard(
+                        icon: "heart.fill",
+                        iconColor: .red,
+                        title: "Biometric Sensing",
+                        description: "Reads your heart rate and activity to understand how you feel right now."
+                    )
 
-                FeatureCard(
-                    icon: "brain.head.profile",
-                    iconColor: .purple,
-                    title: "AI DJ",
-                    description: "Picks the perfect song for your current state and context."
-                )
+                    FeatureCard(
+                        icon: "brain.head.profile",
+                        iconColor: .purple,
+                        title: "AI DJ",
+                        description: "Picks the perfect song for your current state and context."
+                    )
 
-                FeatureCard(
-                    icon: "chart.line.uptrend.xyaxis",
-                    iconColor: .blue,
-                    title: "Learns Over Time",
-                    description: "Gets smarter with every listen, adapting to your unique preferences."
-                )
+                    FeatureCard(
+                        icon: "chart.line.uptrend.xyaxis",
+                        iconColor: .blue,
+                        title: "Learns Over Time",
+                        description: "Gets smarter with every listen, adapting to your unique preferences."
+                    )
+                }
+
+                Spacer(minLength: 20)
             }
-
-            Spacer()
-            Spacer()
+            .frame(minHeight: pageHeight)
+            .padding(.horizontal, 24)
         }
-        .padding(.horizontal, 24)
+        .scrollIndicators(.hidden)
     }
 }
 
@@ -130,52 +138,61 @@ private struct FeatureCard: View {
 struct MusicKitPermissionPage: View {
     @ObservedObject var musicService: MusicKitService
     @Binding var isAuthorized: Bool
+    let pageHeight: CGFloat
 
     @State private var isRequesting = false
 
     var body: some View {
-        VStack(spacing: 24) {
-            Spacer()
+        ScrollView {
+            VStack(spacing: 0) {
+                Spacer(minLength: 20)
 
-            // Icon
-            Image(systemName: "music.note.list")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 80, height: 80)
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [.pink, .orange],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+                // Icon
+                Image(systemName: "music.note.list")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 80, height: 80)
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [.pink, .orange],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
                     )
-                )
+                    .padding(.bottom, 24)
 
-            Text("Access Your Music Library")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-                .multilineTextAlignment(.center)
+                Text("Access Your Music Library")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                    .multilineTextAlignment(.center)
+                    .padding(.bottom, 24)
 
-            // Benefits list
-            VStack(alignment: .leading, spacing: 12) {
-                BenefitRow(icon: "play.circle", text: "Play songs from your library")
-                BenefitRow(icon: "list.bullet", text: "Read your playlists")
-                BenefitRow(icon: "lock.shield", text: "All data stays on your device")
+                // Benefits list
+                VStack(alignment: .leading, spacing: 12) {
+                    BenefitRow(icon: "play.circle", text: "Play songs from your library")
+                    BenefitRow(icon: "list.bullet", text: "Read your playlists")
+                    BenefitRow(icon: "lock.shield", text: "All data stays on your device")
+                }
+                .padding(.horizontal, 8)
+                .padding(.bottom, 32)
+
+                Spacer(minLength: 20)
+
+                // Authorization state
+                if isAuthorized {
+                    authorizedBadge
+                } else {
+                    grantAccessButton
+                    maybeLaterButton
+                        .padding(.top, 8)
+                }
+
+                Spacer(minLength: 20)
             }
-            .padding(.horizontal, 8)
-
-            Spacer()
-
-            // Authorization state
-            if isAuthorized {
-                authorizedBadge
-            } else {
-                grantAccessButton
-                maybeLaterButton
-            }
-
-            Spacer()
+            .frame(minHeight: pageHeight)
+            .padding(.horizontal, 24)
         }
-        .padding(.horizontal, 24)
+        .scrollIndicators(.hidden)
         .onAppear {
             isAuthorized = musicService.authorizationStatus == .authorized
         }
@@ -257,6 +274,7 @@ struct MusicKitPermissionPage: View {
 
 struct HealthKitPermissionPage: View {
     @Binding var healthKitRequested: Bool
+    let pageHeight: CGFloat
 
     @State private var isRequesting = false
     @State private var healthKitAvailable = HKHealthStore.isHealthDataAvailable()
@@ -264,50 +282,58 @@ struct HealthKitPermissionPage: View {
     private let healthStore = HKHealthStore()
 
     var body: some View {
-        VStack(spacing: 24) {
-            Spacer()
+        ScrollView {
+            VStack(spacing: 0) {
+                Spacer(minLength: 20)
 
-            // Icon
-            Image(systemName: "heart.text.square")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 80, height: 80)
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [.red, .pink],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+                // Icon
+                Image(systemName: "heart.text.square")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 80, height: 80)
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [.red, .pink],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
                     )
-                )
+                    .padding(.bottom, 24)
 
-            Text("Health & Activity Data")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-                .multilineTextAlignment(.center)
+                Text("Health & Activity Data")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                    .multilineTextAlignment(.center)
+                    .padding(.bottom, 24)
 
-            // Benefits list
-            VStack(alignment: .leading, spacing: 12) {
-                BenefitRow(icon: "heart.fill", text: "Heart rate for intensity matching")
-                BenefitRow(icon: "figure.run", text: "Activity detection for workouts")
-                BenefitRow(icon: "lock.shield", text: "Everything stays on-device")
+                // Benefits list
+                VStack(alignment: .leading, spacing: 12) {
+                    BenefitRow(icon: "heart.fill", text: "Heart rate for intensity matching")
+                    BenefitRow(icon: "figure.run", text: "Activity detection for workouts")
+                    BenefitRow(icon: "lock.shield", text: "Everything stays on-device")
+                }
+                .padding(.horizontal, 8)
+                .padding(.bottom, 32)
+
+                Spacer(minLength: 20)
+
+                // Authorization state
+                if healthKitRequested {
+                    healthKitGrantedBadge
+                } else if healthKitAvailable {
+                    grantHealthAccessButton
+                    maybeLaterButton
+                        .padding(.top, 8)
+                } else {
+                    healthKitUnavailableLabel
+                }
+
+                Spacer(minLength: 20)
             }
-            .padding(.horizontal, 8)
-
-            Spacer()
-
-            // Authorization state
-            if healthKitRequested {
-                healthKitGrantedBadge
-            } else if healthKitAvailable {
-                grantHealthAccessButton
-                maybeLaterButton
-            } else {
-                healthKitUnavailableLabel
-            }
-
-            Spacer()
+            .frame(minHeight: pageHeight)
+            .padding(.horizontal, 24)
         }
-        .padding(.horizontal, 24)
+        .scrollIndicators(.hidden)
     }
 
     // MARK: - Subviews
@@ -443,22 +469,24 @@ private struct BenefitRow: View {
 // MARK: - Previews
 
 #Preview("Welcome") {
-    WelcomePage()
+    WelcomePage(pageHeight: 700)
 }
 
 #Preview("Value Proposition") {
-    ValuePropositionPage()
+    ValuePropositionPage(pageHeight: 700)
 }
 
 #Preview("MusicKit Permission") {
     MusicKitPermissionPage(
         musicService: MusicKitService(),
-        isAuthorized: .constant(false)
+        isAuthorized: .constant(false),
+        pageHeight: 700
     )
 }
 
 #Preview("HealthKit Permission") {
     HealthKitPermissionPage(
-        healthKitRequested: .constant(false)
+        healthKitRequested: .constant(false),
+        pageHeight: 700
     )
 }
