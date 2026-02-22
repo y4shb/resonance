@@ -26,31 +26,41 @@ struct NowPlayingView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                Spacer()
+            Group {
+                if viewModel.activePlaylistName == nil && viewModel.currentSong == .placeholder {
+                    ContentUnavailableView(
+                        "No Playlist Selected",
+                        systemImage: "music.note.list",
+                        description: Text("Select a playlist from the Playlists tab to start your AI DJ session.")
+                    )
+                } else {
+                    VStack(spacing: 0) {
+                        Spacer()
 
-                artworkView
-                    .padding(.bottom, 24)
+                        artworkView
+                            .padding(.bottom, 24)
 
-                songInfoView
-                    .padding(.bottom, 28)
+                        songInfoView
+                            .padding(.bottom, 28)
 
-                progressView
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 16)
+                        progressView
+                            .padding(.horizontal, 24)
+                            .padding(.bottom, 16)
 
-                transportControls
-                    .padding(.bottom, 24)
+                        transportControls
+                            .padding(.bottom, 24)
 
-                Spacer()
+                        Spacer()
 
-                explanationBar
+                        explanationBar
 
-                stateInfoBar
+                        stateInfoBar
 
-                activePlaylistBar
+                        activePlaylistBar
+                    }
+                    .padding(.horizontal)
+                }
             }
-            .padding(.horizontal)
             .navigationTitle("Resonance")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -75,7 +85,11 @@ struct NowPlayingView: View {
                 MoodInputView(stateEngine: stateEngine)
             }
             .alert("Playback Error", isPresented: showErrorBinding) {
-                Button("OK") { viewModel.errorMessage = nil }
+                Button("Retry") {
+                    viewModel.errorMessage = nil
+                    viewModel.togglePlayPause()
+                }
+                Button("OK", role: .cancel) { viewModel.errorMessage = nil }
             } message: {
                 Text(viewModel.errorMessage ?? "")
             }
@@ -102,8 +116,7 @@ struct NowPlayingView: View {
             } else {
                 // Placeholder artwork
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(.clear)
-                    .glassEffect(.regular, in: .rect(cornerRadius: 12))
+                    .fill(.ultraThinMaterial)
                     .frame(
                         width: UIConstants.ArtworkSize.large,
                         height: UIConstants.ArtworkSize.large
@@ -278,7 +291,7 @@ struct NowPlayingView: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
-                .glassEffect(.regular, in: .rect(cornerRadius: 10))
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
                 .padding(.horizontal, 4)
                 .padding(.bottom, 8)
             }

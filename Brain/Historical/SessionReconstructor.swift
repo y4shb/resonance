@@ -123,6 +123,7 @@ final class SessionReconstructor {
 
             request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
             request.sortDescriptors = [NSSortDescriptor(key: "startedAt", ascending: true)]
+            request.fetchBatchSize = 50
 
             return try context.fetch(request)
         }

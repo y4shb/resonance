@@ -139,7 +139,50 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WatchConnectiv
                 logDebug("Complication not enabled, using transferUserInfo", category: .watchConnectivity)
             }
         } catch {
-            logError("Failed to encode complication data", error: error, category: .watchConnectivity)
+            logWarning("Complication data transfer failed, scheduling retry", category: .watchConnectivity)
+            Task {
+                await retryComplicationTransfer(data: data, attempt: 1, maxAttempts: 3)
+            }
+        }
+    }
+
+    // MARK: - Complication Transfer Retry
+
+    private func retryComplicationTransfer(data: ComplicationData, attempt: Int, maxAttempts: Int) async {
+        guard attempt <= maxAttempts else {
+            logWarning("Complication transfer failed after \(maxAttempts) attempts, giving up", category: .watchConnectivity)
+            return
+        }
+
+        let delaySeconds = UInt64(pow(2.0, Double(attempt - 1))) // 1s, 2s, 4s
+        let delayNanoseconds = delaySeconds * 1_000_000_000
+
+        do {
+            try await Task.sleep(nanoseconds: delayNanoseconds)
+        } catch {
+            return // Task was cancelled
+        }
+
+        guard let session = session, session.activationState == .activated else {
+            logWarning("Complication retry attempt \(attempt)/\(maxAttempts): session not activated", category: .watchConnectivity)
+            await retryComplicationTransfer(data: data, attempt: attempt + 1, maxAttempts: maxAttempts)
+            return
+        }
+
+        do {
+            let message = WatchMessage.complicationUpdate(data)
+            let dict = try message.toDictionary()
+
+            if session.isComplicationEnabled {
+                session.transferCurrentComplicationUserInfo(dict)
+                logInfo("Complication data transferred on retry attempt \(attempt)/\(maxAttempts)", category: .watchConnectivity)
+            } else {
+                session.transferUserInfo(dict)
+                logInfo("Complication data transferred via userInfo on retry attempt \(attempt)/\(maxAttempts)", category: .watchConnectivity)
+            }
+        } catch {
+            logWarning("Complication retry attempt \(attempt)/\(maxAttempts) failed: \(error.localizedDescription)", category: .watchConnectivity)
+            await retryComplicationTransfer(data: data, attempt: attempt + 1, maxAttempts: maxAttempts)
         }
     }
 

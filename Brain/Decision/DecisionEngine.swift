@@ -250,6 +250,7 @@ final class DecisionEngine: ObservableObject {
         let request = NSFetchRequest<Song>(entityName: "Song")
         request.predicate = NSPredicate(format: "ANY playlists.id == %@", playlistId as CVarArg)
         request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
+        request.fetchBatchSize = 50
 
         do {
             return try context.fetch(request)

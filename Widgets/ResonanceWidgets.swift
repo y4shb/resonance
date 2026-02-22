@@ -42,30 +42,34 @@ struct NowPlayingProvider: TimelineProvider {
             date: Date(),
             songTitle: "Song Title",
             artistName: "Artist Name",
-            isPlaying: true
+            isPlaying: true,
+            explanation: nil
         )
     }
 
     func getSnapshot(in context: Context, completion: @escaping (NowPlayingEntry) -> Void) {
+        let snapshot = WidgetDataStore.currentNowPlaying
         let entry = NowPlayingEntry(
             date: Date(),
-            songTitle: "Weightless",
-            artistName: "Marconi Union",
-            isPlaying: true
+            songTitle: snapshot.songTitle,
+            artistName: snapshot.artistName,
+            isPlaying: snapshot.isPlaying,
+            explanation: snapshot.explanation
         )
         completion(entry)
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<NowPlayingEntry>) -> Void) {
-        // In production, this would read from the App Group shared data
+        let snapshot = WidgetDataStore.currentNowPlaying
         let entry = NowPlayingEntry(
             date: Date(),
-            songTitle: "No song playing",
-            artistName: "Open Resonance to start",
-            isPlaying: false
+            songTitle: snapshot.songTitle,
+            artistName: snapshot.artistName,
+            isPlaying: snapshot.isPlaying,
+            explanation: snapshot.explanation
         )
 
-        let timeline = Timeline(entries: [entry], policy: .after(Date().addingTimeInterval(60)))
+        let timeline = Timeline(entries: [entry], policy: .never)
         completion(timeline)
     }
 }
@@ -77,6 +81,7 @@ struct NowPlayingEntry: TimelineEntry {
     let songTitle: String
     let artistName: String
     let isPlaying: Bool
+    let explanation: String?
 }
 
 // MARK: - Now Playing Widget View
@@ -153,6 +158,13 @@ struct NowPlayingWidgetView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
+
+                if let explanation = entry.explanation {
+                    Text(explanation)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(2)
+                }
             }
 
             Spacer()
@@ -196,17 +208,31 @@ struct StateWidget: Widget {
 
 struct StateProvider: TimelineProvider {
     func placeholder(in context: Context) -> StateEntry {
-        StateEntry(date: Date(), stateEmoji: "😌", stateName: "Relaxed", energy: 0.5)
+        StateEntry(date: Date(), stateEmoji: "\u{1F60C}", stateName: "Relaxed", energy: 0.5, heartRate: nil)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (StateEntry) -> Void) {
-        let entry = StateEntry(date: Date(), stateEmoji: "🧘", stateName: "Calm", energy: 0.3)
+        let snapshot = WidgetDataStore.currentState
+        let entry = StateEntry(
+            date: Date(),
+            stateEmoji: snapshot.stateEmoji,
+            stateName: snapshot.stateName,
+            energy: snapshot.energy,
+            heartRate: snapshot.heartRate
+        )
         completion(entry)
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<StateEntry>) -> Void) {
-        let entry = StateEntry(date: Date(), stateEmoji: "❓", stateName: "Unknown", energy: 0.5)
-        let timeline = Timeline(entries: [entry], policy: .after(Date().addingTimeInterval(60)))
+        let snapshot = WidgetDataStore.currentState
+        let entry = StateEntry(
+            date: Date(),
+            stateEmoji: snapshot.stateEmoji,
+            stateName: snapshot.stateName,
+            energy: snapshot.energy,
+            heartRate: snapshot.heartRate
+        )
+        let timeline = Timeline(entries: [entry], policy: .never)
         completion(timeline)
     }
 }
@@ -218,6 +244,7 @@ struct StateEntry: TimelineEntry {
     let stateEmoji: String
     let stateName: String
     let energy: Double
+    let heartRate: Double?
 }
 
 // MARK: - State Widget View
@@ -258,9 +285,20 @@ struct StateWidgetView: View {
             .frame(height: 8)
             .padding(.horizontal)
 
-            Text("Energy")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+            if let heartRate = entry.heartRate {
+                HStack(spacing: 2) {
+                    Image(systemName: "heart.fill")
+                        .foregroundStyle(.red)
+                        .font(.caption2)
+                    Text("\(Int(heartRate)) BPM")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            } else {
+                Text("Energy")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
         }
         .padding()
     }
@@ -273,4 +311,3 @@ struct StateWidgetView: View {
         }
     }
 }
-

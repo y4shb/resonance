@@ -99,7 +99,7 @@ extension WatchMessage {
     }
 }
 
-enum WatchMessageError: Error, LocalizedError {
+enum WatchMessageError: Error, LocalizedError, Equatable {
     case encodingFailed
     case decodingFailed
     case unknownMessageType

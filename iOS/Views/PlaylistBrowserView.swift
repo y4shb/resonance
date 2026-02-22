@@ -24,7 +24,15 @@ struct PlaylistBrowserView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if viewModel.isLoading && viewModel.playlists.isEmpty {
+                if viewModel.isMusicAuthDenied {
+                    PermissionStatusView(
+                        title: "Music Access Required",
+                        message: "Resonance needs access to Apple Music to browse your playlists.",
+                        systemImage: "music.note.list",
+                        actionTitle: "Grant Access",
+                        onAction: { viewModel.requestMusicAuthorization() }
+                    )
+                } else if viewModel.isLoading && viewModel.playlists.isEmpty {
                     loadingView
                 } else if viewModel.playlists.isEmpty {
                     emptyStateView
@@ -81,27 +89,11 @@ struct PlaylistBrowserView: View {
     // MARK: - Empty State View
 
     private var emptyStateView: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "music.note.list")
-                .font(.system(size: 48))
-                .foregroundStyle(.secondary)
-
-            Text("No Playlists Found")
-                .font(.title3)
-                .fontWeight(.semibold)
-
-            Text("Create playlists in Apple Music\nand they will appear here.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-
-            Button("Refresh") {
-                viewModel.fetchPlaylists()
-            }
-            .buttonStyle(.bordered)
-            .padding(.top, 8)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        ContentUnavailableView(
+            "No Playlists Found",
+            systemImage: "music.note.list",
+            description: Text("Create playlists in Apple Music, then pull to refresh.")
+        )
     }
 
     // MARK: - Playlist List
@@ -196,8 +188,7 @@ private struct PlaylistRow: View {
             ArtworkImage(artwork, width: UIConstants.ArtworkSize.small)
         } else {
             RoundedRectangle(cornerRadius: 6)
-                .fill(.clear)
-                .glassEffect(.regular, in: .rect(cornerRadius: 6))
+                .fill(.ultraThinMaterial)
                 .overlay(
                     Image(systemName: "music.note.list")
                         .font(.system(size: 18))

@@ -46,6 +46,8 @@ final class PhoneConnectivityService: NSObject, ObservableObject {
     }
 
     private var cancellables = Set<AnyCancellable>()
+    private var pendingBiometricData: [BiometricPacket] = []
+    private let maxPendingBiometricEntries = 10
 
     // MARK: - Initialization
 
@@ -75,8 +77,36 @@ final class PhoneConnectivityService: NSObject, ObservableObject {
     }
 
     func sendBiometricUpdate(_ packet: BiometricPacket) {
+        guard let session = session, session.activationState == .activated, session.isReachable else {
+            logWarning("Phone not reachable, queuing biometric data for later", category: .watchConnectivity)
+            pendingBiometricData.append(packet)
+            // Limit to last N entries to avoid memory issues
+            if pendingBiometricData.count > maxPendingBiometricEntries {
+                pendingBiometricData = Array(pendingBiometricData.suffix(maxPendingBiometricEntries))
+            }
+            return
+        }
+
         let message = WatchMessage.biometricUpdate(packet)
         sendMessageGuaranteed(message)
+    }
+
+    /// Sends all pending biometric data that was queued while the phone was unreachable.
+    func flushPendingData() {
+        guard !pendingBiometricData.isEmpty else { return }
+        guard let session = session, session.activationState == .activated, session.isReachable else {
+            logWarning("Cannot flush pending data: phone still not reachable", category: .watchConnectivity)
+            return
+        }
+
+        logInfo("Flushing \(pendingBiometricData.count) pending biometric entries", category: .watchConnectivity)
+        let dataToSend = pendingBiometricData
+        pendingBiometricData.removeAll()
+
+        for packet in dataToSend {
+            let message = WatchMessage.biometricUpdate(packet)
+            sendMessageGuaranteed(message)
+        }
     }
 
     func sendMoodInput(_ packet: MoodPacket) {
@@ -196,6 +226,10 @@ extension PhoneConnectivityService: WCSessionDelegate {
             self?.isPhoneReachable = session.isReachable
         }
         logInfo("Phone reachability changed: \(session.isReachable)", category: .watchConnectivity)
+
+        if session.isReachable {
+            flushPendingData()
+        }
     }
 
     // MARK: - Receiving Messages

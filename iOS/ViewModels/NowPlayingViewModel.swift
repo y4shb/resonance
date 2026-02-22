@@ -244,6 +244,16 @@ final class NowPlayingViewModel: ObservableObject {
 
         logDebug("Now playing: \(title) by \(subtitle)", category: .ui)
 
+        // Update iOS widgets
+        WidgetDataStore.updateNowPlaying(
+            title: title,
+            artist: subtitle,
+            isPlaying: isPlaying,
+            progress: playbackProgress,
+            duration: duration,
+            explanation: currentExplanation
+        )
+
         // Sync to Watch
         sendNowPlayingToWatch()
     }
@@ -254,6 +264,16 @@ final class NowPlayingViewModel: ObservableObject {
 
         if wasPlaying != isPlaying {
             logDebug("Playback state changed: \(isPlaying ? "playing" : "paused/stopped")", category: .ui)
+
+            // Update iOS widgets with play/pause state change
+            WidgetDataStore.updateNowPlaying(
+                title: currentSong.title,
+                artist: currentSong.artistName,
+                isPlaying: isPlaying,
+                progress: playbackProgress,
+                duration: duration,
+                explanation: currentExplanation
+            )
 
             // Sync play/pause state to Watch
             sendNowPlayingToWatch()

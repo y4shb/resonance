@@ -11,10 +11,17 @@ import MusicKit
 import HealthKit
 import BackgroundTasks
 import Combine
+import WidgetKit
 
 @main
 struct ResonanceApp: App {
     // MARK: - State
+
+    /// Whether the user has completed the onboarding flow
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+
+    /// Scene phase for detecting foreground/background transitions
+    @Environment(\.scenePhase) private var scenePhase
 
     /// Persistence controller for Core Data
     let persistenceController = PersistenceController.shared
@@ -136,14 +143,29 @@ struct ResonanceApp: App {
 
     var body: some Scene {
         WindowGroup {
-            MainView(
-                nowPlayingViewModel: nowPlayingViewModel,
-                playlistViewModel: playlistViewModel,
-                musicService: musicService,
-                historicalEngine: historicalEngine,
-                stateEngine: stateEngine
-            )
+            Group {
+                if hasCompletedOnboarding {
+                    MainView(
+                        nowPlayingViewModel: nowPlayingViewModel,
+                        playlistViewModel: playlistViewModel,
+                        musicService: musicService,
+                        historicalEngine: historicalEngine,
+                        stateEngine: stateEngine
+                    )
+                } else {
+                    OnboardingContainerView(
+                        hasCompletedOnboarding: $hasCompletedOnboarding,
+                        musicService: musicService
+                    )
+                }
+            }
             .environment(\.managedObjectContext, persistenceController.viewContext)
+            .onChange(of: scenePhase) { _, newPhase in
+                if newPhase == .active {
+                    // Re-check authorization when returning from Settings
+                    musicService.refreshAuthorizationStatus()
+                }
+            }
             .task {
                 await requestMusicKitAuthorization()
 
@@ -168,6 +190,20 @@ struct ResonanceApp: App {
                             guardAdjuster?.recordHeartRate(hr, currentNeed: stateEngine?.currentState.inferredNeed)
                         }
                     }
+
+                // Wire state engine changes to iOS widgets
+                stateEngine.$currentState
+                    .debounce(for: .seconds(30), scheduler: DispatchQueue.main)
+                    .sink { state in
+                        WidgetDataStore.updateState(
+                            emoji: stateEmoji(for: state.context),
+                            stateName: state.context.displayName,
+                            energy: state.energy,
+                            heartRate: nil,
+                            context: state.context.rawValue
+                        )
+                    }
+                    .store(in: &Self.widgetCancellables)
 
                 // Wire EventLogger active event to ContextCollector for biometric tagging
                 contextCollector.observeEventLogger(eventLogger)
@@ -204,6 +240,9 @@ struct ResonanceApp: App {
 
     /// Holds the biometric-to-guard-adjuster subscription across struct copies.
     private static var biometricCancellable: AnyCancellable?
+
+    /// Holds the state-engine-to-widget subscription across struct copies.
+    private static var widgetCancellables = Set<AnyCancellable>()
 
     /// Guard against double-registration crash (BGTaskScheduler crashes if register() called twice for same ID)
     private static var hasRegisteredTasks = false
@@ -353,6 +392,24 @@ struct ResonanceApp: App {
         } catch {
             logError("Failed to schedule historical analysis", error: error, category: .background)
         }
+    }
+}
+
+// MARK: - State Emoji Helper
+
+/// Maps an activity context to a representative emoji for widget display.
+/// Standalone function to avoid coupling to NowPlayingViewModel's private method.
+private func stateEmoji(for context: ActivityContext) -> String {
+    switch context {
+    case .workout: return "\u{1F3C3}"
+    case .postWorkout: return "\u{1F4AA}"
+    case .deepWork: return "\u{1F9E0}"
+    case .work: return "\u{1F4BC}"
+    case .commute: return "\u{1F697}"
+    case .preSleep: return "\u{1F319}"
+    case .morning: return "\u{2600}\u{FE0F}"
+    case .relaxation: return "\u{1F9D8}"
+    default: return "\u{1F3B5}"
     }
 }
 

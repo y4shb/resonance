@@ -2,11 +2,12 @@
 //  SettingsView.swift
 //  Resonance
 //
-//  Basic settings shell for M1. Shows MusicKit authorization status,
-//  app version, and placeholder sections for future features.
+//  Settings view for managing MusicKit/HealthKit authorization,
+//  user preferences, ranking weights, behavioral rules, and data.
 //
 
 import SwiftUI
+import HealthKit
 import MusicKit
 
 // MARK: - Settings View
@@ -19,6 +20,16 @@ struct SettingsView: View {
     @ObservedObject var stateEngine: StateEngine
 
     @State private var isRequestingAuth: Bool = false
+    @State private var preferences = UserPreferences.load()
+
+    // HealthKit
+    @State private var healthAuthStatus: HKAuthorizationStatus = .notDetermined
+    @State private var isRequestingHealthAuth: Bool = false
+    @State private var healthAuthRequested: Bool = false
+
+    // Alerts
+    @State private var showClearHistoryAlert: Bool = false
+    @State private var showResetPreferencesAlert: Bool = false
 
     // MARK: - Body
 
@@ -29,7 +40,11 @@ struct SettingsView: View {
                 healthKitSection
                 historicalAnalysisSection
                 stateEngineSection
-                preferencesSection
+                rankingWeightsSection
+                behavioralPreferencesSection
+                timeOfDaySection
+                dataManagementSection
+                privacySection
                 aboutSection
             }
             .listStyle(.insetGrouped)
@@ -107,21 +122,73 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: - HealthKit Section (Placeholder)
+    // MARK: - HealthKit Section
 
     private var healthKitSection: some View {
         Section {
             HStack {
                 Label("HealthKit", systemImage: "heart.fill")
                 Spacer()
-                Text("Coming Soon")
+                healthAuthStatusBadge
+            }
+
+            if !healthAuthRequested && healthAuthStatus == .notDetermined {
+                Button {
+                    requestHealthAuthorization()
+                } label: {
+                    HStack {
+                        Text("Grant Health Access")
+                        if isRequestingHealthAuth {
+                            Spacer()
+                            ProgressView()
+                        }
+                    }
+                }
+                .disabled(isRequestingHealthAuth)
+            }
+
+            if healthAuthRequested || healthAuthStatus == .sharingAuthorized {
+                Label("Heart Rate: Available", systemImage: "waveform.path.ecg")
+                    .font(.subheadline)
+                    .foregroundStyle(.green)
+
+                Label("HRV: Available", systemImage: "chart.line.uptrend.xyaxis")
+                    .font(.subheadline)
+                    .foregroundStyle(.green)
+            }
+
+            if healthAuthStatus == .sharingDenied {
+                Text("Health access was denied. Please enable HealthKit in Settings > Privacy & Security > Health > Resonance.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
         } header: {
             Text("Health Integration")
         } footer: {
-            Text("Heart rate and activity data will be used to personalize music selection in a future update.")
+            Text("Heart rate and HRV data are used to personalize music selection based on your physiological state.")
+        }
+        .onAppear {
+            checkHealthAuthorizationStatus()
+        }
+    }
+
+    @ViewBuilder
+    private var healthAuthStatusBadge: some View {
+        if healthAuthRequested || healthAuthStatus == .sharingAuthorized {
+            Label("Authorized", systemImage: "checkmark.circle.fill")
+                .font(.caption)
+                .foregroundStyle(.green)
+                .labelStyle(.titleAndIcon)
+        } else if healthAuthStatus == .sharingDenied {
+            Label("Denied", systemImage: "xmark.circle.fill")
+                .font(.caption)
+                .foregroundStyle(.red)
+                .labelStyle(.titleAndIcon)
+        } else {
+            Label("Not Determined", systemImage: "questionmark.circle")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .labelStyle(.titleAndIcon)
         }
     }
 
@@ -227,27 +294,238 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: - Preferences Section (Placeholder)
+    // MARK: - Ranking Weights Section
 
-    private var preferencesSection: some View {
+    private var rankingWeightsSection: some View {
         Section {
-            HStack {
-                Label("Music Preferences", systemImage: "slider.horizontal.3")
-                Spacer()
-                Text("Coming Soon")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            weightSlider(label: "BPM Match", value: $preferences.bpmWeight)
+            weightSlider(label: "Energy Level", value: $preferences.energyWeight)
+            weightSlider(label: "Familiarity", value: $preferences.familiarityWeight)
+            weightSlider(label: "Historical", value: $preferences.historicalWeight)
+            weightSlider(label: "Context", value: $preferences.contextWeight)
+
+            Button("Normalize Weights") {
+                preferences.normalizeWeights()
+                savePreferences()
             }
 
+            HStack(spacing: 12) {
+                Button("Focus") {
+                    preferences = .focusPreset
+                    savePreferences()
+                }
+                .buttonStyle(.bordered)
+
+                Button("Workout") {
+                    preferences = .workoutPreset
+                    savePreferences()
+                }
+                .buttonStyle(.bordered)
+
+                Button("Relaxation") {
+                    preferences = .relaxationPreset
+                    savePreferences()
+                }
+                .buttonStyle(.bordered)
+            }
+
+            Button("Reset to Defaults") {
+                preferences = .default
+                savePreferences()
+            }
+            .foregroundStyle(.red)
+        } header: {
+            Text("Ranking Weights")
+        } footer: {
+            Text("Adjust how different factors influence song selection. Weights should sum to 100%. Use Normalize to rebalance.")
+        }
+    }
+
+    private func weightSlider(label: String, value: Binding<Double>) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Label("Notifications", systemImage: "bell.badge")
+                Text(label)
+                    .font(.subheadline)
                 Spacer()
-                Text("Coming Soon")
-                    .font(.caption)
+                Text("\(Int(value.wrappedValue * 100))%")
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
+                    .monospacedDigit()
+            }
+            Slider(value: value, in: 0.0...1.0, step: 0.01) { editing in
+                if !editing {
+                    savePreferences()
+                }
+            }
+        }
+    }
+
+    // MARK: - Behavioral Preferences Section
+
+    private var behavioralPreferencesSection: some View {
+        Section {
+            Stepper(
+                "Avoid Recent: \(preferences.avoidRecentMinutes) min",
+                value: $preferences.avoidRecentMinutes,
+                in: 0...480,
+                step: 15
+            ) { editing in
+                if !editing {
+                    savePreferences()
+                }
+            }
+
+            Stepper(
+                "Max Same Artist in Row: \(preferences.maxSameArtistInRow)",
+                value: $preferences.maxSameArtistInRow,
+                in: 1...10
+            ) { editing in
+                if !editing {
+                    savePreferences()
+                }
+            }
+
+            Toggle("Prefer Familiar in Stress", isOn: $preferences.preferFamiliarInStress)
+                .onChange(of: preferences.preferFamiliarInStress) { _, _ in
+                    savePreferences()
+                }
+
+            Toggle("Enable Smooth Transitions", isOn: $preferences.enableSmoothTransitions)
+                .onChange(of: preferences.enableSmoothTransitions) { _, _ in
+                    savePreferences()
+                }
+        } header: {
+            Text("Behavioral Preferences")
+        } footer: {
+            Text("Control playback behavior such as song repetition avoidance and artist variety.")
+        }
+    }
+
+    // MARK: - Time of Day Section
+
+    private var timeOfDaySection: some View {
+        Section {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text("Morning Max BPM")
+                        .font(.subheadline)
+                    Spacer()
+                    Text("\(Int(preferences.morningMaxBPM))")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                }
+                Slider(value: $preferences.morningMaxBPM, in: 60...200, step: 5) { editing in
+                    if !editing {
+                        savePreferences()
+                    }
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text("Night Max BPM")
+                        .font(.subheadline)
+                    Spacer()
+                    Text("\(Int(preferences.nightMaxBPM))")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                }
+                Slider(value: $preferences.nightMaxBPM, in: 40...150, step: 5) { editing in
+                    if !editing {
+                        savePreferences()
+                    }
+                }
+            }
+
+            Picker("Morning Ends At", selection: $preferences.morningEndHour) {
+                ForEach(5...12, id: \.self) { hour in
+                    Text("\(hour):00").tag(hour)
+                }
+            }
+            .onChange(of: preferences.morningEndHour) { _, _ in
+                savePreferences()
+            }
+
+            Picker("Night Starts At", selection: $preferences.nightStartHour) {
+                ForEach(18...23, id: \.self) { hour in
+                    Text("\(hour):00").tag(hour)
+                }
+            }
+            .onChange(of: preferences.nightStartHour) { _, _ in
+                savePreferences()
             }
         } header: {
-            Text("Preferences")
+            Text("Time-of-Day Rules")
+        } footer: {
+            Text("Limit BPM during morning and evening hours for gentler music at appropriate times.")
+        }
+    }
+
+    // MARK: - Data Management Section
+
+    private var dataManagementSection: some View {
+        Section {
+            Button(role: .destructive) {
+                showClearHistoryAlert = true
+            } label: {
+                Label("Clear All Listening History", systemImage: "trash")
+            }
+            .alert("Clear All Listening History?", isPresented: $showClearHistoryAlert) {
+                Button("Cancel", role: .cancel) { }
+                Button("Clear All", role: .destructive) {
+                    try? PersistenceController.shared.deleteAllData()
+                }
+            } message: {
+                Text("This will permanently delete all listening history, session data, and learned song effectiveness scores. This action cannot be undone.")
+            }
+
+            Button(role: .destructive) {
+                showResetPreferencesAlert = true
+            } label: {
+                Label("Reset Preferences", systemImage: "arrow.counterclockwise")
+            }
+            .alert("Reset All Preferences?", isPresented: $showResetPreferencesAlert) {
+                Button("Cancel", role: .cancel) { }
+                Button("Reset", role: .destructive) {
+                    UserPreferences.reset()
+                    preferences = UserPreferences.load()
+                }
+            } message: {
+                Text("This will restore all preferences to their default values.")
+            }
+
+            Button {
+                Task { await historicalEngine.runFullBackfill() }
+            } label: {
+                Label("Re-run Historical Backfill", systemImage: "arrow.clockwise")
+            }
+        } header: {
+            Text("Data Management")
+        }
+    }
+
+    // MARK: - Privacy Section
+
+    private var privacySection: some View {
+        Section {
+            Toggle("Backup to iCloud", isOn: $preferences.backupToiCloud)
+                .onChange(of: preferences.backupToiCloud) { _, _ in
+                    savePreferences()
+                }
+
+            Link(destination: URL(string: "https://resonance.app/privacy")!) {
+                HStack {
+                    Text("Privacy Policy")
+                    Spacer()
+                    Image(systemName: "arrow.up.right.square")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        } header: {
+            Text("Privacy")
         }
     }
 
@@ -275,6 +553,16 @@ struct SettingsView: View {
                 Text(buildNumber)
                     .foregroundStyle(.secondary)
             }
+
+            Link(destination: URL(string: "mailto:support@resonance.app")!) {
+                HStack {
+                    Text("Contact Support")
+                    Spacer()
+                    Image(systemName: "envelope")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
         } header: {
             Text("About")
         }
@@ -290,6 +578,66 @@ struct SettingsView: View {
             await musicService.requestAuthorization()
             isRequestingAuth = false
         }
+    }
+
+    private func requestHealthAuthorization() {
+        isRequestingHealthAuth = true
+        logInfo("User tapped request health authorization", category: .ui)
+
+        Task {
+            let healthStore = HKHealthStore()
+            let readTypes: Set<HKObjectType> = {
+                var types = Set<HKObjectType>()
+                if let hr = HKQuantityType.quantityType(forIdentifier: .heartRate) {
+                    types.insert(hr)
+                }
+                if let hrv = HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN) {
+                    types.insert(hrv)
+                }
+                if let rhr = HKQuantityType.quantityType(forIdentifier: .restingHeartRate) {
+                    types.insert(rhr)
+                }
+                if let steps = HKQuantityType.quantityType(forIdentifier: .stepCount) {
+                    types.insert(steps)
+                }
+                if let energy = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned) {
+                    types.insert(energy)
+                }
+                if let sleep = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) {
+                    types.insert(sleep)
+                }
+                types.insert(HKObjectType.workoutType())
+                return types
+            }()
+
+            do {
+                try await healthStore.requestAuthorization(toShare: [], read: readTypes)
+                await MainActor.run {
+                    healthAuthRequested = true
+                    isRequestingHealthAuth = false
+                }
+                logInfo("HealthKit authorization requested from Settings", category: .ui)
+            } catch {
+                await MainActor.run {
+                    isRequestingHealthAuth = false
+                }
+                logError("HealthKit authorization request failed from Settings", error: error, category: .ui)
+            }
+        }
+    }
+
+    private func checkHealthAuthorizationStatus() {
+        guard HKHealthStore.isHealthDataAvailable() else { return }
+
+        let healthStore = HKHealthStore()
+        guard let heartRateType = HKQuantityType.quantityType(forIdentifier: .heartRate) else { return }
+
+        let status = healthStore.authorizationStatus(for: heartRateType)
+        healthAuthStatus = status
+    }
+
+    private func savePreferences() {
+        try? preferences.save()
     }
 
     // MARK: - App Info

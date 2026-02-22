@@ -188,6 +188,16 @@ public final class MusicKitService: MusicKitServiceProtocol {
         return status
     }
 
+    /// Re-checks the current MusicKit authorization status without prompting the user.
+    /// Useful when returning from Settings where the user may have changed permissions.
+    public func refreshAuthorizationStatus() {
+        let status = MusicAuthorization.currentStatus
+        if authorizationStatus != status {
+            authorizationStatus = status
+            logInfo("MusicKit authorization status refreshed: \(status)", category: .musicKit)
+        }
+    }
+
     // MARK: - Library Access
 
     public func fetchUserPlaylists() async throws -> MusicItemCollection<MusicKit.Playlist> {

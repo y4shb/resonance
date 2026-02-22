@@ -29,6 +29,7 @@ final class ContextBroadcaster: ObservableObject {
 
     private var broadcastTimer: Timer?
     private var cancellables = Set<AnyCancellable>()
+    private var lastFailedSignal: MacOSContextSignal?
 
     // CloudKit
     private lazy var container = CKContainer(identifier: "iCloud.com.y4sh.resonance")
@@ -147,9 +148,20 @@ final class ContextBroadcaster: ObservableObject {
     // MARK: - CloudKit Broadcast
 
     private func broadcastContext() {
+        // Retry last-failed signal first, if any
+        if let failedSignal = lastFailedSignal {
+            logInfo("Retrying previously failed context broadcast before current", category: .macOSContext)
+            lastFailedSignal = nil
+            saveSignalToCloudKit(failedSignal, attempt: 1, maxAttempts: 3)
+        }
+
         let signal = buildSignal()
         latestSignal = signal
 
+        saveSignalToCloudKit(signal, attempt: 1, maxAttempts: 3)
+    }
+
+    private func saveSignalToCloudKit(_ signal: MacOSContextSignal, attempt: Int, maxAttempts: Int) {
         isSyncing = true
 
         let record = CKRecord(recordType: recordType)
@@ -170,7 +182,19 @@ final class ContextBroadcaster: ObservableObject {
             DispatchQueue.main.async {
                 self?.isSyncing = false
                 if let error = error {
-                    logError("ContextBroadcaster: CloudKit save failed", error: error, category: .network)
+                    if attempt < maxAttempts {
+                        logInfo("Retrying failed context broadcast (attempt \(attempt + 1)/\(maxAttempts))", category: .macOSContext)
+                        let delaySeconds = pow(2.0, Double(attempt - 1)) // 1s, 2s, 4s
+                        Task {
+                            try? await Task.sleep(nanoseconds: UInt64(delaySeconds * 1_000_000_000))
+                            await MainActor.run {
+                                self?.saveSignalToCloudKit(signal, attempt: attempt + 1, maxAttempts: maxAttempts)
+                            }
+                        }
+                    } else {
+                        logError("ContextBroadcaster: CloudKit save failed after \(maxAttempts) attempts", error: error, category: .macOSContext)
+                        self?.lastFailedSignal = signal
+                    }
                 } else {
                     self?.lastSyncDate = Date()
                     logDebug(

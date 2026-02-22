@@ -46,6 +46,9 @@ final class PlaylistViewModel: ObservableObject {
     /// The currently selected/active playlist name.
     @Published private(set) var activePlaylistName: String?
 
+    /// Whether Apple Music authorization has been denied.
+    @Published private(set) var isMusicAuthDenied: Bool = false
+
     // MARK: - Private Properties
 
     private let musicService: MusicKitService
@@ -58,6 +61,12 @@ final class PlaylistViewModel: ObservableObject {
         self.musicService = musicService
         self.nowPlayingViewModel = nowPlayingViewModel
 
+        // Track authorization status changes
+        musicService.authorizationStatusPublisher
+            .receive(on: DispatchQueue.main)
+            .map { $0 == .denied }
+            .assign(to: &$isMusicAuthDenied)
+
         logDebug("PlaylistViewModel initializing", category: .ui)
     }
 
@@ -66,6 +75,16 @@ final class PlaylistViewModel: ObservableObject {
     /// Links this view model to a NowPlayingViewModel for active playlist propagation.
     func linkNowPlaying(_ viewModel: NowPlayingViewModel) {
         self.nowPlayingViewModel = viewModel
+    }
+
+    /// Requests Apple Music authorization and refreshes playlists on success.
+    func requestMusicAuthorization() {
+        Task {
+            let status = await musicService.requestAuthorization()
+            if status == .authorized {
+                fetchPlaylists()
+            }
+        }
     }
 
     /// Fetches all playlists from the user's Apple Music library.
@@ -114,6 +133,11 @@ final class PlaylistViewModel: ObservableObject {
                     let repo = PlaylistRepository()
                     try? await repo.syncPlaylists(from: musicPlaylists)
                 }
+            } catch is MusicKitServiceError where musicService.authorizationStatus == .denied {
+                self.isLoading = false
+                self.isMusicAuthDenied = true
+                self.errorMessage = "Apple Music access is required. Please grant access in Settings."
+                logError("Failed to fetch playlists: authorization denied", category: .musicKit)
             } catch {
                 self.isLoading = false
                 self.errorMessage = error.localizedDescription

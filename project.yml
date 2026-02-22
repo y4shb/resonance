@@ -129,6 +129,7 @@ targets:
           - "**/*.entitlements"
       - path: Shared/Models
       - path: Shared/Utilities/Constants.swift
+      - path: Shared/Services/WidgetDataStore.swift
     entitlements:
       path: Widgets/ResonanceWidgets.entitlements
     info:
@@ -185,6 +186,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.y4sh.resonance.tests
         TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Resonance.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Resonance"
         BUNDLE_LOADER: "$(TEST_HOST)"
+        GENERATE_INFOPLIST_FILE: YES
 
 schemes:
   # ============================================
