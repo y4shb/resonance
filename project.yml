@@ -39,8 +39,26 @@ targets:
       - path: Brain
     entitlements:
       path: iOS/Entitlements/Resonance.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.y4sh.resonance
+        com.apple.developer.healthkit: true
+        com.apple.developer.healthkit.access: []
+        com.apple.developer.healthkit.background-delivery: true
+        com.apple.developer.icloud-services:
+          - CloudKit
+        com.apple.developer.icloud-container-identifiers:
+          - iCloud.com.y4sh.resonance
     info:
       path: iOS/Info.plist
+      properties:
+        NSAppleMusicUsageDescription: "Resonance needs access to Apple Music to play and analyze your music library."
+        NSHealthShareUsageDescription: "Resonance reads heart rate and HRV data to personalize music selection."
+        NSHealthUpdateUsageDescription: "Resonance records workout context to improve music recommendations."
+        BGTaskSchedulerPermittedIdentifiers:
+          - com.y4sh.resonance.playlistSync
+          - com.y4sh.resonance.featureUpdate
+          - com.y4sh.resonance.historicalAnalysis
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.y4sh.resonance.ios

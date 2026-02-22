@@ -2,6 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.y4sh.resonance.playlistSync</string>
+		<string>com.y4sh.resonance.featureUpdate</string>
+		<string>com.y4sh.resonance.historicalAnalysis</string>
+	</array>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleExecutable</key>
@@ -19,22 +25,10 @@
 	<key>CFBundleVersion</key>
 	<string>1</string>
 	<key>NSAppleMusicUsageDescription</key>
-	<string>Resonance needs access to your Apple Music library to select songs that match your current state.</string>
+	<string>Resonance needs access to Apple Music to play and analyze your music library.</string>
 	<key>NSHealthShareUsageDescription</key>
-	<string>Resonance reads your heart rate and HRV to understand your current energy and stress levels for better song selection.</string>
+	<string>Resonance reads heart rate and HRV data to personalize music selection.</string>
 	<key>NSHealthUpdateUsageDescription</key>
-	<string>Resonance saves session quality data to help correlate your listening with wellness outcomes.</string>
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>audio</string>
-		<string>fetch</string>
-		<string>processing</string>
-	</array>
-	<key>BGTaskSchedulerPermittedIdentifiers</key>
-	<array>
-		<string>com.y4sh.resonance.playlistSync</string>
-		<string>com.y4sh.resonance.featureUpdate</string>
-		<string>com.y4sh.resonance.historicalAnalysis</string>
-	</array>
+	<string>Resonance records workout context to improve music recommendations.</string>
 </dict>
 </plist>
