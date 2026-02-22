@@ -11,7 +11,7 @@ import os.log
 // MARK: - Log Categories
 
 /// Categories for organizing log output
-public enum LogCategory: String, CaseIterable {
+public enum LogCategory: String, CaseIterable, Sendable {
     case general = "General"
     case stateEngine = "StateEngine"
     case decisionEngine = "DecisionEngine"

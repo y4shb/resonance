@@ -16,6 +16,7 @@ struct MainView: View {
     @ObservedObject var nowPlayingViewModel: NowPlayingViewModel
     @ObservedObject var playlistViewModel: PlaylistViewModel
     let musicService: MusicKitService
+    @ObservedObject var historicalEngine: HistoricalEngine
 
     @State private var selectedTab: Tab = .nowPlaying
 
@@ -65,7 +66,7 @@ struct MainView: View {
             }
             .tag(Tab.playlists)
 
-            SettingsView(musicService: musicService)
+            SettingsView(musicService: musicService, historicalEngine: historicalEngine)
                 .tabItem {
                     Label(Tab.settings.title, systemImage: Tab.settings.systemImage)
                 }
@@ -81,9 +82,11 @@ struct MainView: View {
 // MARK: - Preview
 
 #Preview {
+    let service = MusicKitService()
     MainView(
-        nowPlayingViewModel: NowPlayingViewModel(musicService: MusicKitService()),
-        playlistViewModel: PlaylistViewModel(musicService: MusicKitService()),
-        musicService: MusicKitService()
+        nowPlayingViewModel: NowPlayingViewModel(musicService: service),
+        playlistViewModel: PlaylistViewModel(musicService: service),
+        musicService: service,
+        historicalEngine: HistoricalEngine(healthKitService: HealthKitService())
     )
 }

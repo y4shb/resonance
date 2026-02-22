@@ -48,7 +48,7 @@ final class SongRepository {
         let playlistObjectID = playlist.objectID
 
         logInfo(
-            "Starting song sync: \(songArray.count) songs for playlist '\(playlist.name)'",
+            "Starting song sync: \(songArray.count) songs for playlist '\(playlist.name ?? "unknown")'",
             category: .persistence
         )
 
@@ -137,7 +137,7 @@ final class SongRepository {
             }
 
             logInfo(
-                "Song sync complete for '\(backgroundPlaylist.name)' — created: \(created), updated: \(updated)",
+                "Song sync complete for '\(backgroundPlaylist.name ?? "unknown")' — created: \(created), updated: \(updated)",
                 category: .persistence
             )
         }
@@ -162,7 +162,7 @@ final class SongRepository {
             return try persistence.viewContext.fetch(request)
         } catch {
             logError(
-                "Failed to fetch songs for playlist '\(playlist.name)'",
+                "Failed to fetch songs for playlist '\(playlist.name ?? "unknown")'",
                 error: error,
                 category: .persistence
             )
@@ -257,13 +257,13 @@ final class SongRepository {
                 if wasSkipped {
                     backgroundSong.totalSkipCount += 1
                     logDebug(
-                        "Incremented skip count for '\(backgroundSong.title)' to \(backgroundSong.totalSkipCount)",
+                        "Incremented skip count for '\(backgroundSong.title ?? "unknown")' to \(backgroundSong.totalSkipCount)",
                         category: .persistence
                     )
                 } else {
                     backgroundSong.totalPlayCount += 1
                     logDebug(
-                        "Incremented play count for '\(backgroundSong.title)' to \(backgroundSong.totalPlayCount)",
+                        "Incremented play count for '\(backgroundSong.title ?? "unknown")' to \(backgroundSong.totalPlayCount)",
                         category: .persistence
                     )
                 }

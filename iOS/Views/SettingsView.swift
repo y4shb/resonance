@@ -15,6 +15,7 @@ struct SettingsView: View {
     // MARK: - Properties
 
     @ObservedObject var musicService: MusicKitService
+    @ObservedObject var historicalEngine: HistoricalEngine
 
     @State private var isRequestingAuth: Bool = false
 
@@ -25,6 +26,7 @@ struct SettingsView: View {
             List {
                 musicKitSection
                 healthKitSection
+                historicalAnalysisSection
                 preferencesSection
                 aboutSection
             }
@@ -121,6 +123,84 @@ struct SettingsView: View {
         }
     }
 
+    // MARK: - Historical Analysis Section
+
+    private var historicalAnalysisSection: some View {
+        Section {
+            switch historicalEngine.progress {
+            case .idle:
+                HStack {
+                    Label("Last Run", systemImage: "clock")
+                    Spacer()
+                    Text(historicalEngine.lastBackfillDate?.formatted(date: .abbreviated, time: .shortened) ?? "Never")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Button {
+                    Task { await historicalEngine.runFullBackfill() }
+                } label: {
+                    Label("Run Full Backfill", systemImage: "arrow.clockwise")
+                }
+
+            case .reconstructingSessions:
+                HStack {
+                    ProgressView()
+                        .padding(.trailing, 8)
+                    Text("Reconstructing sessions...")
+                        .foregroundStyle(.secondary)
+                }
+
+            case .calculatingSongImpacts:
+                HStack {
+                    ProgressView()
+                        .padding(.trailing, 8)
+                    Text("Calculating song impacts...")
+                        .foregroundStyle(.secondary)
+                }
+
+            case .calculatingPlaylistImpacts:
+                HStack {
+                    ProgressView()
+                        .padding(.trailing, 8)
+                    Text("Calculating playlist impacts...")
+                        .foregroundStyle(.secondary)
+                }
+
+            case .completed(let sessions, let events, let playlists):
+                Label(
+                    "\(sessions) sessions, \(events) events, \(playlists) playlists",
+                    systemImage: "checkmark.circle.fill"
+                )
+                .foregroundStyle(.green)
+                .font(.caption)
+
+                HStack {
+                    Label("Last Run", systemImage: "clock")
+                    Spacer()
+                    Text(historicalEngine.lastBackfillDate?.formatted(date: .abbreviated, time: .shortened) ?? "Just now")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+            case .failed(let message):
+                Label(message, systemImage: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.red)
+                    .font(.caption)
+
+                Button {
+                    Task { await historicalEngine.runFullBackfill() }
+                } label: {
+                    Label("Retry", systemImage: "arrow.clockwise")
+                }
+            }
+        } header: {
+            Text("Historical Analysis")
+        } footer: {
+            Text("Analyzes your listening history to learn song effectiveness across different contexts.")
+        }
+    }
+
     // MARK: - Preferences Section (Placeholder)
 
     private var preferencesSection: some View {
@@ -200,5 +280,8 @@ struct SettingsView: View {
 // MARK: - Preview
 
 #Preview {
-    SettingsView(musicService: MusicKitService())
+    SettingsView(
+        musicService: MusicKitService(),
+        historicalEngine: HistoricalEngine(healthKitService: HealthKitService())
+    )
 }

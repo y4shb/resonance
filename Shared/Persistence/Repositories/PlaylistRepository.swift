@@ -227,7 +227,7 @@ final class PlaylistRepository {
                 }
 
                 logDebug(
-                    "Recalculated aggregates for '\(backgroundPlaylist.name)': avgBPM=\(String(format: "%.1f", avgBPM)), songCount=\(songs.count)",
+                    "Recalculated aggregates for '\(backgroundPlaylist.name ?? "unknown")': avgBPM=\(String(format: "%.1f", avgBPM)), songCount=\(songs.count)",
                     category: .persistence
                 )
             }

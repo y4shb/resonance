@@ -95,7 +95,7 @@ final class EventLogger: ObservableObject {
                 DispatchQueue.main.async {
                     self.activeEventObjectID = event.objectID
                     logInfo(
-                        "EventLogger: playback started for '\(songInContext.title)' — objectID: \(event.objectID)",
+                        "EventLogger: playback started for '\(songInContext.title ?? "unknown")' — objectID: \(event.objectID)",
                         category: .persistence
                     )
                 }
@@ -258,6 +258,30 @@ final class EventLogger: ObservableObject {
                 error: error,
                 category: .persistence
             )
+            return []
+        }
+    }
+
+    /// Fetches all PlaybackEvents not yet assigned to a session, ordered chronologically.
+    /// Used by SessionReconstructor for session grouping.
+    func fetchEventsWithoutSession(since: Date? = nil) -> [PlaybackEvent] {
+        let context = persistence.viewContext
+        let request = NSFetchRequest<PlaybackEvent>(entityName: "PlaybackEvent")
+
+        if let since = since {
+            // For incremental mode, include overlap buffer
+            let bufferDate = since.addingTimeInterval(-Double(BackfillConstants.incrementalOverlapMinutes) * 60)
+            request.predicate = NSPredicate(format: "session == nil AND startedAt >= %@", bufferDate as NSDate)
+        } else {
+            request.predicate = NSPredicate(format: "session == nil")
+        }
+
+        request.sortDescriptors = [NSSortDescriptor(key: "startedAt", ascending: true)]
+
+        do {
+            return try context.fetch(request)
+        } catch {
+            logError("EventLogger: failed to fetch events without session", error: error, category: .persistence)
             return []
         }
     }

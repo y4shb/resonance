@@ -355,123 +355,123 @@ Wave 4: [Build + Verify]                      ← single agent
 ## Checklist
 
 ### 4.0 Prerequisites (BLOCKING — plan.md §12.0.1)
-- [ ] Add `UIBackgroundModes` (audio, fetch, processing) to `iOS/Info.plist`
-- [ ] Add `BGTaskSchedulerPermittedIdentifiers` (playlistSync, historicalAnalysis, featureUpdate) to `iOS/Info.plist`
-- [ ] Add `NSHealthShareUsageDescription` and `NSAppleMusicUsageDescription` to `iOS/Info.plist`
-- [ ] Add static `hasRegisteredTasks` guard in `ResonanceApp.swift` to prevent double-registration crash
-- [ ] Add `BackfillConstants` section to `Constants.swift` (batch sizes, watermark keys, cold-start alpha, behavior-only max confidence)
+- [x] Add `UIBackgroundModes` (audio, fetch, processing) to `iOS/Info.plist`
+- [x] Add `BGTaskSchedulerPermittedIdentifiers` (playlistSync, historicalAnalysis, featureUpdate) to `iOS/Info.plist`
+- [x] Add `NSHealthShareUsageDescription` and `NSAppleMusicUsageDescription` to `iOS/Info.plist`
+- [x] Add static `hasRegisteredTasks` guard in `ResonanceApp.swift` to prevent double-registration crash
+- [x] Add `BackfillConstants` section to `Constants.swift` (batch sizes, watermark keys, cold-start alpha, behavior-only max confidence)
 
 ### 4.1 HealthKit Historical Queries (plan.md §12.1)
 - [x] `fetchHeartRateHistory(from:to:)` — already implemented in Phase 3
 - [x] `fetchHRVHistory(from:to:)` — already implemented in Phase 3
-- [ ] Create `SleepSession` struct (startDate, endDate, value, durationHours, isDeepSleep, isREMSleep)
-- [ ] Create `WorkoutSession` struct (activityType, startDate, endDate, totalEnergyBurned, durationMinutes, activityName)
-- [ ] Add private `fetchCategorySamples(type:predicate:limit:ascending:)` helper for `HKCategorySample`
-- [ ] Add `fetchSleepAnalysis(from:to:)` to `HealthKitServiceProtocol` and implement
-  - [ ] Filter for asleep stages only (`.asleepUnspecified`, `.asleepCore`, `.asleepDeep`, `.asleepREM`)
-  - [ ] Exclude `.inBed` and `.awake` categories
-  - [ ] Handle overlapping sleep sources (merge intervals from Watch, iPhone, third-party apps)
-- [ ] Add `fetchWorkouts(from:to:)` to `HealthKitServiceProtocol` and implement
-  - [ ] Map `HKWorkout` to `WorkoutSession` extracting `workoutActivityType`, `totalEnergyBurned` (deprecated but acceptable for historical backfill)
-- [ ] Add `fetchHeartRateHistoryChunked(from:to:chunkDays:)` for large date ranges (weekly chunks, `Task.sleep` between chunks)
-- [ ] Add `fetchEventsWithoutSession()` query to EventLogger
+- [x] Create `SleepSession` struct (startDate, endDate, value, durationHours, isDeepSleep, isREMSleep)
+- [x] Create `WorkoutSession` struct (activityType, startDate, endDate, totalEnergyBurned, durationMinutes, activityName)
+- [x] Add private `fetchCategorySamples(type:predicate:limit:ascending:)` helper for `HKCategorySample`
+- [x] Add `fetchSleepAnalysis(from:to:)` to `HealthKitServiceProtocol` and implement
+  - [x] Filter for asleep stages only (`.asleepUnspecified`, `.asleepCore`, `.asleepDeep`, `.asleepREM`)
+  - [x] Exclude `.inBed` and `.awake` categories
+  - [x] Handle overlapping sleep sources (merge intervals from Watch, iPhone, third-party apps)
+- [x] Add `fetchWorkouts(from:to:)` to `HealthKitServiceProtocol` and implement
+  - [x] Map `HKWorkout` to `WorkoutSession` extracting `workoutActivityType`, `totalEnergyBurned` (deprecated but acceptable for historical backfill)
+- [ ] Add `fetchHeartRateHistoryChunked(from:to:chunkDays:)` for large date ranges (weekly chunks, `Task.sleep` between chunks) — deferred to Phase 5 (not needed for initial backfill)
+- [x] Add `fetchEventsWithoutSession()` query to EventLogger
 
 ### 4.2 ImpactScore Type (plan.md §12.2)
-- [ ] Create `Brain/Historical/ImpactScore.swift`
-- [ ] Define struct with `calm`, `energy`, `focus`, `moodLift` (all 0.0-1.0), `wasSkipped`, `hasBiometricData`
-- [ ] Implement `ImpactScore.calculate(from:)` factory using plan.md §5.3.1 formula with enhancements:
-  - [ ] Two-tier skip penalty: early skip (<15% listened) = -0.3, late skip (15-30%) = -0.15
-  - [ ] Biometric signal redistribution when partially available (HR-only, HRV-only, both, neither)
-  - [ ] `moodLift` derived from behavioral signals (completion bonus + skip penalty)
-  - [ ] `hasBiometricData` flag for downstream confidence weighting
-- [ ] Use `LearningConstants` for all magic numbers (hrvNormalizationFactor, skipPenaltyMultiplier, etc.)
+- [x] Create `Brain/Historical/ImpactScore.swift`
+- [x] Define struct with `calm`, `energy`, `focus`, `moodLift` (all 0.0-1.0), `wasSkipped`, `hasBiometricData`
+- [x] Implement `ImpactScore.calculate(from:)` factory using plan.md §5.3.1 formula with enhancements:
+  - [x] Two-tier skip penalty: early skip (<15% listened) = -0.3, late skip (15-30%) = -0.15
+  - [x] Biometric signal redistribution when partially available (HR-only, HRV-only, both, neither)
+  - [x] `moodLift` derived from behavioral signals (completion bonus + skip penalty)
+  - [x] `hasBiometricData` flag for downstream confidence weighting
+- [x] Use `LearningConstants` for all magic numbers (hrvNormalizationFactor, skipPenaltyMultiplier, etc.)
 
 ### 4.3 Session Reconstruction (plan.md §12.3)
-- [ ] Create `Brain/Historical/SessionReconstructor.swift`
-- [ ] Implement `fetchUnprocessedEvents(since:in:)` — events where `session == nil` with 30-min overlap buffer for incremental mode
-- [ ] Implement `groupIntoSessions(_:)` — 30-minute gap rule per `SessionConstants.sessionGapMinutes`
-  - [ ] Use `endedAt ?? startedAt + songDuration` (not `endedAt ?? startedAt`) for gap calculation
-  - [ ] Handle nil `startedAt` safely (Core Data `Date?`)
-- [ ] Filter sessions shorter than `SessionConstants.minimumSessionMinutes` (5 min)
-- [ ] Implement `buildSession(from:in:)` — create HistoricalSession Core Data entity
-- [ ] Link all grouped PlaybackEvents to session via `session` relationship
-- [ ] Populate session metadata: `totalSongsPlayed`, `totalSkips`, `skipRate`, `avgListenPercentage`
-- [ ] Implement `enrichWithBiometrics(_:startTime:endTime:)` — fetch HR/HRV ±5min from HealthKit
-- [ ] Populate: `startingHeartRate`, `endingHeartRate`, `avgHeartRate`, `minHeartRate`, `maxHeartRate`, `deltaHeartRate`
-- [ ] Populate: `startingHRV`, `endingHRV`, `avgHRV`, `deltaHRV`
-- [ ] Implement `correlateSleep(_:sessionEndTime:)` — find next-night sleep within 12h
-  - [ ] Filter for substantial sleep (≥3 hours) to distinguish from naps
-  - [ ] Normalize deep sleep pct by dividing by 0.25 (target deep sleep = 25% of total)
-  - [ ] Use `NSNumber(value:)` for assignment (`nextNightSleepScore`, `nextNightSleepDuration`, `nextNightDeepSleepPct` are `NSNumber?` in Core Data)
-  - [ ] Handle missing stage data (all `.asleepUnspecified`) with neutral 0.5 deep score
-- [ ] Calculate `nextNightSleepScore` = durationScore * 0.6 + deepScore * 0.4
-- [ ] Implement `inferContext(startTime:endTime:events:)` — weekend-aware context inference
-  - [ ] Weekdays: morning(5-7), commute(7-9), work(9-17), commute(17-19), relaxation(19-22), preSleep(22-5)
-  - [ ] Weekends: morning(5-9), relaxation(9-22), preSleep(22-5)
-- [ ] Implement `getTimeSlot(for:)` — map hour to `TimeSlot.rawValue` (must match `DecisionContext.timeSlot` exactly)
-- [ ] Implement `detectWorkout(_:startTime:endTime:)` — override context to `workout` when HealthKit workout detected
-- [ ] Implement `scoreSession(_:)` using plan.md §5.3.3 formula (skipScore 0.25, hrvScore 0.30, engagement 0.25, sleep 0.20)
-  - [ ] Use `session.nextNightSleepScore?.doubleValue ?? 0.5` for nullable NSNumber
-- [ ] Link session to playlist if all songs share the same playlist
-- [ ] Implement `reconstructSessions()` main entry point with batch save every 50 sessions
-- [ ] Implement `reconstructSessions(since:)` for incremental mode with `Task.checkCancellation()` between groups
+- [x] Create `Brain/Historical/SessionReconstructor.swift`
+- [x] Implement `fetchUnprocessedEvents(since:in:)` — events where `session == nil` with 30-min overlap buffer for incremental mode
+- [x] Implement `groupIntoSessions(_:)` — 30-minute gap rule per `SessionConstants.sessionGapMinutes`
+  - [x] Use `endedAt ?? startedAt + songDuration` (not `endedAt ?? startedAt`) for gap calculation
+  - [x] Handle nil `startedAt` safely (Core Data `Date?`)
+- [x] Filter sessions shorter than `SessionConstants.minimumSessionMinutes` (5 min)
+- [x] Implement `buildSession(from:in:)` — create HistoricalSession Core Data entity
+- [x] Link all grouped PlaybackEvents to session via `session` relationship
+- [x] Populate session metadata: `totalSongsPlayed`, `totalSkips`, `skipRate`, `avgListenPercentage`
+- [x] Implement `enrichWithBiometrics(_:startTime:endTime:)` — fetch HR/HRV ±5min from HealthKit
+- [x] Populate: `startingHeartRate`, `endingHeartRate`, `avgHeartRate`, `minHeartRate`, `maxHeartRate`, `deltaHeartRate`
+- [x] Populate: `startingHRV`, `endingHRV`, `avgHRV`, `deltaHRV`
+- [x] Implement `correlateSleep(_:sessionEndTime:)` — find next-night sleep within 12h
+  - [x] Filter for substantial sleep (≥3 hours) to distinguish from naps
+  - [x] Normalize deep sleep pct by dividing by 0.25 (target deep sleep = 25% of total)
+  - [x] Use `NSNumber(value:)` for assignment (`nextNightSleepScore`, `nextNightSleepDuration`, `nextNightDeepSleepPct` are `NSNumber?` in Core Data)
+  - [x] Handle missing stage data (all `.asleepUnspecified`) with neutral 0.5 deep score
+- [x] Calculate `nextNightSleepScore` = durationScore * 0.6 + deepScore * 0.4
+- [x] Implement `inferContext(startTime:endTime:events:)` — weekend-aware context inference
+  - [x] Weekdays: morning(5-7), commute(7-9), work(9-17), commute(17-19), relaxation(19-22), preSleep(22-5)
+  - [x] Weekends: morning(5-9), relaxation(9-22), preSleep(22-5)
+- [x] Implement `getTimeSlot(for:)` — map hour to `TimeSlot.rawValue` (must match `DecisionContext.timeSlot` exactly)
+- [x] Implement `detectWorkout(_:startTime:endTime:)` — override context to `workout` when HealthKit workout detected
+- [x] Implement `scoreSession(_:)` using plan.md §5.3.3 formula (skipScore 0.25, hrvScore 0.30, engagement 0.25, sleep 0.20)
+  - [x] Use `session.nextNightSleepScore?.doubleValue ?? 0.5` for nullable NSNumber
+- [x] Link session to playlist if all songs share the same playlist
+- [x] Implement `reconstructSessions()` main entry point with batch save every 50 sessions
+- [x] Implement `reconstructSessions(since:)` for incremental mode with `Task.checkCancellation()` between groups
 
 ### 4.4 Song Impact Calculation (plan.md §12.4)
-- [ ] Create `Brain/Historical/SongImpactCalculator.swift`
-- [ ] Implement `findOrCreateEffect(for:contextType:timeOfDaySlot:in:)` — keyed on `(song, contextType)` only (NOT triple)
-  - [ ] `timeOfDaySlot` is set on entity but NOT part of lookup predicate (avoids sparse data problem)
-- [ ] Implement `updateEffect(_:with:)` — EMA update with two-tier alpha
-  - [ ] Cold-start alpha = 0.4 for first 5 plays (`BackfillConstants.coldStartLearningRate`, `coldStartThreshold`)
-  - [ ] Steady-state alpha = 0.2 (`LearningConstants.defaultLearningRate`)
-- [ ] Update `calmScore`, `energyScore`, `focusScore`, `moodLiftScore` via EMA
-- [ ] Update `sampleCount` and `confidenceLevel`
-  - [ ] Cap confidence at 0.7 for behavior-only impacts (`BackfillConstants.behaviorOnlyMaxConfidence`)
-  - [ ] Cap at 1.0 for impacts with biometric data
-  - [ ] Full confidence at 20 samples (`DecisionEngineConstants.fullConfidenceSampleCount`)
-- [ ] Implement `updateSongAggregates(_:in:)` — confidence-weighted average of effects
-- [ ] Update Song entity: `calmScore`, `focusScore`, `activationScore` (note: Song uses `activationScore` not `energyScore`), `confidenceLevel`
-- [ ] Implement `updateFamiliarity(_:)` — based on play count only (skip rate NOT included — already penalized via effect scores)
-  - [ ] Formula: `min(1.0, totalPlayCount / 10.0)`
-- [ ] Implement `processEvent(_:in:)` — single event processing
-- [ ] Implement `calculateImpacts()` and `calculateImpacts(since:)` entry points with batch save every 100 events
-- [ ] Support cooperative cancellation with `Task.checkCancellation()`
+- [x] Create `Brain/Historical/SongImpactCalculator.swift`
+- [x] Implement `findOrCreateEffect(for:contextType:timeOfDaySlot:in:)` — keyed on `(song, contextType)` only (NOT triple)
+  - [x] `timeOfDaySlot` is set on entity but NOT part of lookup predicate (avoids sparse data problem)
+- [x] Implement `updateEffect(_:with:)` — EMA update with two-tier alpha
+  - [x] Cold-start alpha = 0.4 for first 5 plays (`BackfillConstants.coldStartLearningRate`, `coldStartThreshold`)
+  - [x] Steady-state alpha = 0.2 (`LearningConstants.defaultLearningRate`)
+- [x] Update `calmScore`, `energyScore`, `focusScore`, `moodLiftScore` via EMA
+- [x] Update `sampleCount` and `confidenceLevel`
+  - [x] Cap confidence at 0.7 for behavior-only impacts (`BackfillConstants.behaviorOnlyMaxConfidence`)
+  - [x] Cap at 1.0 for impacts with biometric data
+  - [x] Full confidence at 20 samples (`DecisionEngineConstants.fullConfidenceSampleCount`)
+- [x] Implement `updateSongAggregates(_:in:)` — confidence-weighted average of effects
+- [x] Update Song entity: `calmScore`, `focusScore`, `activationScore` (note: Song uses `activationScore` not `energyScore`), `confidenceLevel`
+- [x] Implement `updateFamiliarity(_:)` — based on play count only (skip rate NOT included — already penalized via effect scores)
+  - [x] Formula: `min(1.0, totalPlayCount / 10.0)`
+- [x] Implement `processEvent(_:in:)` — single event processing
+- [x] Implement `calculateImpacts()` and `calculateImpacts(since:)` entry points with batch save every 100 events
+- [x] Support cooperative cancellation with `Task.checkCancellation()`
 
 ### 4.5 Playlist Impact Calculation (plan.md §12.5)
-- [ ] Create `Brain/Historical/PlaylistImpactCalculator.swift`
-- [ ] Implement `processPlaylist(_:in:)` — confidence-weighted aggregate of song effect scores
-  - [ ] Per-song: confidence-weighted average across all effects
-  - [ ] Per-playlist: confidence-weighted average across all songs
-- [ ] Populate `avgCalmEffect`, `avgFocusEffect`, `avgEnergyEffect`, `effectConfidence`
-- [ ] Implement `buildContextAssociations(from:)` — JSON with per-context frequency AND count
-- [ ] Populate `contextAssociations` binary field on Playlist entity
-- [ ] Implement `calculatePlaylistImpacts()` entry point
+- [x] Create `Brain/Historical/PlaylistImpactCalculator.swift`
+- [x] Implement `processPlaylist(_:in:)` — confidence-weighted aggregate of song effect scores
+  - [x] Per-song: confidence-weighted average across all effects
+  - [x] Per-playlist: confidence-weighted average across all songs
+- [x] Populate `avgCalmEffect`, `avgFocusEffect`, `avgEnergyEffect`, `effectConfidence`
+- [x] Implement `buildContextAssociations(from:)` — JSON with per-context frequency AND count
+- [x] Populate `contextAssociations` binary field on Playlist entity
+- [x] Implement `calculatePlaylistImpacts()` entry point
 
 ### 4.6 HistoricalEngine Orchestrator (plan.md §12.6)
-- [ ] Create `Brain/Historical/HistoricalEngine.swift`
-- [ ] Implement `BackfillProgress` enum (idle, reconstructingSessions, calculatingSongImpacts, calculatingPlaylistImpacts, completed, failed)
-- [ ] Implement per-step watermarks via App Group UserDefaults (`BackfillConstants.WatermarkKey`)
-  - [ ] `sessionReconstruction` watermark
-  - [ ] `songImpact` watermark
-  - [ ] `lastFullBackfill` watermark
-- [ ] Implement atomic `isRunning` guard via `MainActor.run`
-- [ ] Implement `runFullBackfill()` — all events from beginning
-- [ ] Implement `runIncrementalBackfill()` — only since watermarks
-- [ ] Pipeline sequence: reconstructSessions → calculateImpacts → calculatePlaylistImpacts
-- [ ] Support cooperative cancellation (`Task.checkCancellation()` between steps)
-- [ ] Handle `CancellationError` separately from other errors
-- [ ] Publish progress on `@Published progress` for UI consumption
+- [x] Create `Brain/Historical/HistoricalEngine.swift`
+- [x] Implement `BackfillProgress` enum (idle, reconstructingSessions, calculatingSongImpacts, calculatingPlaylistImpacts, completed, failed)
+- [x] Implement per-step watermarks via App Group UserDefaults (`BackfillConstants.WatermarkKey`)
+  - [x] `sessionReconstruction` watermark
+  - [x] `songImpact` watermark
+  - [x] `lastFullBackfill` watermark
+- [x] Implement atomic `isRunning` guard via `@MainActor`
+- [x] Implement `runFullBackfill()` — all events from beginning
+- [x] Implement `runIncrementalBackfill()` — only since watermarks
+- [x] Pipeline sequence: reconstructSessions → calculateImpacts → calculatePlaylistImpacts
+- [x] Support cooperative cancellation (`Task.checkCancellation()` between steps)
+- [x] Handle `CancellationError` separately from other errors
+- [x] Publish progress on `@Published progress` for UI consumption
 
 ### 4.7 Wiring & Settings UI (plan.md §12.7)
-- [ ] Add `HistoricalEngine` as `@StateObject` in `ResonanceApp.swift`
-- [ ] Register `historicalAnalysis` BGProcessingTask in `registerBackgroundTasks()`
-- [ ] Implement `handleHistoricalAnalysis(task:)` handler with cooperative cancellation via `expirationHandler`
-- [ ] Implement `scheduleHistoricalAnalysis()` — weekly, `requiresExternalPower: true`
-- [ ] Add "Historical Analysis" section to SettingsView
-- [ ] Show backfill progress in Settings (ProgressView + status text)
-- [ ] Add "Run Full Backfill" button
-- [ ] Show "Last run" date from watermark
-- [ ] Add "Retry" button on failure
-- [ ] Pass `HistoricalEngine` to SettingsView from MainView
+- [x] Add `HistoricalEngine` as `@StateObject` in `ResonanceApp.swift`
+- [x] Register `historicalAnalysis` BGProcessingTask in `registerBackgroundTasks()`
+- [x] Implement `handleHistoricalAnalysis(task:)` handler with cooperative cancellation via `expirationHandler`
+- [x] Implement `scheduleHistoricalAnalysis()` — weekly, `requiresExternalPower: true`
+- [x] Add "Historical Analysis" section to SettingsView
+- [x] Show backfill progress in Settings (ProgressView + status text)
+- [x] Add "Run Full Backfill" button
+- [x] Show "Last run" date from watermark
+- [x] Add "Retry" button on failure
+- [x] Pass `HistoricalEngine` to SettingsView from MainView
 
 ### 4.8 Verification
 - [ ] Build all targets after implementation
@@ -1064,6 +1064,37 @@ Comprehensive Phase 4 research and planning via 4 parallel research agents inves
 - Updated plan.md Part 12 with all research findings
 - Updated progress.md with enhanced 80+ item checklist
 
+[2026-02-22] - Phase 4 - Implementation Complete
+Implemented all Phase 4 historical backfill components using 4-wave execution strategy:
+
+**Wave 0 — Prerequisites:**
+- Fixed `iOS/Info.plist`: Added `UIBackgroundModes` (audio, fetch, processing), `BGTaskSchedulerPermittedIdentifiers` (3 identifiers), `NSHealthShareUsageDescription`, `NSAppleMusicUsageDescription`
+- Added `BackfillConstants` enum to `Constants.swift` with batch sizes, watermark keys, cold-start thresholds, behavior-only confidence cap, sleep correlation params
+- Added `hasRegisteredTasks` static guard to `ResonanceApp.swift` to prevent BGTask double-registration crash
+
+**Wave 1A — HealthKit + ImpactScore:**
+- Modified `HealthKitService.swift`: Added `SleepSession` struct, `WorkoutSession` struct, `fetchSleepAnalysis(from:to:)`, `fetchWorkouts(from:to:)`, `fetchCategorySamples` helper, protocol declarations
+- Created `Brain/Historical/ImpactScore.swift` (120 lines): Two-tier skip penalty, biometric signal redistribution (4 cases), behavior-only scoring
+- Modified `EventLogger.swift`: Added `fetchEventsWithoutSession(since:)` method with overlap buffer
+
+**Wave 1B — SessionReconstructor:**
+- Created `Brain/Historical/SessionReconstructor.swift` (649 lines): Full pipeline with `reconstructSessions(since:)`, gap-rule grouping using `endedAt ?? startedAt + songDuration`, biometric enrichment (HR/HRV ±5min), sleep correlation (3-hour minimum, deep sleep normalization), weekend-aware context inference, workout detection, session scoring, playlist linking, cooperative cancellation, batch saving
+
+**Wave 2A — SongImpactCalculator:**
+- Created `Brain/Historical/SongImpactCalculator.swift` (287 lines): Per-event processing, SongEffect find-or-create keyed on `(song, contextType)` only, two-tier EMA alpha (0.4 cold/0.2 steady), confidence-weighted song aggregates, familiarity by play count only, batch processing
+
+**Wave 2B — PlaylistImpactCalculator:**
+- Created `Brain/Historical/PlaylistImpactCalculator.swift` (189 lines): Confidence-weighted averaging at song and playlist levels, context associations with frequency and count per context type
+
+**Wave 3 — HistoricalEngine + Wiring + Settings UI:**
+- Created `Brain/Historical/HistoricalEngine.swift` (173 lines): `@MainActor` orchestrator with `BackfillProgress` enum, per-step watermarks via App Group UserDefaults, `runFullBackfill()`, `runIncrementalBackfill()`, `CancellationError` handling, progress publishing
+- Modified `ResonanceApp.swift`: Added `HistoricalEngine` `@StateObject`, moved HealthKitService init to `init()` block, registered `historicalAnalysis` BGProcessingTask with cooperative cancellation via expiration handler, added `scheduleHistoricalAnalysis()` (weekly, requires external power)
+- Modified `SettingsView.swift`: Added `historicalEngine` property, added "Historical Analysis" section with progress display (idle/reconstructing/calculating/completed/failed states), "Run Full Backfill" button, "Last Run" date, "Retry" on failure
+- Modified `MainView.swift`: Threaded `historicalEngine` from ResonanceApp through MainView to SettingsView
+
+**Files created (5):** ImpactScore.swift, SessionReconstructor.swift, SongImpactCalculator.swift, PlaylistImpactCalculator.swift, HistoricalEngine.swift
+**Files modified (7):** Info.plist, Constants.swift, ResonanceApp.swift, HealthKitService.swift, EventLogger.swift, SettingsView.swift, MainView.swift
+
 <!--
 Example entry format:
 [2026-02-07] - Phase 1 - 1.1 Xcode Project Creation
@@ -1079,13 +1110,16 @@ Created all required directories under resonance/ including Shared, Brain, iOS, 
 
 ## Active Blockers
 
-### [BLOCKER-001] Info.plist Missing BGTask Identifiers
+None.
+
+## Resolved Blockers
+
+### [BLOCKER-001] Info.plist Missing BGTask Identifiers — RESOLVED
 **Date Identified:** 2026-02-21
+**Date Resolved:** 2026-02-22
 **Phase:** Phase 3 (retroactive) / Phase 4
-**Description:** iOS Info.plist is missing `BGTaskSchedulerPermittedIdentifiers` and `UIBackgroundModes` entries. Without these, `BGTaskScheduler.shared.register()` crashes at runtime. Existing Phase 3 BGTasks (`playlistSync`, `featureUpdate`) silently fail.
-**Impact:** Blocks all background task execution (playlist sync, feature update, historical analysis)
-**Status:** Fix designed — Phase 4 Step 0
-**Resolution:** Add entries to Info.plist as first step of Phase 4 implementation
+**Description:** iOS Info.plist was missing `BGTaskSchedulerPermittedIdentifiers` and `UIBackgroundModes` entries. Without these, `BGTaskScheduler.shared.register()` crashes at runtime.
+**Resolution:** Fixed in Phase 4 Wave 0 — added all required entries to `iOS/Info.plist` and added static `hasRegisteredTasks` guard in `ResonanceApp.swift`.
 
 Note: Phase 2 testing items (2.1 auth/playback tests, 2.3 remote control test, 2.4 sync tests, 2.6 integration tests) require Xcode builds on physical devices. Code implementation is complete.
 
@@ -1135,12 +1169,13 @@ Example decision format:
 
 | Metric | Value |
 |--------|-------|
-| Swift Files | 38 |
-| Lines of Code | ~8,200 |
+| Swift Files | 43 |
+| Lines of Code | ~9,700 |
 | Test Coverage | 0% |
 | CoreData Entities | 7 |
+| Brain/Historical Files | 5 |
 
-*Last updated: 2026-02-21*
+*Last updated: 2026-02-22*
 
 ---
 

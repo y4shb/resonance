@@ -47,6 +47,12 @@ public protocol HealthKitServiceProtocol {
 
     /// Returns the most recent resting heart rate in BPM, or nil if unavailable.
     func fetchRestingHeartRate() async throws -> Double?
+
+    /// Returns sleep analysis sessions in the given date range, filtered for actual sleep stages.
+    func fetchSleepAnalysis(from: Date, to: Date) async throws -> [SleepSession]
+
+    /// Returns workout sessions in the given date range.
+    func fetchWorkouts(from: Date, to: Date) async throws -> [WorkoutSession]
 }
 
 // MARK: - HealthKit Service Errors
@@ -68,6 +74,59 @@ public enum HealthKitServiceError: LocalizedError {
             return "HealthKit query failed: \(error.localizedDescription)"
         case .backgroundDeliveryFailed(let error):
             return "Failed to enable HealthKit background delivery: \(error.localizedDescription)"
+        }
+    }
+}
+
+// MARK: - Sleep & Workout Types
+
+/// Represents a sleep analysis session from HealthKit.
+public struct SleepSession {
+    let startDate: Date
+    let endDate: Date
+    let value: HKCategoryValueSleepAnalysis
+
+    /// Duration in hours.
+    var durationHours: Double {
+        endDate.timeIntervalSince(startDate) / 3600.0
+    }
+
+    /// Whether this sample represents deep sleep.
+    var isDeepSleep: Bool {
+        value == .asleepDeep
+    }
+
+    /// Whether this sample represents REM sleep.
+    var isREMSleep: Bool {
+        value == .asleepREM
+    }
+}
+
+/// Represents a workout session from HealthKit.
+public struct WorkoutSession {
+    let activityType: HKWorkoutActivityType
+    let startDate: Date
+    let endDate: Date
+    let totalEnergyBurned: Double  // kcal
+    let durationMinutes: Double
+
+    /// Human-readable activity name.
+    var activityName: String {
+        switch activityType {
+        case .running: return "Running"
+        case .walking: return "Walking"
+        case .cycling: return "Cycling"
+        case .swimming: return "Swimming"
+        case .yoga: return "Yoga"
+        case .functionalStrengthTraining, .traditionalStrengthTraining: return "Strength Training"
+        case .highIntensityIntervalTraining: return "HIIT"
+        case .dance: return "Dance"
+        case .cooldown: return "Cooldown"
+        case .coreTraining: return "Core Training"
+        case .elliptical: return "Elliptical"
+        case .rowing: return "Rowing"
+        case .stairClimbing: return "Stair Climbing"
+        default: return "Workout"
         }
     }
 }
@@ -365,7 +424,122 @@ public final class HealthKitService: HealthKitServiceProtocol, ObservableObject 
         }
     }
 
+    // MARK: - Sleep Analysis
+
+    public func fetchSleepAnalysis(from: Date, to: Date) async throws -> [SleepSession] {
+        logDebug("Fetching sleep analysis from \(from) to \(to)", category: .healthKit)
+
+        guard let sleepType = HKCategoryType.categoryType(forIdentifier: .sleepAnalysis) else {
+            logError("Sleep analysis type not available", category: .healthKit)
+            return []
+        }
+
+        let samples = try await fetchCategorySamples(
+            type: sleepType,
+            from: from,
+            to: to
+        )
+
+        // Filter for actual asleep stages only
+        let asleepValues: Set<Int> = [
+            HKCategoryValueSleepAnalysis.asleepUnspecified.rawValue,
+            HKCategoryValueSleepAnalysis.asleepCore.rawValue,
+            HKCategoryValueSleepAnalysis.asleepDeep.rawValue,
+            HKCategoryValueSleepAnalysis.asleepREM.rawValue,
+        ]
+
+        let sessions = samples
+            .filter { asleepValues.contains($0.value) }
+            .compactMap { sample -> SleepSession? in
+                guard let sleepValue = HKCategoryValueSleepAnalysis(rawValue: sample.value) else {
+                    return nil
+                }
+                return SleepSession(
+                    startDate: sample.startDate,
+                    endDate: sample.endDate,
+                    value: sleepValue
+                )
+            }
+            .sorted { $0.startDate < $1.startDate }
+
+        logDebug("Fetched \(sessions.count) sleep sessions", category: .healthKit)
+        return sessions
+    }
+
+    // MARK: - Workouts
+
+    public func fetchWorkouts(from: Date, to: Date) async throws -> [WorkoutSession] {
+        logDebug("Fetching workouts from \(from) to \(to)", category: .healthKit)
+
+        let predicate = HKQuery.predicateForSamples(withStart: from, end: to, options: .strictStartDate)
+
+        let workouts: [HKWorkout] = try await withCheckedThrowingContinuation { continuation in
+            let sortDescriptor = NSSortDescriptor(
+                key: HKSampleSortIdentifierStartDate,
+                ascending: true
+            )
+            let query = HKSampleQuery(
+                sampleType: HKObjectType.workoutType(),
+                predicate: predicate,
+                limit: HKObjectQueryNoLimit,
+                sortDescriptors: [sortDescriptor]
+            ) { _, samples, error in
+                if let error = error {
+                    continuation.resume(throwing: HealthKitServiceError.queryFailed(underlying: error))
+                    return
+                }
+                let workoutSamples = (samples as? [HKWorkout]) ?? []
+                continuation.resume(returning: workoutSamples)
+            }
+            healthStore.execute(query)
+        }
+
+        let sessions = workouts.map { workout in
+            WorkoutSession(
+                activityType: workout.workoutActivityType,
+                startDate: workout.startDate,
+                endDate: workout.endDate,
+                totalEnergyBurned: workout.totalEnergyBurned?.doubleValue(for: .kilocalorie()) ?? 0,
+                durationMinutes: workout.duration / 60.0
+            )
+        }
+
+        logDebug("Fetched \(sessions.count) workout sessions", category: .healthKit)
+        return sessions
+    }
+
     // MARK: - Private Helpers
+
+    /// Fetches category samples for a given type within the date range.
+    private func fetchCategorySamples(
+        type: HKCategoryType,
+        from: Date,
+        to: Date,
+        limit: Int = HKObjectQueryNoLimit,
+        ascending: Bool = true
+    ) async throws -> [HKCategorySample] {
+        return try await withCheckedThrowingContinuation { continuation in
+            let predicate = HKQuery.predicateForSamples(withStart: from, end: to, options: .strictStartDate)
+            let sortDescriptor = NSSortDescriptor(
+                key: HKSampleSortIdentifierStartDate,
+                ascending: ascending
+            )
+            let query = HKSampleQuery(
+                sampleType: type,
+                predicate: predicate,
+                limit: limit,
+                sortDescriptors: [sortDescriptor]
+            ) { _, samples, error in
+                if let error = error {
+                    continuation.resume(throwing: HealthKitServiceError.queryFailed(underlying: error))
+                    return
+                }
+                let categorySamples = (samples as? [HKCategorySample]) ?? []
+                continuation.resume(returning: categorySamples)
+            }
+            self.healthStore.execute(query)
+        }
+    }
 
     /// Fetches `HKQuantitySample` results for the given type, predicate, and limit.
     /// Sorts by `startDate` in the requested direction.

@@ -85,7 +85,7 @@ final class FeatureExtractor {
     /// Extracts features for a single song in the given context.
     func extractFeatures(for song: Song, in context: NSManagedObjectContext) {
         let genres: [String]
-        if let raw = song.genreNames as? [String] {
+        if let raw = song.genreNames {
             genres = raw
         } else {
             genres = []
@@ -113,7 +113,7 @@ final class FeatureExtractor {
         song.activationScore = energy * 0.5 + bpmNormalized * 0.3 + valence * 0.2
 
         logDebug(
-            "Extracted features for '\(song.title)' — genre: \(genreCategory ?? "unknown"), " +
+            "Extracted features for '\(song.title ?? "unknown")' — genre: \(genreCategory ?? "unknown"), " +
             "bpm: \(bpm), energy: \(energy), valence: \(valence), confidence: 0.4",
             category: .background
         )

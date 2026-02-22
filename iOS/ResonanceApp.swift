@@ -28,13 +28,16 @@ struct ResonanceApp: App {
     @StateObject private var playlistViewModel: PlaylistViewModel
 
     /// HealthKit service for biometric data access
-    @StateObject private var healthKitService = HealthKitService()
+    @StateObject private var healthKitService: HealthKitService
 
     /// Event logger for tracking playback events
     @StateObject private var eventLogger: EventLogger
 
     /// Context collector for aggregating biometric and environmental signals
     @StateObject private var contextCollector: ContextCollector
+
+    /// Historical backfill engine for processing past playback data
+    @StateObject private var historicalEngine: HistoricalEngine
 
     /// WatchConnectivity manager for iPhone <-> Watch communication
     private let watchConnectivityManager = WatchConnectivityManager.shared
@@ -73,6 +76,12 @@ struct ResonanceApp: App {
         let contextCollector = ContextCollector()
         _contextCollector = StateObject(wrappedValue: contextCollector)
 
+        let hkService = HealthKitService()
+        _healthKitService = StateObject(wrappedValue: hkService)
+
+        let historicalEngine = HistoricalEngine(healthKitService: hkService)
+        _historicalEngine = StateObject(wrappedValue: historicalEngine)
+
         logInfo("View models initialized with Watch connectivity", category: .general)
 
         // Register background tasks
@@ -86,7 +95,8 @@ struct ResonanceApp: App {
             MainView(
                 nowPlayingViewModel: nowPlayingViewModel,
                 playlistViewModel: playlistViewModel,
-                musicService: musicService
+                musicService: musicService,
+                historicalEngine: historicalEngine
             )
             .environment(\.managedObjectContext, persistenceController.viewContext)
             .task {
@@ -137,7 +147,16 @@ struct ResonanceApp: App {
 
     // MARK: - Background Tasks
 
+    /// Guard against double-registration crash (BGTaskScheduler crashes if register() called twice for same ID)
+    private static var hasRegisteredTasks = false
+
     private func registerBackgroundTasks() {
+        guard !Self.hasRegisteredTasks else {
+            logDebug("Background tasks already registered, skipping", category: .background)
+            return
+        }
+        Self.hasRegisteredTasks = true
+
         BGTaskScheduler.shared.register(
             forTaskWithIdentifier: BackgroundTaskConstants.TaskIdentifier.playlistSync,
             using: nil
@@ -160,8 +179,20 @@ struct ResonanceApp: App {
             self.handleFeatureUpdate(task: processingTask)
         }
 
+        BGTaskScheduler.shared.register(
+            forTaskWithIdentifier: BackgroundTaskConstants.TaskIdentifier.historicalAnalysis,
+            using: nil
+        ) { task in
+            guard let processingTask = task as? BGProcessingTask else {
+                task.setTaskCompleted(success: false)
+                return
+            }
+            self.handleHistoricalAnalysis(task: processingTask)
+        }
+
         schedulePlaylistSync()
         scheduleFeatureUpdate()
+        scheduleHistoricalAnalysis()
 
         logInfo("Background tasks registered", category: .background)
     }
@@ -230,6 +261,41 @@ struct ResonanceApp: App {
             logError("Failed to schedule feature update", error: error, category: .background)
         }
     }
+
+    // MARK: - Historical Analysis Background Task
+
+    private func handleHistoricalAnalysis(task: BGProcessingTask) {
+        let analysisTask = Task {
+            await historicalEngine.runIncrementalBackfill()
+        }
+        task.expirationHandler = {
+            // Cancelling the task triggers CancellationError in SessionReconstructor
+            // and SongImpactCalculator via Task.checkCancellation()
+            analysisTask.cancel()
+        }
+        Task {
+            await analysisTask.value
+            task.setTaskCompleted(success: true)
+            scheduleHistoricalAnalysis()
+        }
+    }
+
+    private func scheduleHistoricalAnalysis() {
+        let request = BGProcessingTaskRequest(
+            identifier: BackgroundTaskConstants.TaskIdentifier.historicalAnalysis
+        )
+        request.requiresNetworkConnectivity = false
+        request.requiresExternalPower = true
+        request.earliestBeginDate = Date(timeIntervalSinceNow:
+            Double(BackgroundTaskConstants.historicalAnalysisIntervalDays) * 86400
+        )
+        do {
+            try BGTaskScheduler.shared.submit(request)
+            logDebug("Historical analysis scheduled", category: .background)
+        } catch {
+            logError("Failed to schedule historical analysis", error: error, category: .background)
+        }
+    }
 }
 
 // MARK: - Preview
@@ -239,6 +305,7 @@ struct ResonanceApp: App {
     MainView(
         nowPlayingViewModel: NowPlayingViewModel(musicService: service),
         playlistViewModel: PlaylistViewModel(musicService: service),
-        musicService: service
+        musicService: service,
+        historicalEngine: HistoricalEngine(healthKitService: HealthKitService())
     )
 }

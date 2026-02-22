@@ -210,6 +210,47 @@ public enum HealthKitConstants {
     public static let processingBatchSize: Int = 500
 }
 
+// MARK: - Backfill Constants
+
+public enum BackfillConstants {
+    /// Batch size for processing PlaybackEvents in SongImpactCalculator
+    public static let eventBatchSize: Int = 100
+
+    /// Batch size for saving HistoricalSessions in SessionReconstructor
+    public static let sessionSaveBatchSize: Int = 50
+
+    /// Learning rate for cold-start songs (first N plays)
+    public static let coldStartLearningRate: Double = 0.4
+
+    /// Number of plays before switching from cold-start to steady-state alpha
+    public static let coldStartThreshold: Int = 5
+
+    /// Maximum confidence for behavior-only impacts (no biometric data)
+    public static let behaviorOnlyMaxConfidence: Double = 0.7
+
+    /// Late skip threshold (listen percentage below which skip is "early")
+    public static let earlySkipThreshold: Double = 0.15
+
+    /// Late skip penalty (less severe than early skip)
+    public static let lateSkipPenalty: Double = 0.15
+
+    /// Minimum sleep duration in hours to count as substantial (filter naps)
+    public static let minimumSubstantialSleepHours: Double = 3.0
+
+    /// Ideal deep sleep percentage (used for normalization)
+    public static let idealDeepSleepPercentage: Double = 0.25
+
+    /// Overlap buffer in minutes for incremental session reconstruction
+    public static let incrementalOverlapMinutes: Int = 30
+
+    /// Watermark keys for per-step incremental backfill
+    public enum WatermarkKey {
+        public static let sessionReconstruction = "com.y4sh.resonance.watermark.sessionReconstruction"
+        public static let songImpact = "com.y4sh.resonance.watermark.songImpact"
+        public static let lastFullBackfill = "com.y4sh.resonance.watermark.lastFullBackfill"
+    }
+}
+
 // MARK: - MusicKit Constants
 
 public enum MusicKitConstants {
