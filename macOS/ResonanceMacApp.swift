@@ -17,6 +17,7 @@ struct ResonanceMacApp: App {
     // MARK: - State
 
     @StateObject private var menuBarController = MenuBarController()
+    @StateObject private var contextBroadcaster = ContextBroadcaster()
 
     // MARK: - Initialization
 
@@ -31,6 +32,9 @@ struct ResonanceMacApp: App {
         // The MenuBarExtra is the primary UI
         MenuBarExtra("Resonance", systemImage: menuBarController.menuBarIconName) {
             PopoverView(controller: menuBarController)
+                .task {
+                    contextBroadcaster.startBroadcasting()
+                }
         }
         .menuBarExtraStyle(.window)
 

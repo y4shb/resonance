@@ -157,7 +157,7 @@ resonance/
 │   │   ├── ContextProcessor.swift
 │   │   └── StateVectorBuilder.swift
 │   │
-│   ├── Ranking/                  # Song selection logic
+│   ├── Decision/                 # Song selection logic
 │   │   ├── DecisionEngine.swift
 │   │   ├── SongScorer.swift
 │   │   ├── TransitionController.swift

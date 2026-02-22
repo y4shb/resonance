@@ -15,10 +15,12 @@ struct NowPlayingView: View {
     // MARK: - Properties
 
     @ObservedObject var viewModel: NowPlayingViewModel
+    @ObservedObject var stateEngine: StateEngine
 
     // Track whether user is actively scrubbing the slider
     @State private var isScrubbing: Bool = false
     @State private var scrubProgress: Double = 0.0
+    @State private var showMoodInput: Bool = false
 
     // MARK: - Body
 
@@ -42,11 +44,36 @@ struct NowPlayingView: View {
 
                 Spacer()
 
+                explanationBar
+
+                stateInfoBar
+
                 activePlaylistBar
             }
             .padding(.horizontal)
             .navigationTitle("Resonance")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        viewModel.requestAISelection()
+                    } label: {
+                        Image(systemName: "wand.and.stars")
+                    }
+                    .disabled(viewModel.activePlaylistName == nil)
+                }
+
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showMoodInput = true
+                    } label: {
+                        Image(systemName: "face.smiling")
+                    }
+                }
+            }
+            .sheet(isPresented: $showMoodInput) {
+                MoodInputView(stateEngine: stateEngine)
+            }
             .alert("Playback Error", isPresented: showErrorBinding) {
                 Button("OK") { viewModel.errorMessage = nil }
             } message: {
@@ -177,6 +204,61 @@ struct NowPlayingView: View {
         }
     }
 
+    // MARK: - Explanation Bar
+
+    private var explanationBar: some View {
+        Group {
+            if let explanation = viewModel.currentExplanation {
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "wand.and.stars")
+                        .foregroundStyle(.blue)
+                        .font(.caption)
+                        .padding(.top, 2)
+
+                    Text(explanation)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(3)
+                        .multilineTextAlignment(.leading)
+
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+            }
+        }
+    }
+
+    // MARK: - State Info Bar
+
+    private var stateInfoBar: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "brain.head.profile")
+                .foregroundStyle(.secondary)
+                .font(.caption)
+
+            Text(stateEngine.currentState.context.displayName)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Text("·")
+                .foregroundStyle(.secondary)
+
+            Text(stateEngine.currentState.inferredNeed.displayName)
+                .font(.caption)
+                .fontWeight(.medium)
+                .foregroundStyle(.tint)
+
+            Spacer()
+
+            Text("\(Int(stateEngine.currentState.confidence * 100))%")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+    }
+
     // MARK: - Active Playlist Bar
 
     private var activePlaylistBar: some View {
@@ -208,6 +290,7 @@ struct NowPlayingView: View {
 
 #Preview {
     NowPlayingView(
-        viewModel: NowPlayingViewModel(musicService: MusicKitService())
+        viewModel: NowPlayingViewModel(musicService: MusicKitService()),
+        stateEngine: StateEngine(contextCollector: ContextCollector(), healthKitService: HealthKitService())
     )
 }

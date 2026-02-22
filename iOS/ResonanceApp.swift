@@ -39,6 +39,12 @@ struct ResonanceApp: App {
     /// Historical backfill engine for processing past playback data
     @StateObject private var historicalEngine: HistoricalEngine
 
+    /// Real-time state estimation engine
+    @StateObject private var stateEngine: StateEngine
+
+    /// AI DJ decision engine
+    @StateObject private var decisionEngine: DecisionEngine
+
     /// WatchConnectivity manager for iPhone <-> Watch communication
     private let watchConnectivityManager = WatchConnectivityManager.shared
 
@@ -82,6 +88,23 @@ struct ResonanceApp: App {
         let historicalEngine = HistoricalEngine(healthKitService: hkService)
         _historicalEngine = StateObject(wrappedValue: historicalEngine)
 
+        let stateEngine = StateEngine(contextCollector: contextCollector, healthKitService: hkService)
+        _stateEngine = StateObject(wrappedValue: stateEngine)
+
+        let decisionEngine = DecisionEngine()
+        _decisionEngine = StateObject(wrappedValue: decisionEngine)
+        nowPlaying.decisionEngine = decisionEngine
+        nowPlaying.stateEngine = stateEngine
+
+        // Wire mood input from Watch → StateEngine
+        contextCollector.onMoodInput = { [weak stateEngine] packet in
+            let energy = Double(packet.energyLevel) / 5.0
+            let valence = Double(packet.moodLevel) / 5.0
+            Task { @MainActor in
+                stateEngine?.setManualMood(energy: energy, valence: valence)
+            }
+        }
+
         logInfo("View models initialized with Watch connectivity", category: .general)
 
         // Register background tasks
@@ -96,7 +119,8 @@ struct ResonanceApp: App {
                 nowPlayingViewModel: nowPlayingViewModel,
                 playlistViewModel: playlistViewModel,
                 musicService: musicService,
-                historicalEngine: historicalEngine
+                historicalEngine: historicalEngine,
+                stateEngine: stateEngine
             )
             .environment(\.managedObjectContext, persistenceController.viewContext)
             .task {
@@ -110,9 +134,10 @@ struct ResonanceApp: App {
                     logWarning("HealthKit setup failed: \(error.localizedDescription)", category: .healthKit)
                 }
 
-                // Start context collection and event logging
+                // Start context collection, event logging, and state engine
                 contextCollector.startCollecting()
                 eventLogger.observeNowPlaying(musicService.nowPlayingPublisher)
+                stateEngine.startUpdating()
 
                 // Wire EventLogger active event to ContextCollector for biometric tagging
                 contextCollector.observeEventLogger(eventLogger)
@@ -302,10 +327,13 @@ struct ResonanceApp: App {
 
 #Preview {
     let service = MusicKitService()
+    let hkService = HealthKitService()
+    let contextCollector = ContextCollector()
     MainView(
         nowPlayingViewModel: NowPlayingViewModel(musicService: service),
         playlistViewModel: PlaylistViewModel(musicService: service),
         musicService: service,
-        historicalEngine: HistoricalEngine(healthKitService: HealthKitService())
+        historicalEngine: HistoricalEngine(healthKitService: hkService),
+        stateEngine: StateEngine(contextCollector: contextCollector, healthKitService: hkService)
     )
 }

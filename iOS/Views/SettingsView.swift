@@ -16,6 +16,7 @@ struct SettingsView: View {
 
     @ObservedObject var musicService: MusicKitService
     @ObservedObject var historicalEngine: HistoricalEngine
+    @ObservedObject var stateEngine: StateEngine
 
     @State private var isRequestingAuth: Bool = false
 
@@ -27,6 +28,7 @@ struct SettingsView: View {
                 musicKitSection
                 healthKitSection
                 historicalAnalysisSection
+                stateEngineSection
                 preferencesSection
                 aboutSection
             }
@@ -201,6 +203,30 @@ struct SettingsView: View {
         }
     }
 
+    // MARK: - State Engine Section
+
+    private var stateEngineSection: some View {
+        Section {
+            HStack {
+                Label(stateEngine.currentState.context.displayName, systemImage: "brain.head.profile")
+                Spacer()
+                Text(stateEngine.currentState.inferredNeed.displayName)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            NavigationLink {
+                StateDebugView(stateEngine: stateEngine)
+            } label: {
+                Label("State Debug", systemImage: "ant")
+            }
+        } header: {
+            Text("State Engine")
+        } footer: {
+            Text("Real-time estimation of your current state for intelligent song selection.")
+        }
+    }
+
     // MARK: - Preferences Section (Placeholder)
 
     private var preferencesSection: some View {
@@ -280,8 +306,11 @@ struct SettingsView: View {
 // MARK: - Preview
 
 #Preview {
+    let hkService = HealthKitService()
+    let contextCollector = ContextCollector()
     SettingsView(
         musicService: MusicKitService(),
-        historicalEngine: HistoricalEngine(healthKitService: HealthKitService())
+        historicalEngine: HistoricalEngine(healthKitService: hkService),
+        stateEngine: StateEngine(contextCollector: contextCollector, healthKitService: hkService)
     )
 }

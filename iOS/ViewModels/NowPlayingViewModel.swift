@@ -8,6 +8,7 @@
 
 import Foundation
 import Combine
+import CoreData
 import MusicKit
 
 // MARK: - Song Display Info
@@ -63,6 +64,22 @@ final class NowPlayingViewModel: ObservableObject {
 
     /// Logs playback events (skip, previous) to Core Data. Set externally after init.
     var eventLogger: EventLogger?
+
+    /// Decision engine for AI song selection. Set externally after init.
+    var decisionEngine: DecisionEngine?
+
+    /// State engine for current user state. Set externally after init.
+    var stateEngine: StateEngine?
+
+    /// The current AI explanation for why this song was selected (nil if manually chosen).
+    @Published var currentExplanation: String?
+
+    /// Whether the DJ should auto-select the next song when the current one ends.
+    var aiAutoAdvanceEnabled: Bool = true
+
+    /// Guards against triggering auto-advance more than once per song.
+    private var hasTriggeredAutoAdvance: Bool = false
+
     private var cancellables = Set<AnyCancellable>()
     private var progressTimer: Timer?
 
@@ -90,6 +107,14 @@ final class NowPlayingViewModel: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] command in
                 self?.handleWatchPlaybackCommand(command)
+            }
+            .store(in: &cancellables)
+
+        // Watch -> Phone: handle crown adjustments from Watch
+        manager.crownAdjustments
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] adjustment in
+                self?.stateEngine?.applyCrownAdjustment(adjustment)
             }
             .store(in: &cancellables)
     }
@@ -120,10 +145,21 @@ final class NowPlayingViewModel: ObservableObject {
             isPlaying: isPlaying,
             progress: playbackProgress,
             duration: duration,
-            explanation: nil // Explanation comes in a later phase
+            explanation: currentExplanation
         )
 
         manager.sendNowPlaying(packet)
+
+        // Also send complication data for watch face updates
+        let complicationData = ComplicationData(
+            songTitle: currentSong.title,
+            artistName: currentSong.artistName,
+            stateEmoji: stateEmoji(for: stateEngine?.currentState),
+            heartRate: nil,
+            isPlaying: isPlaying,
+            timestamp: Date()
+        )
+        manager.updateComplication(complicationData)
     }
 
     deinit {
@@ -153,6 +189,9 @@ final class NowPlayingViewModel: ObservableObject {
     // MARK: - State Handlers
 
     private func handleNowPlayingChange(_ entry: MusicPlayer.Queue.Entry?) {
+        // Reset auto-advance flag for the new song
+        hasTriggeredAutoAdvance = false
+
         guard let entry = entry else {
             currentSong = .placeholder
             duration = 0
@@ -219,6 +258,22 @@ final class NowPlayingViewModel: ObservableObject {
         } else {
             playbackProgress = 0
         }
+
+        // Auto-advance: when the song is near its end, trigger AI selection for the next song
+        if aiAutoAdvanceEnabled
+            && !hasTriggeredAutoAdvance
+            && duration > 0
+            && playbackProgress > 0.95
+            && activePlaylistId != nil
+            && decisionEngine != nil {
+            hasTriggeredAutoAdvance = true
+
+            // Log natural end of current playback event
+            eventLogger?.logPlaybackEnd(wasSkipped: false, skipReason: nil, currentHeartRate: nil, currentHRV: nil)
+
+            logInfo("Auto-advance triggered at \(String(format: "%.1f%%", playbackProgress * 100)) progress", category: .decisionEngine)
+            requestAISelection()
+        }
     }
 
     // MARK: - Playback Actions
@@ -241,6 +296,7 @@ final class NowPlayingViewModel: ObservableObject {
 
     /// Skips to the next track.
     func skip() {
+        hasTriggeredAutoAdvance = true  // Prevent auto-advance from also firing
         Task {
             do {
                 eventLogger?.logPlaybackEnd(wasSkipped: true, skipReason: "manual_skip", currentHeartRate: nil, currentHRV: nil)
@@ -254,6 +310,7 @@ final class NowPlayingViewModel: ObservableObject {
 
     /// Skips to the previous track.
     func previous() {
+        hasTriggeredAutoAdvance = true  // Prevent auto-advance from also firing
         Task {
             do {
                 eventLogger?.logPlaybackEnd(wasSkipped: true, skipReason: "manual_previous", currentHeartRate: nil, currentHRV: nil)
@@ -275,6 +332,95 @@ final class NowPlayingViewModel: ObservableObject {
         logDebug("Seeked to \(String(format: "%.1f", targetTime))s", category: .musicKit)
     }
 
+    // MARK: - AI Song Selection
+
+    /// The Core Data ID of the active playlist (set when a playlist is selected).
+    var activePlaylistId: UUID?
+
+    /// Asks the DecisionEngine to select the next song based on current state.
+    /// Called automatically when a song ends, or manually by the user.
+    func requestAISelection() {
+        guard let engine = decisionEngine,
+              let state = stateEngine?.currentState,
+              let playlistId = activePlaylistId,
+              let playlistName = activePlaylistName else {
+            logDebug("AI selection unavailable: missing engine, state, or playlist", category: .decisionEngine)
+            return
+        }
+
+        Task {
+            guard let result = await engine.selectNextSong(
+                playlistId: playlistId,
+                playlistName: playlistName,
+                stateVector: state
+            ) else {
+                logWarning("DecisionEngine returned no result", category: .decisionEngine)
+                return
+            }
+
+            // Play the selected song
+            await playSongById(result.songId)
+
+            // Update explanation
+            currentExplanation = result.explanation.full
+
+            // Log the playback start with AI selection context
+            let context = PersistenceController.shared.viewContext
+            let fetchRequest = NSFetchRequest<Song>(entityName: "Song")
+            fetchRequest.predicate = NSPredicate(format: "id == %@", result.songId as CVarArg)
+            fetchRequest.fetchLimit = 1
+            if let song = try? context.fetch(fetchRequest).first {
+                eventLogger?.logPlaybackStart(
+                    songAppleMusicId: song.appleMusicId ?? "",
+                    wasAISelected: true,
+                    selectionScore: result.score.finalScore,
+                    selectionReason: result.explanation.short,
+                    currentHeartRate: nil,
+                    currentHRV: nil
+                )
+            }
+
+            // Sync explanation to Watch
+            sendNowPlayingToWatch()
+
+            logInfo(
+                "AI selected: '\(result.score.songTitle)' — \(result.explanation.short)",
+                category: .decisionEngine
+            )
+        }
+    }
+
+    /// Plays a song from its Core Data UUID by looking up its Apple Music ID.
+    private func playSongById(_ songId: UUID) async {
+        let context = PersistenceController.shared.viewContext
+        let fetchRequest = NSFetchRequest<Song>(entityName: "Song")
+        fetchRequest.predicate = NSPredicate(format: "id == %@", songId as CVarArg)
+        fetchRequest.fetchLimit = 1
+
+        guard let song = try? context.fetch(fetchRequest).first,
+              let appleMusicId = song.appleMusicId else {
+            logWarning("Could not resolve song from UUID for playback", category: .decisionEngine)
+            return
+        }
+
+        do {
+            // Fetch the MusicKit Song by Apple Music ID
+            var request = MusicCatalogResourceRequest<MusicKit.Song>(matching: \.id, equalTo: MusicItemID(rawValue: appleMusicId))
+            request.limit = 1
+            let response = try await request.response()
+
+            guard let mkSong = response.items.first else {
+                logWarning("MusicKit song not found for ID '\(appleMusicId)'", category: .decisionEngine)
+                return
+            }
+
+            try await musicService.play(song: mkSong)
+        } catch {
+            logError("Failed to play AI-selected song", error: error, category: .decisionEngine)
+            errorMessage = "Failed to play selected song"
+        }
+    }
+
     // MARK: - Formatting Helpers
 
     /// Formats a time interval as "m:ss".
@@ -283,5 +429,23 @@ final class NowPlayingViewModel: ObservableObject {
         let minutes = Int(time) / 60
         let seconds = Int(time) % 60
         return String(format: "%d:%02d", minutes, seconds)
+    }
+
+    // MARK: - Complication Helpers
+
+    /// Maps the current state context to an emoji for complications.
+    private func stateEmoji(for state: StateVector?) -> String {
+        guard let state = state else { return "\u{1F3B5}" }
+        switch state.context {
+        case .workout: return "\u{1F3C3}"
+        case .postWorkout: return "\u{1F4AA}"
+        case .deepWork: return "\u{1F9E0}"
+        case .work: return "\u{1F4BC}"
+        case .commute: return "\u{1F697}"
+        case .preSleep: return "\u{1F319}"
+        case .morning: return "\u{2600}\u{FE0F}"
+        case .relaxation: return "\u{1F9D8}"
+        default: return "\u{1F3B5}"
+        }
     }
 }

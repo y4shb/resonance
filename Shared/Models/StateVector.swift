@@ -156,6 +156,7 @@ public enum DataSource: String, Codable, CaseIterable, Sendable {
     case timeOfDay
     case manualMoodInput
     case historicalPattern
+    case crownInput
 
     public var displayName: String {
         switch self {
@@ -167,6 +168,7 @@ public enum DataSource: String, Codable, CaseIterable, Sendable {
         case .timeOfDay: return "Time of Day"
         case .manualMoodInput: return "Manual Input"
         case .historicalPattern: return "Historical Pattern"
+        case .crownInput: return "Crown Input"
         }
     }
 }

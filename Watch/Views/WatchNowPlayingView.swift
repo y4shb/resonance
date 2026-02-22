@@ -11,6 +11,9 @@ import SwiftUI
 
 struct WatchNowPlayingView: View {
     @ObservedObject var connectivityService: PhoneConnectivityService
+    @ObservedObject var crownHandler: CrownHandler
+    @State private var crownRotation: Double = 0.0
+    @FocusState private var isCrownFocused: Bool
 
     var body: some View {
         if let nowPlaying = connectivityService.currentNowPlaying {
@@ -31,19 +34,107 @@ struct WatchNowPlayingView: View {
                 // Song Info
                 songInfoSection(nowPlaying)
 
+                // DJ Mode Energy Gauge
+                if crownHandler.isDJModeActive {
+                    HStack(spacing: 4) {
+                        Image(systemName: "minus")
+                            .font(.system(size: 8))
+                            .foregroundStyle(.secondary)
+                        GeometryReader { geometry in
+                            ZStack(alignment: .leading) {
+                                RoundedRectangle(cornerRadius: 2)
+                                    .fill(.quaternary)
+                                    .frame(height: 4)
+                                RoundedRectangle(cornerRadius: 2)
+                                    .fill(.orange)
+                                    .frame(
+                                        width: geometry.size.width * ((crownHandler.energyAdjustment + 1.0) / 2.0),
+                                        height: 4
+                                    )
+                            }
+                        }
+                        .frame(height: 4)
+                        Image(systemName: "plus")
+                            .font(.system(size: 8))
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, 8)
+                    .transition(.opacity.combined(with: .scale))
+                }
+
                 // Progress Bar
                 progressBar(progress: nowPlaying.progress, duration: nowPlaying.duration)
 
+                // State Info Row
+                if let state = connectivityService.currentState {
+                    HStack(spacing: 8) {
+                        if let hr = state.heartRate {
+                            HStack(spacing: 2) {
+                                Image(systemName: "heart.fill")
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(.red)
+                                Text("\(Int(hr))")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        if let context = state.currentContext {
+                            Text(context)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+
                 // Playback Controls
                 playbackControls(isPlaying: nowPlaying.isPlaying)
+
+                // DJ Mode Toggle
+                Button {
+                    crownHandler.toggleDJMode()
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: crownHandler.isDJModeActive ? "dial.high.fill" : "dial.low")
+                            .font(.caption)
+                        Text(crownHandler.isDJModeActive ? "DJ On" : "DJ Mode")
+                            .font(.caption2)
+                    }
+                }
+                .buttonStyle(.bordered)
+                .tint(crownHandler.isDJModeActive ? .orange : .gray)
 
                 // Explanation
                 if let explanation = nowPlaying.explanation, !explanation.isEmpty {
                     explanationView(explanation)
                 }
+
+                // Mood Input
+                NavigationLink {
+                    WatchMoodInputView(connectivityService: connectivityService)
+                } label: {
+                    Label("Set Mood", systemImage: "face.smiling")
+                        .font(.caption2)
+                }
+                .buttonStyle(.bordered)
+                .tint(.cyan)
             }
             .padding(.horizontal, 4)
         }
+        .digitalCrownRotation(
+            $crownRotation,
+            from: -CrownConstants.maxAdjustment,
+            through: CrownConstants.maxAdjustment,
+            sensitivity: .medium,
+            isContinuous: false,
+            isHapticFeedbackEnabled: true
+        )
+        .focusable(true)
+        .focused($isCrownFocused)
+        .onChange(of: crownRotation) { _, newValue in
+            crownHandler.handleCrownRotation(value: newValue)
+        }
+        .onAppear { isCrownFocused = true }
+        .animation(.easeInOut(duration: 0.3), value: crownHandler.isDJModeActive)
         .navigationTitle("Resonance")
     }
 
@@ -132,6 +223,7 @@ struct WatchNowPlayingView: View {
             } label: {
                 Image(systemName: "backward.fill")
                     .font(.title3)
+                    .frame(width: 44, height: 44)
             }
             .buttonStyle(.plain)
 
@@ -142,6 +234,7 @@ struct WatchNowPlayingView: View {
             } label: {
                 Image(systemName: isPlaying ? "pause.fill" : "play.fill")
                     .font(.title2)
+                    .frame(width: 44, height: 44)
             }
             .buttonStyle(.plain)
 
@@ -151,6 +244,7 @@ struct WatchNowPlayingView: View {
             } label: {
                 Image(systemName: "forward.fill")
                     .font(.title3)
+                    .frame(width: 44, height: 44)
             }
             .buttonStyle(.plain)
         }
@@ -210,5 +304,9 @@ struct WatchNowPlayingView: View {
 // MARK: - Preview
 
 #Preview("Now Playing") {
-    WatchNowPlayingView(connectivityService: PhoneConnectivityService())
+    let service = PhoneConnectivityService()
+    WatchNowPlayingView(
+        connectivityService: service,
+        crownHandler: CrownHandler(connectivityService: service)
+    )
 }

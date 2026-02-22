@@ -17,6 +17,7 @@ struct MainView: View {
     @ObservedObject var playlistViewModel: PlaylistViewModel
     let musicService: MusicKitService
     @ObservedObject var historicalEngine: HistoricalEngine
+    @ObservedObject var stateEngine: StateEngine
 
     @State private var selectedTab: Tab = .nowPlaying
 
@@ -48,7 +49,7 @@ struct MainView: View {
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            NowPlayingView(viewModel: nowPlayingViewModel)
+            NowPlayingView(viewModel: nowPlayingViewModel, stateEngine: stateEngine)
                 .tabItem {
                     Label(Tab.nowPlaying.title, systemImage: Tab.nowPlaying.systemImage)
                 }
@@ -66,11 +67,15 @@ struct MainView: View {
             }
             .tag(Tab.playlists)
 
-            SettingsView(musicService: musicService, historicalEngine: historicalEngine)
-                .tabItem {
-                    Label(Tab.settings.title, systemImage: Tab.settings.systemImage)
-                }
-                .tag(Tab.settings)
+            SettingsView(
+                musicService: musicService,
+                historicalEngine: historicalEngine,
+                stateEngine: stateEngine
+            )
+            .tabItem {
+                Label(Tab.settings.title, systemImage: Tab.settings.systemImage)
+            }
+            .tag(Tab.settings)
         }
         .tint(.blue)
         .onAppear {
@@ -83,10 +88,13 @@ struct MainView: View {
 
 #Preview {
     let service = MusicKitService()
+    let hkService = HealthKitService()
+    let contextCollector = ContextCollector()
     MainView(
         nowPlayingViewModel: NowPlayingViewModel(musicService: service),
         playlistViewModel: PlaylistViewModel(musicService: service),
         musicService: service,
-        historicalEngine: HistoricalEngine(healthKitService: HealthKitService())
+        historicalEngine: HistoricalEngine(healthKitService: hkService),
+        stateEngine: StateEngine(contextCollector: contextCollector, healthKitService: hkService)
     )
 }

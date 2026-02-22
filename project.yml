@@ -68,6 +68,8 @@ targets:
       - path: Watch
         excludes:
           - "**/*.entitlements"
+          - Complications/ComplicationWidgets.swift
+          - Complications/Info.plist
       - path: Shared/Models
       - path: Shared/Utilities
     entitlements:
@@ -85,6 +87,9 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         SKIP_INSTALL: false
         LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/Frameworks"
+    dependencies:
+      - target: ResonanceWatchComplications
+        embed: true
 
   # ============================================
   # macOS Menu Bar App Target
@@ -140,6 +145,31 @@ targets:
         SKIP_INSTALL: true
 
   # ============================================
+  # watchOS Widget Extension Target (Complications)
+  # ============================================
+  ResonanceWatchComplications:
+    type: app-extension
+    platform: watchOS
+    deploymentTarget: "26.0"
+    sources:
+      - path: Watch/Complications
+      - path: Shared/Models/WatchMessages.swift
+      - path: Shared/Utilities/Constants.swift
+    entitlements:
+      path: Watch/Entitlements/ResonanceWatch.entitlements
+    info:
+      path: Watch/Complications/Info.plist
+      properties:
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.y4sh.resonance.ios.watchkitapp.complications
+        INFOPLIST_FILE: Watch/Complications/Info.plist
+        SKIP_INSTALL: true
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks"
+
+  # ============================================
   # Unit Tests Target
   # ============================================
   ResonanceTests:
@@ -185,6 +215,7 @@ schemes:
     build:
       targets:
         ResonanceWatch: all
+        ResonanceWatchComplications: all
     run:
       config: Debug
     profile:
@@ -220,6 +251,7 @@ schemes:
         ResonanceWatch: all
         ResonanceMac: all
         ResonanceWidgets: all
+        ResonanceWatchComplications: all
         ResonanceTests: ["test"]
     run:
       config: Debug

@@ -117,8 +117,7 @@ struct PopoverView: View {
             } else {
                 ZStack {
                     RoundedRectangle(cornerRadius: 8)
-                        .fill(.clear)
-                        .glassEffect(.regular, in: .rect(cornerRadius: 8))
+                        .fill(.ultraThinMaterial)
                         .frame(width: 50, height: 50)
                     Image(systemName: "music.note")
                         .font(.title3)
@@ -274,8 +273,12 @@ struct PopoverView: View {
     }
 
     private func openSettings() {
-        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-        NSApp.activate(ignoringOtherApps: true)
+        if #available(macOS 14.0, *) {
+            NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+        } else {
+            NSApp.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil)
+        }
+        NSApp.activate()
     }
 }
 

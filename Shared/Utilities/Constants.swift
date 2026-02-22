@@ -269,3 +269,16 @@ public enum MusicKitConstants {
     /// Artwork thumbnail compression quality
     public static let artworkCompressionQuality: Double = 0.7
 }
+
+// MARK: - Crown Control Constants
+
+public enum CrownConstants {
+    /// Sensitivity multiplier for crown rotation
+    public static let sensitivityMultiplier: Double = 0.5
+    /// Debounce interval before sending adjustment to iPhone (seconds)
+    public static let debounceIntervalSeconds: Double = 0.3
+    /// How long a crown adjustment influences state (seconds)
+    public static let adjustmentDecaySeconds: Double = 300 // 5 minutes
+    /// Maximum accumulated crown adjustment
+    public static let maxAdjustment: Double = 0.5
+}

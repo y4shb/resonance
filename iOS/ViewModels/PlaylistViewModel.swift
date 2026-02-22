@@ -129,6 +129,9 @@ final class PlaylistViewModel: ObservableObject {
         activePlaylistName = playlistInfo.name
         nowPlayingViewModel?.activePlaylistName = playlistInfo.name
 
+        // Reset the decision engine session for the new playlist
+        nowPlayingViewModel?.decisionEngine?.resetSession()
+
         Task {
             do {
                 try await musicService.setQueue(playlist: playlistInfo.playlist)
@@ -142,6 +145,11 @@ final class PlaylistViewModel: ObservableObject {
         // Find Core Data playlist on main thread (viewContext is main-queue only)
         let playlistRepo = PlaylistRepository()
         let cdPlaylist = playlistRepo.findByAppleMusicId(playlistInfo.id.rawValue)
+
+        // Set the active playlist ID for AI selection
+        if let cdPlaylist = cdPlaylist, let playlistId = cdPlaylist.id {
+            nowPlayingViewModel?.activePlaylistId = playlistId
+        }
 
         // Sync songs in background
         Task.detached(priority: .utility) {

@@ -12,6 +12,7 @@
 import Foundation
 import Combine
 import CoreData
+import CloudKit
 
 /// Central collector for all context signals on iPhone.
 /// Receives biometric updates from Watch via WatchConnectivityManager,
@@ -64,6 +65,17 @@ final class ContextCollector: ObservableObject {
                 self?.handleBiometricUpdate(packet)
             }
             .store(in: &cancellables)
+
+        // Subscribe to mood inputs from Watch
+        watchManager.moodInputs
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] packet in
+                self?.handleMoodInput(packet)
+            }
+            .store(in: &cancellables)
+
+        // Start polling for macOS context via CloudKit
+        startMacOSContextPolling()
 
         logInfo("ContextCollector started collecting biometric updates", category: .general)
     }
@@ -122,10 +134,12 @@ final class ContextCollector: ObservableObject {
             sample.setValue(signal.sourceDevice, forKey: "sourceDevice")
             sample.setValue(signal.sampleQuality, forKey: "sampleQuality")
 
-            var eventUUID: UUID? = nil
+            let eventUUID: UUID?
             if let oid = eventObjectID,
                let event = try? context.existingObject(with: oid) as? PlaybackEvent {
                 eventUUID = event.id
+            } else {
+                eventUUID = nil
             }
             sample.setValue(eventUUID, forKey: "activePlaybackEventId")
 
@@ -136,6 +150,91 @@ final class ContextCollector: ObservableObject {
             }
         }
     }
+
+    // MARK: - Mood Input Handling
+
+    /// Callback for StateEngine to receive mood inputs from Watch.
+    var onMoodInput: ((MoodPacket) -> Void)?
+
+    private func handleMoodInput(_ packet: MoodPacket) {
+        logInfo(
+            "Mood input received: energy=\(packet.energyLevel), mood=\(packet.moodLevel)",
+            category: .general
+        )
+        onMoodInput?(packet)
+    }
+
+    // MARK: - macOS Context via CloudKit
+
+    private var macOSPollTimer: Timer?
+
+    private func startMacOSContextPolling() {
+        // Poll CloudKit every 60 seconds for macOS context updates
+        macOSPollTimer = Timer.scheduledTimer(
+            withTimeInterval: 60,
+            repeats: true
+        ) { [weak self] _ in
+            self?.fetchLatestMacOSContext()
+        }
+
+        // Initial fetch
+        fetchLatestMacOSContext()
+    }
+
+    private func fetchLatestMacOSContext() {
+        let container = CKContainer(identifier: "iCloud.com.y4sh.resonance")
+        let database = container.privateCloudDatabase
+
+        let query = CKQuery(
+            recordType: "MacOSContext",
+            predicate: NSPredicate(
+                format: "timestamp > %@",
+                Date().addingTimeInterval(-120) as NSDate  // Last 2 minutes
+            )
+        )
+        query.sortDescriptors = [NSSortDescriptor(key: "timestamp", ascending: false)]
+
+        database.fetch(withQuery: query, inZoneWith: nil, desiredKeys: nil, resultsLimit: 1) { [weak self] result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let (matchResults, _)):
+                    guard let firstMatch = matchResults.first,
+                          case .success(let record) = firstMatch.1 else {
+                        return
+                    }
+                    self?.processMacOSContextRecord(record)
+                case .failure(let error):
+                    logDebug("CloudKit macOS context fetch: \(error.localizedDescription)", category: .network)
+                }
+            }
+        }
+    }
+
+    private func processMacOSContextRecord(_ record: CKRecord) {
+        let signal = MacOSContextSignal(
+            focusModeActive: (record["focusModeActive"] as? NSNumber)?.boolValue ?? false,
+            focusModeName: record["focusModeName"] as? String,
+            activeAppName: record["activeAppName"] as? String,
+            activeAppCategory: (record["activeAppCategory"] as? String).flatMap { AppCategory(rawValue: $0) },
+            productivityMinutes: (record["productivityMinutes"] as? NSNumber)?.doubleValue ?? 0,
+            entertainmentMinutes: (record["entertainmentMinutes"] as? NSNumber)?.doubleValue ?? 0,
+            socialMinutes: (record["socialMinutes"] as? NSNumber)?.doubleValue ?? 0,
+            hasOngoingMeeting: (record["hasOngoingMeeting"] as? NSNumber)?.boolValue ?? false,
+            minutesUntilNextEvent: (record["minutesUntilNextEvent"] as? NSNumber)?.doubleValue,
+            inferredWorkState: (record["inferredWorkState"] as? String).flatMap { WorkState(rawValue: $0) } ?? .idle
+        )
+
+        latestMacOSContext = signal
+        rebuildAggregatedContext()
+
+        logDebug(
+            "macOS context received: work state=\(signal.inferredWorkState.rawValue), "
+            + "focus=\(signal.focusModeActive)",
+            category: .general
+        )
+    }
+
+    // MARK: - Context Rebuild
 
     private func rebuildAggregatedContext() {
         aggregatedContext = AggregatedContext(

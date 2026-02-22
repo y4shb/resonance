@@ -7,6 +7,7 @@
 
 import SwiftUI
 import HealthKit
+import WidgetKit
 
 @main
 struct ResonanceWatchApp: App {
@@ -14,6 +15,7 @@ struct ResonanceWatchApp: App {
 
     @StateObject private var connectivityService: PhoneConnectivityService
     @StateObject private var sensorCoordinator: SensorCoordinator
+    @StateObject private var crownHandler: CrownHandler
     @Environment(\.scenePhase) private var scenePhase
 
     // MARK: - Initialization
@@ -23,13 +25,17 @@ struct ResonanceWatchApp: App {
         let connectivity = PhoneConnectivityService()
         _connectivityService = StateObject(wrappedValue: connectivity)
         _sensorCoordinator = StateObject(wrappedValue: SensorCoordinator(connectivityService: connectivity))
+        _crownHandler = StateObject(wrappedValue: CrownHandler(connectivityService: connectivity))
     }
 
     // MARK: - Body
 
     var body: some Scene {
         WindowGroup {
-            WatchNowPlayingView(connectivityService: connectivityService)
+            WatchNowPlayingView(
+                    connectivityService: connectivityService,
+                    crownHandler: crownHandler
+                )
                 .onAppear {
                     connectivityService.activate()
                     logInfo("PhoneConnectivityService activated", category: .watchConnectivity)
@@ -62,6 +68,12 @@ struct ResonanceWatchApp: App {
                         break
                     }
                 }
+                .onReceive(connectivityService.complicationUpdates) { data in
+                    ComplicationDataStore.update(from: data)
+                }
+                .onReceive(connectivityService.nowPlayingUpdates) { packet in
+                    ComplicationDataStore.updateFromNowPlaying(packet)
+                }
         }
     }
 }
@@ -70,5 +82,8 @@ struct ResonanceWatchApp: App {
 
 #Preview {
     let service = PhoneConnectivityService()
-    WatchNowPlayingView(connectivityService: service)
+    WatchNowPlayingView(
+        connectivityService: service,
+        crownHandler: CrownHandler(connectivityService: service)
+    )
 }
