@@ -376,13 +376,14 @@ public final class MusicKitService: MusicKitServiceProtocol {
         // Observe playback status changes and also check for entry changes.
         // State changes fire after queue changes settle, so entry.item is resolved.
         stateObservationTask = Task { [weak self] in
-            guard let self else { return }
+            guard let player = self?.player else { return }
 
-            for await _ in self.player.state.objectWillChange.values {
-                guard !Task.isCancelled, let self else { break }
+            for await _ in player.state.objectWillChange.values {
+                guard !Task.isCancelled else { break }
+                guard let self else { break }
 
-                let newStatus = self.player.state.playbackStatus
-                let newEntry = self.player.queue.currentEntry
+                let newStatus = player.state.playbackStatus
+                let newEntry = player.queue.currentEntry
 
                 await MainActor.run { [weak self] in
                     guard let self else { return }
@@ -407,15 +408,16 @@ public final class MusicKitService: MusicKitServiceProtocol {
         // Observe queue changes for faster song transition detection.
         // Uses Task.yield() to let the change commit before reading currentEntry.
         queueObservationTask = Task { [weak self] in
-            guard let self else { return }
+            guard let player = self?.player else { return }
 
-            for await _ in self.player.queue.objectWillChange.values {
-                guard !Task.isCancelled, let self else { break }
+            for await _ in player.queue.objectWillChange.values {
+                guard !Task.isCancelled else { break }
+                guard let self else { break }
 
                 // Yield to allow the property change to commit
                 await Task.yield()
 
-                let newEntry = self.player.queue.currentEntry
+                let newEntry = player.queue.currentEntry
 
                 await MainActor.run { [weak self] in
                     guard let self else { return }

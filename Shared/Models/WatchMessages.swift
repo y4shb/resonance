@@ -15,6 +15,7 @@ enum WatchMessage: Codable {
     case moodInput(MoodPacket)
     case playbackCommand(PlaybackCommand)
     case crownAdjustment(CrownAdjustment)
+    case requestNowPlaying
 
     // Phone -> Watch
     case nowPlayingUpdate(NowPlayingPacket)

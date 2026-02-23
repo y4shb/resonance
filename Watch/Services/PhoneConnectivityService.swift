@@ -71,6 +71,11 @@ final class PhoneConnectivityService: NSObject, ObservableObject {
 
     // MARK: - Sending (Watch -> Phone)
 
+    func requestNowPlaying() {
+        let message = WatchMessage.requestNowPlaying
+        sendMessage(message)
+    }
+
     func sendPlaybackCommand(_ command: PlaybackCommand) {
         let message = WatchMessage.playbackCommand(command)
         sendMessage(message)
@@ -187,7 +192,7 @@ final class PhoneConnectivityService: NSObject, ObservableObject {
                     self?.complicationSubject.send(data)
                 }
 
-            case .biometricUpdate, .moodInput, .playbackCommand, .crownAdjustment:
+            case .biometricUpdate, .moodInput, .playbackCommand, .crownAdjustment, .requestNowPlaying:
                 // These are watch -> phone messages; should not be received on watchOS
                 logWarning("Received unexpected watch->phone message on watchOS side", category: .watchConnectivity)
             }

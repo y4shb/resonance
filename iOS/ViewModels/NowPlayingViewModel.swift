@@ -124,6 +124,24 @@ final class NowPlayingViewModel: ObservableObject {
                 self?.stateEngine?.applyCrownAdjustment(adjustment)
             }
             .store(in: &cancellables)
+
+        // Phone -> Watch: resend current state when Watch becomes reachable
+        manager.$watchIsReachable
+            .removeDuplicates()
+            .filter { $0 }
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.sendNowPlayingToWatch()
+            }
+            .store(in: &cancellables)
+
+        // Phone -> Watch: respond to Watch's explicit request for NowPlaying
+        manager.nowPlayingRequests
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] in
+                self?.sendNowPlayingToWatch()
+            }
+            .store(in: &cancellables)
     }
 
     /// Connects the LearningStore for real-time feedback loop.

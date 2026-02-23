@@ -65,6 +65,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WatchConnectiv
     private let moodSubject = PassthroughSubject<MoodPacket, Never>()
     private let playbackCommandSubject = PassthroughSubject<PlaybackCommand, Never>()
     private let crownAdjustmentSubject = PassthroughSubject<CrownAdjustment, Never>()
+    private let nowPlayingRequestSubject = PassthroughSubject<Void, Never>()
 
     var biometricUpdates: AnyPublisher<BiometricPacket, Never> {
         biometricSubject.eraseToAnyPublisher()
@@ -80,6 +81,10 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WatchConnectiv
 
     var crownAdjustments: AnyPublisher<CrownAdjustment, Never> {
         crownAdjustmentSubject.eraseToAnyPublisher()
+    }
+
+    var nowPlayingRequests: AnyPublisher<Void, Never> {
+        nowPlayingRequestSubject.eraseToAnyPublisher()
     }
 
     // MARK: - Private Properties
@@ -113,6 +118,15 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WatchConnectiv
     func sendNowPlaying(_ packet: NowPlayingPacket) {
         let message = WatchMessage.nowPlayingUpdate(packet)
         sendMessage(message)
+
+        // Also persist via transferUserInfo for guaranteed delivery
+        // when the Watch app isn't in the foreground
+        do {
+            let dict = try message.toDictionary()
+            session?.transferUserInfo(dict)
+        } catch {
+            logError("Failed to encode NowPlaying for transferUserInfo", error: error, category: .watchConnectivity)
+        }
     }
 
     func sendStateUpdate(_ packet: StatePacket) {
@@ -274,6 +288,10 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WatchConnectiv
             case .crownAdjustment(let adjustment):
                 logDebug("Received crown adjustment: \(adjustment.adjustmentType) delta=\(adjustment.delta)", category: .watchConnectivity)
                 crownAdjustmentSubject.send(adjustment)
+
+            case .requestNowPlaying:
+                logInfo("Watch requested current NowPlaying state", category: .watchConnectivity)
+                nowPlayingRequestSubject.send(())
 
             case .nowPlayingUpdate, .stateUpdate, .complicationUpdate:
                 // These are phone -> watch messages; should not be received on iOS

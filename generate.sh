@@ -1,3 +1,12 @@
+#!/bin/bash
+# Regenerates Xcode project and restores Watch entitlements.
+# Usage: bash generate.sh
+
+cd "$(dirname "$0")"
+
+xcodegen generate
+
+cat > Watch/Entitlements/ResonanceWatch.entitlements << 'ENTITLEMENTS'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -12,3 +21,6 @@
 	<array/>
 </dict>
 </plist>
+ENTITLEMENTS
+
+echo "Done. Watch entitlements restored."

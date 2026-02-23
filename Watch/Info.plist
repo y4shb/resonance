@@ -20,6 +20,8 @@
 	<string>1</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>Resonance Watch reads heart rate and HRV to personalize music.</string>
+	<key>NSMotionUsageDescription</key>
+	<string>Resonance uses motion data to detect activity context for music selection.</string>
 	<key>WKApplication</key>
 	<true/>
 	<key>WKCompanionAppBundleIdentifier</key>
