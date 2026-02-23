@@ -31,6 +31,8 @@ struct WidgetDataStore {
         static let heartRate = "widget_heartRate"
         static let context = "widget_context"
         static let lastUpdated = "widget_lastUpdated"
+        static let nowPlayingLastUpdated = "widget_nowPlayingLastUpdated"
+        static let stateLastUpdated = "widget_stateLastUpdated"
     }
 
     // MARK: - Write (from main app)
@@ -50,7 +52,7 @@ struct WidgetDataStore {
         defaults.set(progress, forKey: Keys.progress)
         defaults.set(duration, forKey: Keys.duration)
         defaults.set(explanation, forKey: Keys.explanation)
-        defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastUpdated)
+        defaults.set(Date().timeIntervalSince1970, forKey: Keys.nowPlayingLastUpdated)
         WidgetCenter.shared.reloadTimelines(ofKind: "NowPlayingWidget")
     }
 
@@ -71,7 +73,7 @@ struct WidgetDataStore {
             defaults.removeObject(forKey: Keys.heartRate)
         }
         defaults.set(context, forKey: Keys.context)
-        defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastUpdated)
+        defaults.set(Date().timeIntervalSince1970, forKey: Keys.stateLastUpdated)
         WidgetCenter.shared.reloadTimelines(ofKind: "StateWidget")
     }
 
@@ -86,7 +88,7 @@ struct WidgetDataStore {
             progress: defaults.double(forKey: Keys.progress),
             duration: defaults.double(forKey: Keys.duration),
             explanation: defaults.string(forKey: Keys.explanation),
-            lastUpdated: Date(timeIntervalSince1970: defaults.double(forKey: Keys.lastUpdated))
+            lastUpdated: Date(timeIntervalSince1970: defaults.double(forKey: Keys.nowPlayingLastUpdated))
         )
     }
 
@@ -98,7 +100,7 @@ struct WidgetDataStore {
             energy: defaults.double(forKey: Keys.energy),
             heartRate: defaults.object(forKey: Keys.heartRate) as? Double,
             context: defaults.string(forKey: Keys.context) ?? "",
-            lastUpdated: Date(timeIntervalSince1970: defaults.double(forKey: Keys.lastUpdated))
+            lastUpdated: Date(timeIntervalSince1970: defaults.double(forKey: Keys.stateLastUpdated))
         )
     }
 }

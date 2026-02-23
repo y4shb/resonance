@@ -201,11 +201,11 @@ struct WatchNowPlayingView: View {
 
             // Time labels
             HStack {
-                Text(formatTime(duration * progress))
+                Text((duration * progress).formattedMinutesSeconds)
                     .font(.system(size: 10, design: .monospaced))
                     .foregroundStyle(.secondary)
                 Spacer()
-                Text(formatTime(duration))
+                Text(duration.formattedMinutesSeconds)
                     .font(.system(size: 10, design: .monospaced))
                     .foregroundStyle(.secondary)
             }
@@ -291,14 +291,6 @@ struct WatchNowPlayingView: View {
         .navigationTitle("Resonance")
     }
 
-    // MARK: - Helpers
-
-    private func formatTime(_ seconds: TimeInterval) -> String {
-        let totalSeconds = Int(max(0, seconds))
-        let minutes = totalSeconds / 60
-        let secs = totalSeconds % 60
-        return String(format: "%d:%02d", minutes, secs)
-    }
 }
 
 // MARK: - Preview

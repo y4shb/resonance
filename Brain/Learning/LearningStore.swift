@@ -79,10 +79,10 @@ final class LearningStore: ObservableObject {
             )
 
             // 3. Compute final impact scores (clamp to [0, 1])
-            let calmImpact = Self.clamp(0.5 + responseResult.calmCredit + skipResult.weightedPenalty)
-            let energyImpact = Self.clamp(0.5 + responseResult.energyCredit + skipResult.weightedPenalty)
+            let calmImpact = Self.clamp(0.5 + responseResult.weightedCalmCredit + skipResult.weightedPenalty)
+            let energyImpact = Self.clamp(0.5 + responseResult.weightedEnergyCredit + skipResult.weightedPenalty)
             let focusImpact = Self.clamp(0.5 + responseResult.focusCredit + skipResult.weightedPenalty)
-            let moodLiftImpact = Self.clamp(0.5 + responseResult.focusCredit)
+            let moodLiftImpact = Self.clamp(0.5 + responseResult.valenceCredit + skipResult.weightedPenalty)
 
             // 4. Determine context for SongEffect lookup
             // Use the session's context if available, otherwise "any"
@@ -90,7 +90,7 @@ final class LearningStore: ObservableObject {
             let timeOfDaySlot = event.session?.timeOfDaySlot ?? "any"
 
             // 5. Find or create the SongEffect for this song + context
-            let effect = self.findOrCreateEffect(
+            let effect = SongEffectHelper.findOrCreateEffect(
                 for: song,
                 contextType: contextType,
                 timeOfDaySlot: timeOfDaySlot,
@@ -121,14 +121,14 @@ final class LearningStore: ObservableObject {
             effect.lastUpdatedAt = Date()
 
             // 7. Update Song aggregate scores (confidence-weighted average across all effects)
-            self.updateSongAggregates(song, in: context)
+            SongEffectHelper.updateSongAggregates(song, in: context)
 
             // 8. Update play/skip counts and familiarity
             song.totalPlayCount += 1
             if skipResult.isSkip {
                 song.totalSkipCount += 1
             }
-            self.updateFamiliarity(song)
+            SongEffectHelper.updateFamiliarity(song)
 
             // 9. Save
             do {
@@ -179,99 +179,6 @@ final class LearningStore: ObservableObject {
     func resetSession() {
         runningSession = SessionQualityScorer.RunningSession()
         logInfo("LearningStore: session reset", category: .learning)
-    }
-
-    // MARK: - Core Data Helpers
-
-    /// Find existing SongEffect or create a new one. Mirrors SongImpactCalculator.findOrCreateEffect pattern.
-    private nonisolated func findOrCreateEffect(
-        for song: Song,
-        contextType: String,
-        timeOfDaySlot: String,
-        in context: NSManagedObjectContext
-    ) -> SongEffect {
-        let request = NSFetchRequest<SongEffect>(entityName: "SongEffect")
-        request.predicate = NSPredicate(format: "song == %@ AND contextType == %@", song, contextType)
-        request.fetchLimit = 1
-
-        if let existing = (try? context.fetch(request))?.first {
-            // Update the timeOfDaySlot to the most recent value
-            existing.timeOfDaySlot = timeOfDaySlot
-            return existing
-        }
-
-        // Create a new SongEffect with defaults
-        guard let effect = NSEntityDescription.insertNewObject(forEntityName: "SongEffect", into: context) as? SongEffect else {
-            logError("LearningStore: failed to create SongEffect entity", category: .learning)
-            fatalError("Failed to create SongEffect entity")
-        }
-
-        effect.id = UUID()
-        effect.song = song
-        effect.contextType = contextType
-        effect.timeOfDaySlot = timeOfDaySlot
-        effect.calmScore = 0.5
-        effect.focusScore = 0.5
-        effect.energyScore = 0.5
-        effect.moodLiftScore = 0.5
-        effect.sampleCount = 0
-        effect.confidenceLevel = 0.0
-        effect.firstRecordedAt = Date()
-        effect.lastUpdatedAt = Date()
-
-        logDebug(
-            "LearningStore: created new SongEffect for context '\(contextType)' on song '\(song.appleMusicId ?? "unknown")'",
-            category: .learning
-        )
-
-        return effect
-    }
-
-    /// Update Song aggregate scores from all its SongEffect records.
-    /// Mirrors SongImpactCalculator.updateSongAggregates pattern.
-    private nonisolated func updateSongAggregates(_ song: Song, in context: NSManagedObjectContext) {
-        guard let effectsSet = song.effects,
-              let effects = effectsSet.allObjects as? [SongEffect],
-              !effects.isEmpty else {
-            logDebug(
-                "LearningStore: no effects found for song '\(song.appleMusicId ?? "unknown")', skipping aggregate update",
-                category: .learning
-            )
-            return
-        }
-
-        var totalWeight: Double = 0.0
-        var weightedCalm: Double = 0.0
-        var weightedFocus: Double = 0.0
-        var weightedActivation: Double = 0.0
-        var maxConfidence: Double = 0.0
-
-        for effect in effects {
-            let weight = effect.confidenceLevel
-            guard weight > 0.0 else { continue }
-
-            totalWeight += weight
-            weightedCalm += effect.calmScore * weight
-            weightedFocus += effect.focusScore * weight
-            weightedActivation += effect.energyScore * weight
-
-            if effect.confidenceLevel > maxConfidence {
-                maxConfidence = effect.confidenceLevel
-            }
-        }
-
-        if totalWeight > 0.0 {
-            song.calmScore = weightedCalm / totalWeight
-            song.focusScore = weightedFocus / totalWeight
-            song.activationScore = weightedActivation / totalWeight
-            song.confidenceLevel = maxConfidence
-        }
-    }
-
-    /// Updates the song's familiarity score based on total play count.
-    /// Formula: min(1.0, totalPlayCount / 10.0)
-    private nonisolated func updateFamiliarity(_ song: Song) {
-        song.familiarityScore = min(1.0, Double(song.totalPlayCount) / 10.0)
     }
 
     // MARK: - Helpers

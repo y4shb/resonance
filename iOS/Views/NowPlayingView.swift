@@ -173,16 +173,15 @@ struct NowPlayingView: View {
             .tint(.blue)
 
             HStack {
-                Text(NowPlayingViewModel.formatTime(
-                    isScrubbing ? scrubProgress * viewModel.duration : viewModel.currentTime
-                ))
+                Text((isScrubbing ? scrubProgress * viewModel.duration : viewModel.currentTime)
+                    .formattedMinutesSeconds)
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .monospacedDigit()
 
                 Spacer()
 
-                Text(NowPlayingViewModel.formatTime(viewModel.duration))
+                Text(viewModel.duration.formattedMinutesSeconds)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .monospacedDigit()

@@ -156,7 +156,7 @@ final class RealTimeGuardAdjuster: ObservableObject {
 
     /// Whether any guard adjustments are currently active.
     var hasActiveAdjustments: Bool {
-        !activeAdjustments.filter { !$0.isExpired }.isEmpty
+        activeAdjustments.contains(where: { !$0.isExpired })
     }
 
     /// Reset all tracking state (e.g., on session end).

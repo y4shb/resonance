@@ -96,6 +96,9 @@ struct ResonanceApp: App {
         let contextCollector = ContextCollector()
         _contextCollector = StateObject(wrappedValue: contextCollector)
 
+        // Give EventLogger access to biometric data for auto-detected song transitions.
+        eventLogger.contextCollector = contextCollector
+
         let hkService = HealthKitService()
         _healthKitService = StateObject(wrappedValue: hkService)
 
@@ -196,7 +199,7 @@ struct ResonanceApp: App {
                     .debounce(for: .seconds(30), scheduler: DispatchQueue.main)
                     .sink { state in
                         WidgetDataStore.updateState(
-                            emoji: stateEmoji(for: state.context),
+                            emoji: state.context.emoji,
                             stateName: state.context.displayName,
                             energy: state.energy,
                             heartRate: nil,
@@ -392,24 +395,6 @@ struct ResonanceApp: App {
         } catch {
             logError("Failed to schedule historical analysis", error: error, category: .background)
         }
-    }
-}
-
-// MARK: - State Emoji Helper
-
-/// Maps an activity context to a representative emoji for widget display.
-/// Standalone function to avoid coupling to NowPlayingViewModel's private method.
-private func stateEmoji(for context: ActivityContext) -> String {
-    switch context {
-    case .workout: return "\u{1F3C3}"
-    case .postWorkout: return "\u{1F4AA}"
-    case .deepWork: return "\u{1F9E0}"
-    case .work: return "\u{1F4BC}"
-    case .commute: return "\u{1F697}"
-    case .preSleep: return "\u{1F319}"
-    case .morning: return "\u{2600}\u{FE0F}"
-    case .relaxation: return "\u{1F9D8}"
-    default: return "\u{1F3B5}"
     }
 }
 

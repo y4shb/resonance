@@ -74,6 +74,13 @@ public final class PersistenceController: @unchecked Sendable {
             }
         }
 
+        // Enable persistent history tracking for sync (must be set BEFORE loading stores)
+        if !inMemory {
+            let description = container.persistentStoreDescriptions.first
+            description?.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
+            description?.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
+        }
+
         // Load persistent stores
         container.loadPersistentStores { storeDescription, error in
             if let error = error as NSError? {
@@ -107,13 +114,6 @@ public final class PersistenceController: @unchecked Sendable {
 
         // Set name for debugging
         viewContext.name = "ViewContext"
-
-        // Enable persistent history tracking for sync
-        if !inMemory {
-            let description = container.persistentStoreDescriptions.first
-            description?.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
-            description?.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
-        }
     }
 
     // MARK: - Background Context

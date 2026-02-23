@@ -332,6 +332,10 @@ public final class MusicKitService: MusicKitServiceProtocol {
     }
 
     public func setQueue(songs: [MusicKit.Song]) async throws {
+        guard authorizationStatus == .authorized else {
+            throw MusicKitServiceError.notAuthorized
+        }
+
         guard !songs.isEmpty else {
             logWarning("Attempted to set empty queue", category: .musicKit)
             throw MusicKitServiceError.queueEmpty
@@ -372,15 +376,17 @@ public final class MusicKitService: MusicKitServiceProtocol {
         // Observe playback status changes and also check for entry changes.
         // State changes fire after queue changes settle, so entry.item is resolved.
         stateObservationTask = Task { [weak self] in
-            guard let self = self else { return }
+            guard let self else { return }
 
             for await _ in self.player.state.objectWillChange.values {
-                guard !Task.isCancelled else { break }
+                guard !Task.isCancelled, let self else { break }
 
                 let newStatus = self.player.state.playbackStatus
                 let newEntry = self.player.queue.currentEntry
 
-                await MainActor.run {
+                await MainActor.run { [weak self] in
+                    guard let self else { return }
+
                     if self.playbackStatus != newStatus {
                         self.playbackStatus = newStatus
                         logDebug("Playback status changed: \(newStatus)", category: .musicKit)
@@ -401,17 +407,19 @@ public final class MusicKitService: MusicKitServiceProtocol {
         // Observe queue changes for faster song transition detection.
         // Uses Task.yield() to let the change commit before reading currentEntry.
         queueObservationTask = Task { [weak self] in
-            guard let self = self else { return }
+            guard let self else { return }
 
             for await _ in self.player.queue.objectWillChange.values {
-                guard !Task.isCancelled else { break }
+                guard !Task.isCancelled, let self else { break }
 
                 // Yield to allow the property change to commit
                 await Task.yield()
 
                 let newEntry = self.player.queue.currentEntry
 
-                await MainActor.run {
+                await MainActor.run { [weak self] in
+                    guard let self else { return }
+
                     if self.nowPlayingEntry?.id != newEntry?.id {
                         self.nowPlayingEntry = newEntry
                         if let entry = newEntry {

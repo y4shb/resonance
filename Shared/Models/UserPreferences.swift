@@ -205,6 +205,8 @@ extension UserPreferences {
     /// Preset for focus-oriented music selection
     public static var focusPreset: UserPreferences {
         var prefs = UserPreferences()
+        prefs.bpmWeight = 0.10
+        prefs.energyWeight = 0.10
         prefs.familiarityWeight = 0.25
         prefs.contextWeight = 0.30
         prefs.nightMaxBPM = 90
@@ -218,6 +220,8 @@ extension UserPreferences {
         prefs.bpmWeight = 0.30
         prefs.energyWeight = 0.35
         prefs.familiarityWeight = 0.10
+        prefs.historicalWeight = 0.15
+        prefs.contextWeight = 0.10
         prefs.morningMaxBPM = 180
         prefs.nightMaxBPM = 160
         return prefs.validated()

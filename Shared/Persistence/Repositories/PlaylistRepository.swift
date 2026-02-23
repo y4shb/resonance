@@ -49,20 +49,28 @@ final class PlaylistRepository {
             var created = 0
             var updated = 0
 
+            // Batch-fetch all existing playlists in a single query to avoid
+            // N+1 fetches inside the loop.
+            let allAppleMusicIds = playlistArray.map { $0.id.rawValue }
+            let batchFetch = NSFetchRequest<NSManagedObject>(entityName: "Playlist")
+            batchFetch.predicate = NSPredicate(
+                format: "appleMusicId IN %@", allAppleMusicIds
+            )
+            let existingPlaylists = try context.fetch(batchFetch)
+            var existingByAppleMusicId: [String: NSManagedObject] = [:]
+            for obj in existingPlaylists {
+                if let amid = obj.value(forKey: "appleMusicId") as? String {
+                    existingByAppleMusicId[amid] = obj
+                }
+            }
+
             for mkPlaylist in playlistArray {
                 let appleMusicId = mkPlaylist.id.rawValue
 
-                // Fetch existing record, if any.
-                let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "Playlist")
-                fetchRequest.predicate = NSPredicate(
-                    format: "appleMusicId == %@", appleMusicId
-                )
-                fetchRequest.fetchLimit = 1
-
-                let results = try context.fetch(fetchRequest)
+                // O(1) dictionary lookup instead of a Core Data fetch.
                 let playlist: NSManagedObject
 
-                if let existing = results.first {
+                if let existing = existingByAppleMusicId[appleMusicId] {
                     playlist = existing
                     updated += 1
                 } else {

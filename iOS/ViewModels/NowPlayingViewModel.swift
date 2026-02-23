@@ -10,6 +10,7 @@ import Foundation
 import Combine
 import CoreData
 import MusicKit
+import UIKit
 
 // MARK: - Song Display Info
 
@@ -155,32 +156,70 @@ final class NowPlayingViewModel: ObservableObject {
         }
     }
 
+    /// Cached artwork data for Watch transfer (avoids re-fetching on play/pause).
+    private var cachedWatchArtworkData: Data?
+
     /// Builds a NowPlayingPacket from current state and sends it to Watch.
     private func sendNowPlayingToWatch() {
         guard let manager = watchConnectivityManager else { return }
 
-        let packet = NowPlayingPacket(
-            songTitle: currentSong.title,
-            artistName: currentSong.artistName,
-            artworkData: nil, // Artwork data transfer deferred to avoid large payloads
-            isPlaying: isPlaying,
-            progress: playbackProgress,
-            duration: duration,
-            explanation: currentExplanation
-        )
+        let artwork = currentSong.artwork
+        let songTitle = currentSong.title
+        let artistName = currentSong.artistName
+        let playing = isPlaying
+        let progress = playbackProgress
+        let dur = duration
+        let explanation = currentExplanation
+        let emoji = (stateEngine?.currentState.context ?? .unknown).emoji
 
-        manager.sendNowPlaying(packet)
+        Task {
+            // Use cached artwork if available, otherwise fetch and cache
+            let artworkData: Data?
+            if let cached = cachedWatchArtworkData {
+                artworkData = cached
+            } else {
+                artworkData = await fetchArtworkData(for: artwork)
+                cachedWatchArtworkData = artworkData
+            }
 
-        // Also send complication data for watch face updates
-        let complicationData = ComplicationData(
-            songTitle: currentSong.title,
-            artistName: currentSong.artistName,
-            stateEmoji: stateEmoji(for: stateEngine?.currentState),
-            heartRate: nil,
-            isPlaying: isPlaying,
-            timestamp: Date()
-        )
-        manager.updateComplication(complicationData)
+            let packet = NowPlayingPacket(
+                songTitle: songTitle,
+                artistName: artistName,
+                artworkData: artworkData,
+                isPlaying: playing,
+                progress: progress,
+                duration: dur,
+                explanation: explanation
+            )
+
+            manager.sendNowPlaying(packet)
+
+            // Also send complication data for watch face updates
+            let complicationData = ComplicationData(
+                songTitle: songTitle,
+                artistName: artistName,
+                stateEmoji: emoji,
+                heartRate: nil,
+                isPlaying: playing,
+                timestamp: Date()
+            )
+            manager.updateComplication(complicationData)
+        }
+    }
+
+    /// Fetches and compresses artwork into a small JPEG for Watch transfer.
+    private func fetchArtworkData(for artwork: MusicKit.Artwork?) async -> Data? {
+        guard let artwork = artwork,
+              let url = artwork.url(width: 160, height: 160) else { return nil }
+
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            guard let image = UIImage(data: data) else { return nil }
+            return image.jpegData(compressionQuality: 0.6)
+        } catch {
+            logDebug("Artwork fetch for Watch failed: \(error.localizedDescription)", category: .watchConnectivity)
+            return nil
+        }
     }
 
     deinit {
@@ -212,6 +251,8 @@ final class NowPlayingViewModel: ObservableObject {
     private func handleNowPlayingChange(_ entry: MusicPlayer.Queue.Entry?) {
         // Reset auto-advance flag for the new song
         hasTriggeredAutoAdvance = false
+        // Clear cached artwork so the new song's artwork gets fetched
+        cachedWatchArtworkData = nil
 
         guard let entry = entry else {
             currentSong = .placeholder
@@ -322,6 +363,7 @@ final class NowPlayingViewModel: ObservableObject {
 
     /// Toggles between play and pause.
     func togglePlayPause() {
+        errorMessage = nil
         Task {
             do {
                 if isPlaying {
@@ -338,6 +380,7 @@ final class NowPlayingViewModel: ObservableObject {
 
     /// Skips to the next track.
     func skip() {
+        errorMessage = nil
         hasTriggeredAutoAdvance = true  // Prevent auto-advance from also firing
         Task {
             do {
@@ -353,6 +396,7 @@ final class NowPlayingViewModel: ObservableObject {
 
     /// Skips to the previous track.
     func previous() {
+        errorMessage = nil
         hasTriggeredAutoAdvance = true  // Prevent auto-advance from also firing
         Task {
             do {
@@ -368,6 +412,7 @@ final class NowPlayingViewModel: ObservableObject {
 
     /// Seeks to a specific progress position (0.0 to 1.0).
     func seek(to progress: Double) {
+        errorMessage = nil
         guard duration > 0 else { return }
         let targetTime = progress * duration
         ApplicationMusicPlayer.shared.playbackTime = targetTime
@@ -448,48 +493,25 @@ final class NowPlayingViewModel: ObservableObject {
         }
 
         do {
-            // Fetch the MusicKit Song by Apple Music ID
-            var request = MusicCatalogResourceRequest<MusicKit.Song>(matching: \.id, equalTo: MusicItemID(rawValue: appleMusicId))
-            request.limit = 1
+            // Songs are synced from the user's library, so their IDs are library-
+            // scoped identifiers.  Use MusicLibraryRequest (which queries the local
+            // library) instead of MusicCatalogResourceRequest (which queries the
+            // Apple Music catalog and does not recognise library IDs).
+            var request = MusicLibraryRequest<MusicKit.Song>()
+            request.filter(matching: \.id, equalTo: MusicItemID(rawValue: appleMusicId))
             let response = try await request.response()
 
             guard let mkSong = response.items.first else {
-                logWarning("MusicKit song not found for ID '\(appleMusicId)'", category: .decisionEngine)
+                logWarning("MusicKit song not found in library for ID '\(appleMusicId)'", category: .decisionEngine)
+                errorMessage = "Song not found in your Apple Music library"
                 return
             }
 
             try await musicService.play(song: mkSong)
         } catch {
             logError("Failed to play AI-selected song", error: error, category: .decisionEngine)
-            errorMessage = "Failed to play selected song"
+            errorMessage = "Failed to play selected song: \(error.localizedDescription)"
         }
     }
 
-    // MARK: - Formatting Helpers
-
-    /// Formats a time interval as "m:ss".
-    static func formatTime(_ time: TimeInterval) -> String {
-        guard time.isFinite && time >= 0 else { return "0:00" }
-        let minutes = Int(time) / 60
-        let seconds = Int(time) % 60
-        return String(format: "%d:%02d", minutes, seconds)
-    }
-
-    // MARK: - Complication Helpers
-
-    /// Maps the current state context to an emoji for complications.
-    private func stateEmoji(for state: StateVector?) -> String {
-        guard let state = state else { return "\u{1F3B5}" }
-        switch state.context {
-        case .workout: return "\u{1F3C3}"
-        case .postWorkout: return "\u{1F4AA}"
-        case .deepWork: return "\u{1F9E0}"
-        case .work: return "\u{1F4BC}"
-        case .commute: return "\u{1F697}"
-        case .preSleep: return "\u{1F319}"
-        case .morning: return "\u{2600}\u{FE0F}"
-        case .relaxation: return "\u{1F9D8}"
-        default: return "\u{1F3B5}"
-        }
-    }
 }

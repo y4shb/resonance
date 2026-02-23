@@ -147,7 +147,7 @@ struct PopoverView: View {
             }
             .frame(height: 3)
 
-            Text(formatTime(controller.nowPlayingInfo.duration * controller.nowPlayingInfo.progress))
+            Text((controller.nowPlayingInfo.duration * controller.nowPlayingInfo.progress).formattedMinutesSeconds)
                 .font(.system(size: 10, design: .monospaced))
                 .foregroundStyle(.secondary)
                 .frame(width: 32, alignment: .trailing)
@@ -264,13 +264,6 @@ struct PopoverView: View {
     }
 
     // MARK: - Helpers
-
-    private func formatTime(_ seconds: TimeInterval) -> String {
-        let totalSeconds = Int(max(0, seconds))
-        let minutes = totalSeconds / 60
-        let secs = totalSeconds % 60
-        return String(format: "%d:%02d", minutes, secs)
-    }
 
     private func openSettings() {
         if #available(macOS 14.0, *) {

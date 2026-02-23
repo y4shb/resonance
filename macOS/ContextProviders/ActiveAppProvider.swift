@@ -25,6 +25,8 @@ final class ActiveAppProvider: ObservableObject {
     private var observer: Any?
     private var lastAppChangeTime: Date = Date()
     private var lastCategory: AppCategory = .unknown
+    /// The hour component (0-23) when categoryTime was last updated.
+    private var currentTrackingHour: Int = Calendar.current.component(.hour, from: Date())
 
     init() {
         logInfo("ActiveAppProvider initialized", category: .general)
@@ -58,19 +60,34 @@ final class ActiveAppProvider: ObservableObject {
 
     /// Returns minutes spent in a category in the current tracking period.
     func minutesInCategory(_ category: AppCategory) -> Double {
-        (categoryTime[category] ?? 0) / 60.0
+        resetCategoryTimeIfNeeded(now: Date())
+        return (categoryTime[category] ?? 0) / 60.0
     }
 
     // MARK: - Private
 
     private func handleAppActivation(_ notification: Notification) {
-        // Accumulate time for the previous app's category
         let now = Date()
+
+        // Reset category time when the hour rolls over
+        resetCategoryTimeIfNeeded(now: now)
+
+        // Accumulate time for the previous app's category
         let elapsed = now.timeIntervalSince(lastAppChangeTime)
         categoryTime[lastCategory, default: 0] += elapsed
         lastAppChangeTime = now
 
         updateActiveApp()
+    }
+
+    /// Clears accumulated category time when the calendar hour changes.
+    private func resetCategoryTimeIfNeeded(now: Date) {
+        let hour = Calendar.current.component(.hour, from: now)
+        if hour != currentTrackingHour {
+            categoryTime.removeAll()
+            currentTrackingHour = hour
+            lastAppChangeTime = now
+        }
     }
 
     private func updateActiveApp() {

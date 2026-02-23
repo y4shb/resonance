@@ -427,6 +427,8 @@ struct HealthKitPermissionPage: View {
         let quantityIdentifiers: [HKQuantityTypeIdentifier] = [
             .heartRate,
             .heartRateVariabilitySDNN,
+            .restingHeartRate,
+            .activeEnergyBurned,
             .stepCount,
         ]
 

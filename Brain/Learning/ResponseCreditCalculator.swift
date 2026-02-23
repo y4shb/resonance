@@ -24,12 +24,18 @@ struct ResponseCreditCalculator {
         let energyCredit: Double
         /// Credit/penalty for focus score (based on listen completion).
         let focusCredit: Double
+        /// Credit/penalty for mood lift / valence (engagement-weighted, behavior-driven).
+        let valenceCredit: Double
         /// Whether biometric data was available
         let hasBiometricData: Bool
         /// Maximum confidence this result can contribute (0.7 if no biometrics, 1.0 if biometrics present)
         let maxConfidence: Double
-        /// Weight factor from user preferences
+        /// Weight factor from user preferences (hrvResponseWeight)
         let userWeight: Double
+        /// Calm credit weighted by user's HRV response weight preference.
+        var weightedCalmCredit: Double { calmCredit * userWeight }
+        /// Energy credit weighted by user's HRV response weight preference.
+        var weightedEnergyCredit: Double { energyCredit * userWeight }
     }
 
     /// Calculate biometric response credit for a playback event.
@@ -92,6 +98,9 @@ struct ResponseCreditCalculator {
         // Focus credit is primarily behavior-driven
         let focusCredit = completionBonus + skipSignal
 
+        // Valence / mood-lift credit: stronger completion weight, matching ImpactScore.swift batch pattern
+        let valenceCredit = completionBonus * 1.5 + skipSignal
+
         // Weight by listen duration — partial listens contribute less
         let durationWeight = min(1.0, listenPercentage * 1.5)  // Full weight at ~67% listen
 
@@ -102,6 +111,7 @@ struct ResponseCreditCalculator {
             calmCredit: calmCredit * durationWeight,
             energyCredit: energyCredit * durationWeight,
             focusCredit: focusCredit * durationWeight,
+            valenceCredit: valenceCredit * durationWeight,
             hasBiometricData: hasBiometricData,
             maxConfidence: maxConfidence,
             userWeight: preferences.hrvResponseWeight

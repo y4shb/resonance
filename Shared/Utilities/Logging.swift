@@ -73,11 +73,31 @@ public final class Logger: @unchecked Sendable {
 
     public static let shared = Logger()
 
+    // MARK: - Static Formatters
+
+    #if DEBUG
+    private static let iso8601Formatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        return formatter
+    }()
+    #endif
+
     // MARK: - Properties
 
     private let osLoggers: [LogCategory: OSLog]
-    private var minimumLevel: LogLevel = .debug
-    private var isEnabled: Bool = true
+    private var _minimumLevel: LogLevel = .debug
+    private var _isEnabled: Bool = true
+    private let propertyQueue = DispatchQueue(label: "com.y4sh.resonance.logger.properties")
+
+    private var minimumLevel: LogLevel {
+        get { propertyQueue.sync { _minimumLevel } }
+        set { propertyQueue.sync { _minimumLevel = newValue } }
+    }
+
+    private var isEnabled: Bool {
+        get { propertyQueue.sync { _isEnabled } }
+        set { propertyQueue.sync { _isEnabled = newValue } }
+    }
 
     #if DEBUG
     private var inMemoryLogs: [LogEntry] = []
@@ -196,7 +216,7 @@ public final class Logger: @unchecked Sendable {
 
         #if DEBUG
         // Also print to console in debug builds
-        let timestamp = ISO8601DateFormatter().string(from: Date())
+        let timestamp = Self.iso8601Formatter.string(from: Date())
         let consoleMessage = "\(timestamp) \(level.emoji) [\(category.rawValue)] \(formattedMessage)"
         print(consoleMessage)
 
@@ -260,10 +280,14 @@ public struct LogEntry: Identifiable, Sendable {
     public let function: String
     public let line: Int
 
-    public var formattedTimestamp: String {
+    private static let timestampFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm:ss.SSS"
-        return formatter.string(from: timestamp)
+        return formatter
+    }()
+
+    public var formattedTimestamp: String {
+        Self.timestampFormatter.string(from: timestamp)
     }
 
     public var summary: String {

@@ -202,7 +202,7 @@ final class SongScorer {
     /// Energy match: 1.0 when exact match, linearly decreasing.
     private func calculateEnergyMatchScore(songEnergy: Double, targetEnergy: Double) -> Double {
         let energyDelta = abs(songEnergy - targetEnergy)
-        return 1.0 - energyDelta
+        return max(0.0, 1.0 - energyDelta)
     }
 
     /// Familiarity: base familiarity score with contextual boosts.
@@ -257,7 +257,7 @@ final class SongScorer {
 
     /// Looks up the SongEffect for a song in the given activity context.
     /// Falls back to "any" context if no specific match exists.
-    func getEffectForContext(song: Song, context: ActivityContext) -> SongEffect? {
+    private func getEffectForContext(song: Song, context: ActivityContext) -> SongEffect? {
         guard let effectsSet = song.effects,
               let effects = effectsSet.allObjects as? [SongEffect],
               !effects.isEmpty else {
@@ -382,32 +382,27 @@ final class SongScorer {
     /// Confidence in the score based on data availability.
     private func calculateConfidence(song: Song, state: StateVector) -> Double {
         var confidence: Double = 0.0
-        var factors: Double = 0.0
 
         // BPM known
         if song.bpm > 0 {
             confidence += 0.2
         }
-        factors += 0.2
 
         // Has effect data
         if let effects = song.effects, effects.count > 0 {
             confidence += 0.3 * song.confidenceLevel
         }
-        factors += 0.3
 
         // State confidence
         confidence += 0.3 * state.confidence
-        factors += 0.3
 
         // Has play history
         if song.totalPlayCount > 0 {
             let historyConfidence = min(1.0, Double(song.totalPlayCount) / 10.0)
             confidence += 0.2 * historyConfidence
         }
-        factors += 0.2
 
-        return confidence / factors
+        return confidence
     }
 
     // MARK: - Explanation Component Building

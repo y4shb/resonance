@@ -64,13 +64,13 @@ final class GuardFilters {
 
         for song in candidates {
             // Filter 1: Must have a valid ID
-            guard song.id != nil else {
+            guard let songId = song.id else {
                 rejected.append((song, .noValidId))
                 continue
             }
 
             // Filter 2: Recency — skip songs played too recently
-            if let songId = song.id, context.wasPlayedRecently(songId) {
+            if context.wasPlayedRecently(songId) {
                 rejected.append((song, .playedRecently))
                 continue
             }
@@ -119,7 +119,7 @@ final class GuardFilters {
         bpmAdjustment: Double = 0.0
     ) -> FilterResult {
         // First apply standard filters
-        var result = apply(candidates: candidates, context: context, recentArtists: recentArtists)
+        let result = apply(candidates: candidates, context: context, recentArtists: recentArtists)
 
         // If no BPM adjustment, return standard result
         guard bpmAdjustment < -5.0 else { return result }
@@ -134,7 +134,7 @@ final class GuardFilters {
         var newRejected = result.rejected
 
         for song in result.accepted {
-            if song.bpm > adjustedMaxBPM && song.bpm > 0 {
+            if song.bpm > 0 && song.bpm > adjustedMaxBPM {
                 newRejected.append((song: song, reason: .bpmTooHighForState))
             } else {
                 stillAccepted.append(song)
@@ -166,7 +166,8 @@ final class GuardFilters {
 
         // Count how many of the last N songs are by the same artist
         let trailing = recentArtists.suffix(maxInRow)
-        let sameArtistCount = trailing.filter { $0.lowercased() == artistName.lowercased() }.count
+        let lowercasedArtist = artistName.lowercased()
+        let sameArtistCount = trailing.filter { $0.lowercased() == lowercasedArtist }.count
 
         return sameArtistCount >= maxInRow
     }

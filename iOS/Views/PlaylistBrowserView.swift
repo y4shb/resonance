@@ -127,8 +127,10 @@ struct PlaylistBrowserView: View {
         .listStyle(.insetGrouped)
         .refreshable {
             viewModel.fetchPlaylists()
-            // Wait briefly to allow the fetch to start
-            try? await Task.sleep(nanoseconds: 500_000_000)
+            // Wait for the fetch to actually complete before dismissing the spinner
+            while viewModel.isLoading {
+                try? await Task.sleep(nanoseconds: 100_000_000)
+            }
         }
     }
 }

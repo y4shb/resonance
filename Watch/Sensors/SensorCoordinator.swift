@@ -42,6 +42,11 @@ final class SensorCoordinator: ObservableObject {
         logInfo("SensorCoordinator initialized", category: .healthKit)
     }
 
+    deinit {
+        batchTimer?.invalidate()
+        cancellables.removeAll()
+    }
+
     // MARK: - Public Interface
 
     /// Starts all three sensors and the batching timer.

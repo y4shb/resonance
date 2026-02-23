@@ -21,6 +21,10 @@ final class CrownHandler: ObservableObject {
         self.connectivityService = connectivityService
     }
 
+    deinit {
+        debounceTimer?.invalidate()
+    }
+
     // MARK: - Crown Rotation
 
     func handleCrownRotation(value: Double) {

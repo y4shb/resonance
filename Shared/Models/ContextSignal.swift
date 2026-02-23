@@ -319,14 +319,6 @@ public struct AggregatedContext: Sendable {
         let hour = calendar.component(.hour, from: timestamp)
         self.dayOfWeek = calendar.component(.weekday, from: timestamp)
         self.isWeekend = dayOfWeek == 1 || dayOfWeek == 7
-
-        switch hour {
-        case 5..<9: self.timeSlot = .earlyMorning
-        case 9..<12: self.timeSlot = .morning
-        case 12..<14: self.timeSlot = .midday
-        case 14..<17: self.timeSlot = .afternoon
-        case 17..<21: self.timeSlot = .evening
-        default: self.timeSlot = .night
-        }
+        self.timeSlot = TimeSlot(hour: hour)
     }
 }

@@ -171,19 +171,21 @@ final class PhoneConnectivityService: NSObject, ObservableObject {
                 logDebug("Received now playing: \(packet.songTitle) - \(packet.artistName)", category: .watchConnectivity)
                 DispatchQueue.main.async { [weak self] in
                     self?.currentNowPlaying = packet
+                    self?.nowPlayingSubject.send(packet)
                 }
-                nowPlayingSubject.send(packet)
 
             case .stateUpdate(let packet):
                 logDebug("Received state update: context=\(packet.currentContext ?? "none")", category: .watchConnectivity)
                 DispatchQueue.main.async { [weak self] in
                     self?.currentState = packet
+                    self?.stateSubject.send(packet)
                 }
-                stateSubject.send(packet)
 
             case .complicationUpdate(let data):
                 logDebug("Received complication update", category: .watchConnectivity)
-                complicationSubject.send(data)
+                DispatchQueue.main.async { [weak self] in
+                    self?.complicationSubject.send(data)
+                }
 
             case .biometricUpdate, .moodInput, .playbackCommand, .crownAdjustment:
                 // These are watch -> phone messages; should not be received on watchOS

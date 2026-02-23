@@ -54,6 +54,10 @@ final class ContextCollector: ObservableObject {
         logInfo("ContextCollector initialized", category: .general)
     }
 
+    deinit {
+        macOSPollTimer?.invalidate()
+    }
+
     /// Starts listening for biometric updates from the Watch.
     func startCollecting() {
         guard !isCollecting else { return }

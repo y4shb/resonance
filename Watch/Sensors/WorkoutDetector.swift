@@ -23,6 +23,13 @@ final class WorkoutDetector: NSObject, ObservableObject {
     private var observerQuery: HKObserverQuery?
     private var activeWorkoutQuery: HKSampleQuery?
 
+    // MARK: - Deinitialization
+
+    deinit {
+        if let query = observerQuery { healthStore.stop(query) }
+        if let query = activeWorkoutQuery { healthStore.stop(query) }
+    }
+
     // MARK: - Observation Control
 
     /// Installs an HKObserverQuery that fires whenever a workout sample is written
@@ -114,13 +121,16 @@ final class WorkoutDetector: NSObject, ObservableObject {
                 return
             }
 
-            // A workout is considered "active" if it has no end date, or its
-            // end date is within the last 90 seconds (covering any brief lag in
-            // HealthKit committing the end timestamp).
+            // A workout is considered "active" if:
+            // 1. Its endDate equals its startDate (HealthKit marks in-progress
+            //    workouts this way), OR
+            // 2. Its end date is within the last 90 seconds (covering any brief
+            //    lag in HealthKit committing the end timestamp).
             let now = Date()
             let recentThreshold: TimeInterval = 90
-            let workoutEnded = workout.endDate < now.addingTimeInterval(-recentThreshold)
-            let active = !workoutEnded
+            let isInProgress = workout.endDate == workout.startDate
+            let endedRecently = workout.endDate >= now.addingTimeInterval(-recentThreshold)
+            let active = isInProgress || endedRecently
 
             let typeName = self.displayName(for: workout.workoutActivityType)
             logDebug(

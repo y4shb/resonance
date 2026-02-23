@@ -15,16 +15,19 @@
 		0DBD17308E2D7CC8A1F6C24B /* ContextSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7CEBC645377CAEEE4177E11 /* ContextSignal.swift */; };
 		10962499327021055EC510D9 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5486784FF7066093E97EB3E0 /* Constants.swift */; };
 		10F8D6C96C0586CA8135D664 /* ResonanceWatchComplications.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 548B64C3FCA444DFB6C866F0 /* ResonanceWatchComplications.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		12BD3A20A1C259CD7FE49C00 /* ActivityContext+Emoji.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23C3650D47C23549563D5DB6 /* ActivityContext+Emoji.swift */; };
 		174E5C9B60C516716C46C08B /* Logging.swift in Sources */ = {isa = PBXBuildFile; fileRef = B691E2026B8610C50C4AAACB /* Logging.swift */; };
 		17AE8E63922D4B9BEEF53479 /* SkipPenaltyCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D4C7A3BFA492FD3B57677E7 /* SkipPenaltyCalculator.swift */; };
 		18E469D28FD7F4E275E37AB6 /* WatchMessages.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6540C50B867AE3A9DC75F79 /* WatchMessages.swift */; };
 		19B2606A8A3AF0E20C8EA301 /* OnboardingContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EC3935BE134DD6556CE07BC /* OnboardingContainerView.swift */; };
+		19C29EAAE98CB26037A4CBD0 /* ActivityContext+Emoji.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23C3650D47C23549563D5DB6 /* ActivityContext+Emoji.swift */; };
 		1C79194718E7864541DCE25C /* ContextSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7CEBC645377CAEEE4177E11 /* ContextSignal.swift */; };
 		1DB3FE0761125C9857678F2C /* LearningTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFDBBA3C8BC97BE5B2198FC1 /* LearningTests.swift */; };
 		20041EE803C89F10ABBBFD24 /* ContextBroadcaster.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71C27282C268D98C8607EC57 /* ContextBroadcaster.swift */; };
 		23213B785858D8BBA8CD9DF2 /* StateDebugView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCA0CD7FC6BF9C5855A1C224 /* StateDebugView.swift */; };
 		23A0B6FA52559D49B7409080 /* SongScore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28FDD4C9EF07A4A8BB08634A /* SongScore.swift */; };
 		23C08DB06D89BEB5F7515607 /* StateVector.swift in Sources */ = {isa = PBXBuildFile; fileRef = F241DEEB8268A1779CC2935D /* StateVector.swift */; };
+		2429B0EAAE7D88EB87089AD0 /* ActivityContext+Emoji.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23C3650D47C23549563D5DB6 /* ActivityContext+Emoji.swift */; };
 		25B14D89A11A896AFF4139B6 /* ExplanationGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A8149FFCF6706C172E042B1 /* ExplanationGenerator.swift */; };
 		26854498D8B06CA44D203C0A /* FocusModeProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED42428B577ED3BC4AEA80A6 /* FocusModeProvider.swift */; };
 		297EFED2B93BF6502FDE9E93 /* NowPlayingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19BA53DF712E3E2C0F0282D1 /* NowPlayingView.swift */; };
@@ -32,6 +35,7 @@
 		2DB9E0C77374397CD59288E5 /* HealthKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDBD41A77B0E761822F1FE2E /* HealthKitService.swift */; };
 		2F0601AF672C423DB03E6A29 /* SensorCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9F6C93D86E21EE17EB88B59 /* SensorCoordinator.swift */; };
 		2FE732B56756A518D4C271B3 /* ContextSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7CEBC645377CAEEE4177E11 /* ContextSignal.swift */; };
+		39805E2F82E4BF1BCEDDA132 /* TimeInterval+Formatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3CBB8CB2176ED52682C780C /* TimeInterval+Formatting.swift */; };
 		39EEAA73E67FDAD04E51A8DA /* ComplicationWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 194814068C7656B22718E136 /* ComplicationWidgets.swift */; };
 		3B2C991FFF5E1D57FB350129 /* Logging.swift in Sources */ = {isa = PBXBuildFile; fileRef = B691E2026B8610C50C4AAACB /* Logging.swift */; };
 		3B515791B418449660F92B8B /* Resonance.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = B01A0531B60ACDDE4F19AE8C /* Resonance.xcdatamodeld */; };
@@ -58,10 +62,13 @@
 		6A89C006415919AFD582586B /* TransitionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CCADAC7FB009C002BC36EFC /* TransitionController.swift */; };
 		6AA79F8C7AAAF398B1AAB4D1 /* WatchMessages.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6540C50B867AE3A9DC75F79 /* WatchMessages.swift */; };
 		6AF434331AED1DA74AB9C0A9 /* PlaylistImpactCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B54255AF72500CA0A6E288F6 /* PlaylistImpactCalculator.swift */; };
+		7199CA108BBD57280A8180D9 /* TimeInterval+Formatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3CBB8CB2176ED52682C780C /* TimeInterval+Formatting.swift */; };
+		74C9AE559891068C4C1AAC1B /* TimeInterval+Formatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3CBB8CB2176ED52682C780C /* TimeInterval+Formatting.swift */; };
 		76F4A6D0D7E4D54AC67E76C0 /* ActiveAppProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23ACA67DDB92602CCF5082D9 /* ActiveAppProvider.swift */; };
 		784362FB61D03A62C8E23D83 /* PersistenceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FF638D1478E3FB11FE0DACE /* PersistenceController.swift */; };
 		7C24C6948894B8EBA91D9728 /* WatchMessagesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A248E4B7944A77BA978883E7 /* WatchMessagesTests.swift */; };
 		7CC417F5D8B6EC0E440F301E /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6F6047E05519D26A1DF6A20 /* MainView.swift */; };
+		7E7A5743C4091115650A4219 /* SongEffectHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7950BC1C06A11CB12EC9F865 /* SongEffectHelper.swift */; };
 		7EE4684CDC4DC856CBBF17CF /* ContextCollector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87F7D222E37C93A1497688F6 /* ContextCollector.swift */; };
 		810765D75ADACA153DD65110 /* PlaylistBrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 158614189CEBBF0AD2AE00E9 /* PlaylistBrowserView.swift */; };
 		82F498D4AECB861CA5443F92 /* WorkoutDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 688C3FEB7CF667361B387CEB /* WorkoutDetector.swift */; };
@@ -128,13 +135,6 @@
 			remoteGlobalIDString = 0F3C53BD9D06691F17971225;
 			remoteInfo = Resonance;
 		};
-		3C2E3FB09FB375C8F551146C /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 82DD14A371CBBD071FC718E7 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 9ADD061BE78C7F9A58426A5F;
-			remoteInfo = ResonanceWatch;
-		};
 		9C0D88D256F1D4583E74C86F /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 82DD14A371CBBD071FC718E7 /* Project object */;
@@ -192,6 +192,7 @@
 		1D217803861D913D63D0A3DA /* ComplicationDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComplicationDataStore.swift; sourceTree = "<group>"; };
 		1D5307B2A9BD3DD16C6187A7 /* ResonanceApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResonanceApp.swift; sourceTree = "<group>"; };
 		23ACA67DDB92602CCF5082D9 /* ActiveAppProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveAppProvider.swift; sourceTree = "<group>"; };
+		23C3650D47C23549563D5DB6 /* ActivityContext+Emoji.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ActivityContext+Emoji.swift"; sourceTree = "<group>"; };
 		23FB0034847F0A18B4949C23 /* MenuBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarController.swift; sourceTree = "<group>"; };
 		2482AFE319C5939E80F05713 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		28FDD4C9EF07A4A8BB08634A /* SongScore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SongScore.swift; sourceTree = "<group>"; };
@@ -215,6 +216,7 @@
 		70D39772E4F3B940A6620F0D /* SongRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SongRepository.swift; sourceTree = "<group>"; };
 		71C27282C268D98C8607EC57 /* ContextBroadcaster.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextBroadcaster.swift; sourceTree = "<group>"; };
 		774E6162E40AD4FFB45A7B86 /* PhoneConnectivityService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneConnectivityService.swift; sourceTree = "<group>"; };
+		7950BC1C06A11CB12EC9F865 /* SongEffectHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SongEffectHelper.swift; sourceTree = "<group>"; };
 		7E0B826229674100DEE2F127 /* ResonanceWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ResonanceWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7FF638D1478E3FB11FE0DACE /* PersistenceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceController.swift; sourceTree = "<group>"; };
 		8408383041679F7AFD01CBEF /* SessionQualityScorer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionQualityScorer.swift; sourceTree = "<group>"; };
@@ -231,6 +233,7 @@
 		A1ED57DAEA3956431D6AF49C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		A248E4B7944A77BA978883E7 /* WatchMessagesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchMessagesTests.swift; sourceTree = "<group>"; };
 		A2E9A8AAD3FA362E3020F326 /* PopoverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PopoverView.swift; sourceTree = "<group>"; };
+		A3CBB8CB2176ED52682C780C /* TimeInterval+Formatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TimeInterval+Formatting.swift"; sourceTree = "<group>"; };
 		A6F6047E05519D26A1DF6A20 /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
 		A80DA985F6241BB42937B35C /* ResponseCreditCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResponseCreditCalculator.swift; sourceTree = "<group>"; };
 		A936029DE841B8A646575612 /* DecisionContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecisionContext.swift; sourceTree = "<group>"; };
@@ -288,6 +291,7 @@
 				CFD34B1929ED9EBE67EF7CA1 /* Historical */,
 				32494CCAAF8DFF98D8A64CAE /* Learning */,
 				58E7AF8D653E914A2DC4296B /* Ranking */,
+				6D53660CFCE4FBBD07CCCFA6 /* Shared */,
 				64DC888E51F89EF2BB1FD17D /* State */,
 			);
 			path = Brain;
@@ -446,6 +450,14 @@
 			path = ContextProviders;
 			sourceTree = "<group>";
 		};
+		6D53660CFCE4FBBD07CCCFA6 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				7950BC1C06A11CB12EC9F865 /* SongEffectHelper.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
 		6D560496731D69A27A277209 /* MenuBar */ = {
 			isa = PBXGroup;
 			children = (
@@ -535,6 +547,8 @@
 		B59FE8896373293BA0783182 /* Extensions */ = {
 			isa = PBXGroup;
 			children = (
+				23C3650D47C23549563D5DB6 /* ActivityContext+Emoji.swift */,
+				A3CBB8CB2176ED52682C780C /* TimeInterval+Formatting.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -676,7 +690,6 @@
 			);
 			dependencies = (
 				57B951D836CB75B35B108714 /* PBXTargetDependency */,
-				34AA4EED3C40B77A8708F20C /* PBXTargetDependency */,
 			);
 			name = Resonance;
 			packageProductDependencies = (
@@ -872,6 +885,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				76F4A6D0D7E4D54AC67E76C0 /* ActiveAppProvider.swift in Sources */,
+				19C29EAAE98CB26037A4CBD0 /* ActivityContext+Emoji.swift in Sources */,
 				60A1793DF8A4CEE520AD0B15 /* CalendarProvider.swift in Sources */,
 				10962499327021055EC510D9 /* Constants.swift in Sources */,
 				20041EE803C89F10ABBBFD24 /* ContextBroadcaster.swift in Sources */,
@@ -886,6 +900,7 @@
 				23A0B6FA52559D49B7409080 /* SongScore.swift in Sources */,
 				C03EA5716A0FBB54F27ED72D /* StateVector.swift in Sources */,
 				AC1630D80C58C1CE36DCB582 /* StatusItemView.swift in Sources */,
+				39805E2F82E4BF1BCEDDA132 /* TimeInterval+Formatting.swift in Sources */,
 				57CA96BEC692840448CA7E8D /* UserPreferences.swift in Sources */,
 				18E469D28FD7F4E275E37AB6 /* WatchMessages.swift in Sources */,
 			);
@@ -895,6 +910,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				12BD3A20A1C259CD7FE49C00 /* ActivityContext+Emoji.swift in Sources */,
 				DA8DFC66743AB594BE2F48E5 /* ComplicationDataStore.swift in Sources */,
 				8661E02DCACDE6E4410DA79A /* Constants.swift in Sources */,
 				1C79194718E7864541DCE25C /* ContextSignal.swift in Sources */,
@@ -909,6 +925,7 @@
 				AF2A82AF2ED4046FD2A9F0A1 /* SongFeatures.swift in Sources */,
 				940D52E5C8B5B049036C3B3A /* SongScore.swift in Sources */,
 				23C08DB06D89BEB5F7515607 /* StateVector.swift in Sources */,
+				7199CA108BBD57280A8180D9 /* TimeInterval+Formatting.swift in Sources */,
 				DAD8FA89D3944F38EE3B6A2C /* UserPreferences.swift in Sources */,
 				A16F9811CC03A331D5A6F9BC /* WatchMessages.swift in Sources */,
 				C3490FB249567D71CF1FAF70 /* WatchMoodInputView.swift in Sources */,
@@ -921,6 +938,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2429B0EAAE7D88EB87089AD0 /* ActivityContext+Emoji.swift in Sources */,
 				0157D1CC9BBA2B61E3086C6A /* Constants.swift in Sources */,
 				7EE4684CDC4DC856CBBF17CF /* ContextCollector.swift in Sources */,
 				0DBD17308E2D7CC8A1F6C24B /* ContextSignal.swift in Sources */,
@@ -957,6 +975,7 @@
 				587E14EF4B789C8B2447DA16 /* SessionReconstructor.swift in Sources */,
 				2CBDA478E078BA253CC6E64F /* SettingsView.swift in Sources */,
 				17AE8E63922D4B9BEEF53479 /* SkipPenaltyCalculator.swift in Sources */,
+				7E7A5743C4091115650A4219 /* SongEffectHelper.swift in Sources */,
 				E7637A8FC24899BC33CDC059 /* SongFeatures.swift in Sources */,
 				CAAE446FB88AD2E734CFE928 /* SongImpactCalculator.swift in Sources */,
 				4A14B1A3FD2828BFF498DEE1 /* SongRepository.swift in Sources */,
@@ -965,6 +984,7 @@
 				23213B785858D8BBA8CD9DF2 /* StateDebugView.swift in Sources */,
 				4618DA4CC7DB5A210E22C895 /* StateEngine.swift in Sources */,
 				CBDCA92D05EF0491FDF120D3 /* StateVector.swift in Sources */,
+				74C9AE559891068C4C1AAC1B /* TimeInterval+Formatting.swift in Sources */,
 				6A89C006415919AFD582586B /* TransitionController.swift in Sources */,
 				A805F382D6543CD73055C3E1 /* UserPreferences.swift in Sources */,
 				93F6283B05AED31F0C824EC9 /* WatchConnectivityManager.swift in Sources */,
@@ -987,11 +1007,6 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		34AA4EED3C40B77A8708F20C /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 9ADD061BE78C7F9A58426A5F /* ResonanceWatch */;
-			targetProxy = 3C2E3FB09FB375C8F551146C /* PBXContainerItemProxy */;
-		};
 		57B951D836CB75B35B108714 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = D904743186D370ABC4670396 /* ResonanceWidgets */;
@@ -1020,8 +1035,9 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.y4sh.resonance.ios.watchkitapp;
 				SDKROOT = watchos;
 				SKIP_INSTALL = NO;
+				SUPPORTS_MACCATALYST = NO;
 				TARGETED_DEVICE_FAMILY = 4;
-				WATCHOS_DEPLOYMENT_TARGET = 26.0;
+				WATCHOS_DEPLOYMENT_TARGET = 11.0;
 			};
 			name = Debug;
 		};
@@ -1081,7 +1097,7 @@
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = 4;
-				WATCHOS_DEPLOYMENT_TARGET = 26.0;
+				WATCHOS_DEPLOYMENT_TARGET = 11.0;
 			};
 			name = Release;
 		};
@@ -1150,7 +1166,7 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.9;
-				WATCHOS_DEPLOYMENT_TARGET = 26.0;
+				WATCHOS_DEPLOYMENT_TARGET = 11.0;
 			};
 			name = Debug;
 		};
@@ -1241,7 +1257,7 @@
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.9;
-				WATCHOS_DEPLOYMENT_TARGET = 26.0;
+				WATCHOS_DEPLOYMENT_TARGET = 11.0;
 			};
 			name = Release;
 		};
@@ -1255,8 +1271,9 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.y4sh.resonance.ios.watchkitapp;
 				SDKROOT = watchos;
 				SKIP_INSTALL = NO;
+				SUPPORTS_MACCATALYST = NO;
 				TARGETED_DEVICE_FAMILY = 4;
-				WATCHOS_DEPLOYMENT_TARGET = 26.0;
+				WATCHOS_DEPLOYMENT_TARGET = 11.0;
 			};
 			name = Release;
 		};
@@ -1270,7 +1287,7 @@
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = 4;
-				WATCHOS_DEPLOYMENT_TARGET = 26.0;
+				WATCHOS_DEPLOYMENT_TARGET = 11.0;
 			};
 			name = Debug;
 		};

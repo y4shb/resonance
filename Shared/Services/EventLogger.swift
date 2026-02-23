@@ -23,6 +23,10 @@ final class EventLogger: ObservableObject {
     private let songRepository: SongRepository
     private var cancellables = Set<AnyCancellable>()
 
+    /// Provides access to the latest biometric data for playback event logging.
+    /// Weak to avoid retain cycles (ContextCollector already observes EventLogger).
+    weak var contextCollector: ContextCollector?
+
     /// Guards against duplicate subscriptions if observeNowPlaying() is called multiple times.
     private var isObservingNowPlaying = false
 
@@ -229,13 +233,17 @@ final class EventLogger: ObservableObject {
             .sink { [weak self] entry in
                 guard let self = self else { return }
 
+                // Snapshot the latest biometric data for this transition.
+                let heartRate = self.contextCollector?.latestBiometric?.heartRate
+                let hrv = self.contextCollector?.latestBiometric?.hrv
+
                 // If there was a previous song playing, end it (not a manual skip).
                 if self.activeEventObjectID != nil {
                     self.logPlaybackEnd(
                         wasSkipped: false,
                         skipReason: nil,
-                        currentHeartRate: nil,
-                        currentHRV: nil
+                        currentHeartRate: heartRate,
+                        currentHRV: hrv
                     )
                 }
 
@@ -246,8 +254,8 @@ final class EventLogger: ObservableObject {
                         wasAISelected: false,
                         selectionScore: nil,
                         selectionReason: nil,
-                        currentHeartRate: nil,
-                        currentHRV: nil
+                        currentHeartRate: heartRate,
+                        currentHRV: hrv
                     )
                 }
                 // If entry is nil, we've already ended the previous event above.

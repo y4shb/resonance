@@ -54,22 +54,32 @@ final class TransitionController {
             return candidates.first // Already sorted by finalScore descending
         }
 
+        // Precompute genre categories for the last-played song (avoids recomputing per candidate)
+        let fromGenreCategories: Set<String> = {
+            guard let genres = lastSong.genreNames, !genres.isEmpty else { return [] }
+            return categorize(genres: genres)
+        }()
+
+        // Batch-fetch all candidate songs in a single Core Data query
+        let candidateIds = candidates.map { $0.songId }
+        let songLookup = fetchSongs(songIds: candidateIds, in: context)
+
         // Adjust scores with transition bonus
         let adjustedCandidates = candidates.map { candidate -> (score: SongScore, adjustedScore: Double) in
-            let song = fetchSong(songId: candidate.songId, in: context)
+            let song = songLookup[candidate.songId]
 
             let adjustedScore: Double
             if song != nil {
                 let transitionScore = calculateTransitionScore(
                     from: lastSong,
                     to: song,
-                    context: context
+                    fromGenreCategories: fromGenreCategories
                 )
                 // Blend: 70% base score + 30% transition quality
                 adjustedScore = candidate.finalScore * (0.7 + transitionScore.combined * 0.3)
             } else {
                 // Cannot resolve song — use base score without transition bonus
-                adjustedScore = candidate.finalScore * 0.85
+                adjustedScore = candidate.finalScore * 0.7
             }
 
             return (candidate, adjustedScore)
@@ -85,7 +95,7 @@ final class TransitionController {
     func calculateTransitionScore(
         from: Song,
         to: Song?,
-        context: NSManagedObjectContext
+        fromGenreCategories: Set<String>? = nil
     ) -> TransitionScore {
         guard let to = to else {
             return TransitionScore(bpmSmoothness: 1.0, energySmoothness: 1.0, genreBonus: 0.0, combined: 1.0)
@@ -107,7 +117,12 @@ final class TransitionController {
         let energySmoothness = max(0.0, 1.0 - (energyDelta / DecisionEngineConstants.maxEnergyTransitionDelta))
 
         // Genre compatibility bonus
-        let genreBonus: Double = sharesGenre(from, to) ? 0.1 : 0.0
+        let genreBonus: Double
+        if let precomputed = fromGenreCategories {
+            genreBonus = sharesGenre(fromCategories: precomputed, to) ? 0.1 : 0.0
+        } else {
+            genreBonus = sharesGenre(from, to) ? 0.1 : 0.0
+        }
 
         // Combined score (plan.md §5.2.3)
         let combined = (bpmSmoothness * 0.4) + (energySmoothness * 0.4) + genreBonus
@@ -136,6 +151,16 @@ final class TransitionController {
         return !categoryA.isDisjoint(with: categoryB)
     }
 
+    /// Checks if precomputed `from` categories overlap with a song's genre categories.
+    private func sharesGenre(fromCategories: Set<String>, _ b: Song) -> Bool {
+        guard !fromCategories.isEmpty,
+              let genresB = b.genreNames, !genresB.isEmpty else {
+            return false
+        }
+        let categoryB = categorize(genres: genresB)
+        return !fromCategories.isDisjoint(with: categoryB)
+    }
+
     /// Maps genre names to broad categories using SongFeatures.genreCategories.
     private func categorize(genres: [String]) -> Set<String> {
         var categories = Set<String>()
@@ -151,6 +176,19 @@ final class TransitionController {
     }
 
     // MARK: - Helpers
+
+    /// Fetches multiple Songs by their UUIDs in a single Core Data query.
+    /// Returns a dictionary keyed by song ID for O(1) lookup.
+    private func fetchSongs(songIds: [UUID], in context: NSManagedObjectContext) -> [UUID: Song] {
+        guard !songIds.isEmpty else { return [:] }
+        let request = NSFetchRequest<Song>(entityName: "Song")
+        request.predicate = NSPredicate(format: "id IN %@", songIds)
+        guard let results = try? context.fetch(request) else { return [:] }
+        return Dictionary(uniqueKeysWithValues: results.compactMap { song in
+            guard let id = song.id else { return nil }
+            return (id, song)
+        })
+    }
 
     /// Fetches a Song by its UUID.
     private func fetchSong(songId: UUID, in context: NSManagedObjectContext) -> Song? {

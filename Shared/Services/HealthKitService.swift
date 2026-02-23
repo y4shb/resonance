@@ -383,8 +383,13 @@ public final class HealthKitService: HealthKitServiceProtocol, ObservableObject 
 
     // MARK: - Heart Rate Stream
 
-    public var heartRateStream: AsyncStream<Double> {
-        AsyncStream<Double> { continuation in
+    public lazy var heartRateStream: AsyncStream<Double> = {
+        AsyncStream<Double> { [weak self] continuation in
+            guard let self = self else {
+                continuation.finish()
+                return
+            }
+
             logDebug("Starting heart rate AsyncStream via anchored object query", category: .healthKit)
 
             let updateHandler: (HKAnchoredObjectQuery, [HKSample]?, [HKDeletedObject]?, HKQueryAnchor?, Error?) -> Void
@@ -407,7 +412,7 @@ public final class HealthKitService: HealthKitServiceProtocol, ObservableObject 
             let predicate = HKQuery.predicateForSamples(withStart: startDate, end: nil, options: .strictStartDate)
 
             let query = HKAnchoredObjectQuery(
-                type: heartRateType,
+                type: self.heartRateType,
                 predicate: predicate,
                 anchor: nil,
                 limit: HKObjectQueryNoLimit,
@@ -415,14 +420,14 @@ public final class HealthKitService: HealthKitServiceProtocol, ObservableObject 
             )
             query.updateHandler = updateHandler
 
-            healthStore.execute(query)
+            self.healthStore.execute(query)
 
             continuation.onTermination = { [weak self] _ in
                 logDebug("Heart rate stream terminated — stopping anchored object query", category: .healthKit)
                 self?.healthStore.stop(query)
             }
         }
-    }
+    }()
 
     // MARK: - Sleep Analysis
 

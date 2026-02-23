@@ -262,7 +262,8 @@ final class SessionReconstructor {
             session.dayOfWeek = Int16(dayOfWeek)
 
             // Time slot
-            session.timeOfDaySlot = self.getTimeSlot(from: startTime).rawValue
+            let hour = Calendar.current.component(.hour, from: startTime)
+            session.timeOfDaySlot = TimeSlot(hour: hour).rawValue
 
             // Playlist linking: if all events' songs share the same playlist, link it
             self.linkPlaylistIfShared(session: session, events: events)
@@ -521,35 +522,6 @@ final class SessionReconstructor {
             return .relaxation
         case 22..<24, 0..<5:
             return .preSleep
-        default:
-            return .unknown
-        }
-    }
-
-    // MARK: - Time Slot
-
-    /// Maps a date to the TimeSlot enum, matching DecisionContext.timeSlot exactly.
-    /// - 5..<9   -> earlyMorning
-    /// - 9..<12  -> morning
-    /// - 12..<14 -> midday
-    /// - 14..<17 -> afternoon
-    /// - 17..<21 -> evening
-    /// - 21..<24, 0..<5 -> night
-    private func getTimeSlot(from date: Date) -> TimeSlot {
-        let hour = Calendar.current.component(.hour, from: date)
-        switch hour {
-        case 5..<9:
-            return .earlyMorning
-        case 9..<12:
-            return .morning
-        case 12..<14:
-            return .midday
-        case 14..<17:
-            return .afternoon
-        case 17..<21:
-            return .evening
-        case 21..<24, 0..<5:
-            return .night
         default:
             return .unknown
         }

@@ -24,6 +24,13 @@ final class HeartRateSensor: ObservableObject {
     private var heartRateQuery: HKAnchoredObjectQuery?
     private var hrvQuery: HKAnchoredObjectQuery?
 
+    // MARK: - Deinitialization
+
+    deinit {
+        if let query = heartRateQuery { healthStore.stop(query) }
+        if let query = hrvQuery { healthStore.stop(query) }
+    }
+
     // MARK: - Monitoring Control
 
     /// Starts anchored object queries for heart rate and HRV.

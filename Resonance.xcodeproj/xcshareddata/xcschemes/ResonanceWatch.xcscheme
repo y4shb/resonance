@@ -63,8 +63,10 @@
       debugDocumentVersioning = "YES"
       debugServiceExtension = "internal"
       allowLocationSimulation = "YES">
-      <BuildableProductRunnable
-         runnableDebuggingMode = "0">
+      <RemoteRunnable
+         runnableDebuggingMode = "2"
+         BundleIdentifier = "com.apple.Carousel"
+         RemotePath = "/(null)">
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "9ADD061BE78C7F9A58426A5F"
@@ -72,7 +74,7 @@
             BlueprintName = "ResonanceWatch"
             ReferencedContainer = "container:Resonance.xcodeproj">
          </BuildableReference>
-      </BuildableProductRunnable>
+      </RemoteRunnable>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"
@@ -80,8 +82,10 @@
       savedToolIdentifier = ""
       useCustomWorkingDirectory = "NO"
       debugDocumentVersioning = "YES">
-      <BuildableProductRunnable
-         runnableDebuggingMode = "0">
+      <RemoteRunnable
+         runnableDebuggingMode = "2"
+         BundleIdentifier = "com.apple.Carousel"
+         RemotePath = "/(null)">
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "9ADD061BE78C7F9A58426A5F"
@@ -89,7 +93,7 @@
             BlueprintName = "ResonanceWatch"
             ReferencedContainer = "container:Resonance.xcodeproj">
          </BuildableReference>
-      </BuildableProductRunnable>
+      </RemoteRunnable>
    </ProfileAction>
    <AnalyzeAction
       buildConfiguration = "Debug">

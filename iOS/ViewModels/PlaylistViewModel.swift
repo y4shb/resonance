@@ -8,6 +8,7 @@
 
 import Foundation
 import Combine
+import CoreData
 import MusicKit
 
 // MARK: - Playlist Display Info
@@ -103,24 +104,16 @@ final class PlaylistViewModel: ObservableObject {
             do {
                 let musicPlaylists = try await musicService.fetchUserPlaylists()
 
-                // Map MusicKit playlists to display info
-                var displayPlaylists: [PlaylistDisplayInfo] = []
-                for playlist in musicPlaylists {
-                    // Attempt to get song count by loading tracks
-                    var songCount: Int? = nil
-                    if let detailedPlaylist = try? await playlist.with([.tracks]) {
-                        songCount = detailedPlaylist.tracks?.count
-                    }
-
-                    let info = PlaylistDisplayInfo(
+                // Show playlists immediately without song counts
+                let displayPlaylists: [PlaylistDisplayInfo] = musicPlaylists.map { playlist in
+                    PlaylistDisplayInfo(
                         id: playlist.id,
                         name: playlist.name,
                         description: playlist.standardDescription,
                         artwork: playlist.artwork,
-                        songCount: songCount,
+                        songCount: nil,
                         playlist: playlist
                     )
-                    displayPlaylists.append(info)
                 }
 
                 self.playlists = displayPlaylists
@@ -133,6 +126,36 @@ final class PlaylistViewModel: ObservableObject {
                     let repo = PlaylistRepository()
                     try? await repo.syncPlaylists(from: musicPlaylists)
                 }
+
+                // Load song counts concurrently and update UI as they arrive
+                await withTaskGroup(of: (MusicItemID, Int?).self) { group in
+                    for playlist in musicPlaylists {
+                        group.addTask {
+                            let count: Int? = if let detailed = try? await playlist.with([.tracks]) {
+                                detailed.tracks?.count
+                            } else {
+                                nil
+                            }
+                            return (playlist.id, count)
+                        }
+                    }
+
+                    for await (playlistId, songCount) in group {
+                        if let index = self.playlists.firstIndex(where: { $0.id == playlistId }) {
+                            let existing = self.playlists[index]
+                            self.playlists[index] = PlaylistDisplayInfo(
+                                id: existing.id,
+                                name: existing.name,
+                                description: existing.description,
+                                artwork: existing.artwork,
+                                songCount: songCount,
+                                playlist: existing.playlist
+                            )
+                        }
+                    }
+                }
+
+                logDebug("All playlist song counts loaded", category: .ui)
             } catch is MusicKitServiceError where musicService.authorizationStatus == .denied {
                 self.isLoading = false
                 self.isMusicAuthDenied = true
@@ -175,6 +198,10 @@ final class PlaylistViewModel: ObservableObject {
             nowPlayingViewModel?.activePlaylistId = playlistId
         }
 
+        // Capture the thread-safe objectID on the main thread;
+        // the NSManagedObject itself must NOT cross into Task.detached.
+        let playlistObjectID = cdPlaylist?.objectID
+
         // Sync songs in background
         Task.detached(priority: .utility) {
             if let detailedPlaylist = try? await playlistInfo.playlist.with([.tracks]),
@@ -190,9 +217,15 @@ final class PlaylistViewModel: ObservableObject {
                     }
                 }
                 let songCollection = MusicItemCollection(songs)
-                if let cdPlaylist = cdPlaylist {
+                if let playlistObjectID = playlistObjectID {
+                    // Re-fetch the Playlist in a background context to
+                    // respect Core Data thread confinement.
+                    let bgContext = PersistenceController.shared.newBackgroundContext()
+                    guard let bgPlaylist = try? bgContext.existingObject(with: playlistObjectID) as? Playlist else {
+                        return
+                    }
                     let songRepo = SongRepository()
-                    try? await songRepo.syncSongs(songCollection, for: cdPlaylist)
+                    try? await songRepo.syncSongs(songCollection, for: bgPlaylist)
                 }
             }
         }

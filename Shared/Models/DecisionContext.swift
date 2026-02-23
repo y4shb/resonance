@@ -82,15 +82,7 @@ extension DecisionContext {
 
     /// Returns the time slot for the current time
     public var timeSlot: TimeSlot {
-        switch currentHour {
-        case 5..<9: return .earlyMorning
-        case 9..<12: return .morning
-        case 12..<14: return .midday
-        case 14..<17: return .afternoon
-        case 17..<21: return .evening
-        case 21..<24, 0..<5: return .night
-        default: return .unknown
-        }
+        TimeSlot(hour: currentHour)
     }
 
     /// Returns how many songs are available for selection
@@ -141,6 +133,19 @@ public enum TimeSlot: String, Codable, CaseIterable, Sendable {
         case .evening: return "Evening"
         case .night: return "Night"
         case .unknown: return "Unknown"
+        }
+    }
+
+    /// Creates a TimeSlot from an hour value (0-23).
+    public init(hour: Int) {
+        switch hour {
+        case 5..<9: self = .earlyMorning
+        case 9..<12: self = .morning
+        case 12..<14: self = .midday
+        case 14..<17: self = .afternoon
+        case 17..<21: self = .evening
+        case 21..<24, 0..<5: self = .night
+        default: self = .unknown
         }
     }
 

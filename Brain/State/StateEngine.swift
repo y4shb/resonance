@@ -90,11 +90,11 @@ final class StateEngine: ObservableObject {
         guard !isRunning else { return }
         isRunning = true
 
-        // Fetch initial resting HR
-        Task { await refreshRestingHeartRate() }
-
-        // Initial update
-        Task { await updateState() }
+        // Fetch initial resting HR, then perform first state update
+        Task {
+            await refreshRestingHeartRate()
+            await updateState()
+        }
 
         // Schedule periodic updates
         updateTimer = Timer.scheduledTimer(
@@ -121,13 +121,15 @@ final class StateEngine: ObservableObject {
 
     /// Records a manual mood input from the user (iOS or Watch).
     func setManualMood(energy: Double, valence: Double) {
+        let clampedEnergy = Self.clamp(energy, 0.0, 1.0)
+        let clampedValence = Self.clamp(valence, 0.0, 1.0)
         manualMood = ManualMoodInput(
-            energy: clamp(energy, 0.0, 1.0),
-            valence: clamp(valence, 0.0, 1.0),
+            energy: clampedEnergy,
+            valence: clampedValence,
             timestamp: Date()
         )
         logInfo(
-            "Manual mood set: energy=\(String(format: "%.2f", energy)), valence=\(String(format: "%.2f", valence))",
+            "Manual mood set: energy=\(String(format: "%.2f", clampedEnergy)), valence=\(String(format: "%.2f", clampedValence))",
             category: .stateEngine
         )
         // Trigger immediate state update
@@ -151,8 +153,11 @@ final class StateEngine: ObservableObject {
 
     private func updateState() async {
         // Refresh resting HR every 30 minutes
-        if lastRestingHRFetch == nil ||
-            Date().timeIntervalSince(lastRestingHRFetch!) > 1800 {
+        if let lastFetch = lastRestingHRFetch {
+            if Date().timeIntervalSince(lastFetch) > 1800 {
+                await refreshRestingHeartRate()
+            }
+        } else {
             await refreshRestingHeartRate()
         }
 
@@ -211,7 +216,7 @@ final class StateEngine: ObservableObject {
         }
 
         let normalizedHR = (hr - resting) / hrReserve
-        let arousal = clamp(normalizedHR, 0.0, 1.0)
+        let arousal = Self.clamp(normalizedHR, 0.0, 1.0)
 
         // Confidence based on signal quality
         let confidence = biometric?.sampleQuality ?? 0.5
@@ -236,7 +241,7 @@ final class StateEngine: ObservableObject {
         // ratio 0.5 (low HRV) -> stress ~0.7
         // ratio 1.0 (baseline) -> stress ~0.4
         // ratio 1.5 (high HRV) -> stress ~0.1
-        let stress = clamp(1.0 - (ratio * 0.6), 0.0, 1.0)
+        let stress = Self.clamp(1.0 - (ratio * 0.6), 0.0, 1.0)
 
         let confidence = biometric?.sampleQuality ?? 0.5
 
@@ -256,17 +261,17 @@ final class StateEngine: ObservableObject {
     private func calculateFocus(stress: Double, arousal: Double, context: ActivityContext) -> Double {
         switch context {
         case .deepWork:
-            return clamp(0.8 - (stress * 0.3), 0.0, 1.0)
+            return Self.clamp(0.8 - (stress * 0.3), 0.0, 1.0)
         case .work:
-            return clamp(0.6 - (stress * 0.2), 0.0, 1.0)
+            return Self.clamp(0.6 - (stress * 0.2), 0.0, 1.0)
         case .workout:
             return 0.3  // Physical focus, not mental
         case .preSleep:
-            return clamp(0.3 - (arousal * 0.2), 0.0, 1.0)
+            return Self.clamp(0.3 - (arousal * 0.2), 0.0, 1.0)
         default:
             let base = 0.5 - (stress * 0.2)
             let lowArousalBonus = arousal < 0.4 ? 0.1 : 0.0
-            return clamp(base + lowArousalBonus, 0.0, 1.0)
+            return Self.clamp(base + lowArousalBonus, 0.0, 1.0)
         }
     }
 
@@ -274,7 +279,7 @@ final class StateEngine: ObservableObject {
 
     /// Valence (mood positivity). Default neutral, adjusted by stress, blended with manual input.
     private func calculateValence(stress: Double) -> Double {
-        clamp(0.5 - (stress * 0.3), 0.0, 1.0)
+        Self.clamp(0.5 - (stress * 0.3), 0.0, 1.0)
     }
 
     // MARK: - Context Inference (plan.md §5.1.3)
@@ -311,10 +316,17 @@ final class StateEngine: ObservableObject {
             }
         }
 
-        // Priority 3: Motion-based inference
-        if let bio = biometric, !bio.isStationary, bio.heartRate ?? 0 > 100 {
-            // High HR + moving — could be commute or light activity
-            return .commute
+        // Priority 3: Motion-based inference (HR + movement)
+        if let bio = biometric, !bio.isStationary {
+            let hr = bio.heartRate ?? 0
+            if hr > 130 {
+                // Very high HR + moving — likely an active workout
+                return .workout
+            }
+            if hr > 100 {
+                // Moderate HR + moving — likely commuting or light activity
+                return .commute
+            }
         }
 
         // Priority 4: Time-based defaults
@@ -328,24 +340,20 @@ final class StateEngine: ObservableObject {
             return .morning
         }
 
-        if hour >= 7 && hour < 9 && !isWeekend {
-            return .commute
+        if hour >= 7 && hour < 9 {
+            return isWeekend ? .morning : .commute
         }
 
-        if hour >= 9 && hour < 17 && !isWeekend {
-            return .work
+        if hour >= 9 && hour < 17 {
+            return isWeekend ? .relaxation : .work
         }
 
-        if hour >= 17 && hour < 19 && !isWeekend {
-            return .commute
+        if hour >= 17 && hour < 19 {
+            return isWeekend ? .relaxation : .commute
         }
 
-        // Priority 5: Fallback
-        if biometric?.isStationary == true {
-            return .relaxation
-        }
-
-        return .unknown
+        // 19:00-22:00 — evening leisure
+        return .relaxation
     }
 
     // MARK: - Music Need Inference (plan.md §5.1.5)
@@ -408,8 +416,8 @@ final class StateEngine: ObservableObject {
         // Blend with manual mood input if active
         if let mood = manualMood, mood.isActive {
             let weight = mood.currentWeight * 0.7  // Max 70% manual influence
-            energy = blend(energy, mood.energy, weight: weight * 0.5)
-            valence = blend(valence, mood.valence, weight: weight)
+            energy = Self.blend(energy, mood.energy, weight: weight * 0.5)
+            valence = Self.blend(valence, mood.valence, weight: weight)
         }
 
         // Blend crown energy adjustment with decay
@@ -417,7 +425,7 @@ final class StateEngine: ObservableObject {
             let elapsed = Date().timeIntervalSince(crownTimestamp)
             if elapsed < CrownConstants.adjustmentDecaySeconds {
                 let decayFactor = 1.0 - (elapsed / CrownConstants.adjustmentDecaySeconds)
-                energy = clamp(energy + crownEnergyAdjustment * decayFactor, 0.0, 1.0)
+                energy = Self.clamp(energy + crownEnergyAdjustment * decayFactor, 0.0, 1.0)
             } else {
                 crownEnergyAdjustment = 0.0
                 crownAdjustmentTimestamp = nil
@@ -450,7 +458,7 @@ final class StateEngine: ObservableObject {
         // Confidence: average of biometric confidence, boosted by data source count
         let biometricConfidence = (arousal.confidence + stress.confidence) / 2.0
         let sourceBonus = min(0.3, Double(dataSources.count) * 0.05)
-        let confidence = clamp(biometricConfidence + sourceBonus, 0.0, 1.0)
+        let confidence = Self.clamp(biometricConfidence + sourceBonus, 0.0, 1.0)
 
         var state = StateVector(
             arousal: arousal.value,
@@ -484,11 +492,11 @@ final class StateEngine: ObservableObject {
         lastRestingHRFetch = Date()
     }
 
-    private func clamp(_ value: Double, _ low: Double, _ high: Double) -> Double {
+    private static func clamp(_ value: Double, _ low: Double, _ high: Double) -> Double {
         min(max(value, low), high)
     }
 
-    private func blend(_ a: Double, _ b: Double, weight: Double) -> Double {
+    private static func blend(_ a: Double, _ b: Double, weight: Double) -> Double {
         a * (1.0 - weight) + b * weight
     }
 }
