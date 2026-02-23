@@ -111,10 +111,6 @@ final class CalendarProvider: ObservableObject {
             return .focus
         }
 
-        if event.isAllDay {
-            return .allDay
-        }
-
         if event.hasAlarms {
             return .reminder
         }

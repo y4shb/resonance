@@ -60,14 +60,14 @@ final class CrownHandler: ObservableObject {
     // MARK: - Send to iPhone
 
     private func sendAdjustment() {
-        let delta = crownValue
-        guard abs(delta - lastSentValue) > 0.01 else { return }
+        let normalizedDelta = energyAdjustment  // -1.0 to 1.0 range
+        guard abs(normalizedDelta - lastSentValue) > 0.01 else { return }
 
         let adjustment = CrownAdjustment(
-            delta: delta,
+            delta: normalizedDelta,
             adjustmentType: "energy"
         )
         connectivityService.sendCrownAdjustment(adjustment)
-        lastSentValue = delta
+        lastSentValue = normalizedDelta
     }
 }

@@ -30,6 +30,8 @@ final class ContextBroadcaster: ObservableObject {
     private var broadcastTimer: Timer?
     private var cancellables = Set<AnyCancellable>()
     private var lastFailedSignal: MacOSContextSignal?
+    private var isRunning = false
+    private var activeSaveCount = 0
 
     // CloudKit
     private lazy var container = CKContainer(identifier: "iCloud.com.y4sh.resonance")
@@ -56,6 +58,12 @@ final class ContextBroadcaster: ObservableObject {
 
     /// Starts all providers and periodic broadcasting.
     func startBroadcasting() {
+        guard !isRunning else {
+            logDebug("ContextBroadcaster already running", category: .general)
+            return
+        }
+        isRunning = true
+
         focusModeProvider.startMonitoring()
         activeAppProvider.startMonitoring()
         calendarProvider.startMonitoring()
@@ -77,6 +85,7 @@ final class ContextBroadcaster: ObservableObject {
     }
 
     func stopBroadcasting() {
+        isRunning = false
         broadcastTimer?.invalidate()
         broadcastTimer = nil
         focusModeProvider.stopMonitoring()
@@ -162,6 +171,7 @@ final class ContextBroadcaster: ObservableObject {
     }
 
     private func saveSignalToCloudKit(_ signal: MacOSContextSignal, attempt: Int, maxAttempts: Int) {
+        activeSaveCount += 1
         isSyncing = true
 
         let record = CKRecord(recordType: recordType)
@@ -180,7 +190,10 @@ final class ContextBroadcaster: ObservableObject {
         let database = container.privateCloudDatabase
         database.save(record) { [weak self] _, error in
             DispatchQueue.main.async {
-                self?.isSyncing = false
+                if let self = self {
+                    self.activeSaveCount -= 1
+                    self.isSyncing = self.activeSaveCount > 0
+                }
                 if let error = error {
                     if attempt < maxAttempts {
                         logInfo("Retrying failed context broadcast (attempt \(attempt + 1)/\(maxAttempts))", category: .macOSContext)

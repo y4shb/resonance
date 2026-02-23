@@ -7,6 +7,7 @@
 
 import SwiftUI
 import AppKit
+import Combine
 
 @main
 struct ResonanceMacApp: App {
@@ -34,6 +35,27 @@ struct ResonanceMacApp: App {
             PopoverView(controller: menuBarController)
                 .task {
                     contextBroadcaster.startBroadcasting()
+                }
+                .onReceive(contextBroadcaster.focusModeProvider.$isActive) { active in
+                    menuBarController.updateContextInfo(
+                        focusMode: active
+                            ? (contextBroadcaster.focusModeProvider.focusModeName ?? "Active")
+                            : "Off"
+                    )
+                }
+                .onReceive(contextBroadcaster.activeAppProvider.$activeAppName) { appName in
+                    menuBarController.updateContextInfo(activeApp: appName ?? "None")
+                }
+                .onReceive(contextBroadcaster.$latestSignal.compactMap { $0 }) { signal in
+                    menuBarController.updateContextInfo(
+                        isDeepWork: signal.inferredWorkState == .deepWork
+                    )
+                    menuBarController.updateConnectionStatus(
+                        contextBroadcaster.isSyncing ? .syncing : .connected
+                    )
+                }
+                .onReceive(contextBroadcaster.$lastSyncDate.compactMap { $0 }) { date in
+                    menuBarController.lastSyncTime = date
                 }
         }
         .menuBarExtraStyle(.window)

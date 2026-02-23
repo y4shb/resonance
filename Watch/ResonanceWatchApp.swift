@@ -39,12 +39,15 @@ struct ResonanceWatchApp: App {
                 .onAppear {
                     connectivityService.activate()
                     logInfo("PhoneConnectivityService activated", category: .watchConnectivity)
-
-                    // Request current NowPlaying from iPhone after a short delay
-                    // to allow WCSession to fully activate
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                        connectivityService.requestNowPlaying()
-                    }
+                }
+                .onReceive(
+                    connectivityService.$isSessionActivated
+                        .filter { $0 }
+                        .first()
+                ) { _ in
+                    // Request current NowPlaying once the WCSession has activated,
+                    // rather than relying on an arbitrary delay.
+                    connectivityService.requestNowPlaying()
                 }
                 .task {
                     if HKHealthStore.isHealthDataAvailable() {
