@@ -102,8 +102,8 @@ final class EventLogger: ObservableObject {
 
             do {
                 try context.save()
-                DispatchQueue.main.async {
-                    self.activeEventObjectID = event.objectID
+                DispatchQueue.main.async { [weak self] in
+                    self?.activeEventObjectID = event.objectID
                     logInfo(
                         "EventLogger: playback started for '\(songInContext.title ?? "unknown")' — objectID: \(event.objectID)",
                         category: .persistence

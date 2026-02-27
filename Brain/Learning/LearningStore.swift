@@ -73,6 +73,8 @@ final class LearningStore: ObservableObject {
             let responseResult = ResponseCreditCalculator.calculate(
                 hrvDelta: event.hrvDelta,
                 hrDelta: event.hrDelta,
+                hrAtStart: event.hrAtStart,
+                hrvAtStart: event.hrvAtStart,
                 listenPercentage: event.listenPercentage,
                 wasSkipped: event.wasSkipped,
                 preferences: preferences
@@ -123,11 +125,8 @@ final class LearningStore: ObservableObject {
             // 7. Update Song aggregate scores (confidence-weighted average across all effects)
             SongEffectHelper.updateSongAggregates(song, in: context)
 
-            // 8. Update play/skip counts and familiarity
-            song.totalPlayCount += 1
-            if skipResult.isSkip {
-                song.totalSkipCount += 1
-            }
+            // 8. Update familiarity (play/skip counts are managed by
+            // SongRepository.updatePlaybackStats to avoid double-counting)
             SongEffectHelper.updateFamiliarity(song)
 
             // 9. Save
@@ -152,8 +151,10 @@ final class LearningStore: ObservableObject {
             )
 
             let listenPercentage = event.listenPercentage
-            let hrvDelta = event.hrvDelta
             let isSkip = skipResult.isSkip
+            // Compute absolute HRV for session tracking (RunningSession expects
+            // absolute values, not deltas, so it can compute session-level change).
+            let currentAbsoluteHRV: Double? = event.hrvAtStart > 0 ? (event.hrvAtStart + event.hrvDelta) : nil
 
             // Publish result and update running session on main thread
             Task { @MainActor [weak self] in
@@ -161,7 +162,7 @@ final class LearningStore: ObservableObject {
                 self?.runningSession.recordSong(
                     wasSkipped: isSkip,
                     listenPercentage: listenPercentage,
-                    currentHRV: hrvDelta != 0 ? hrvDelta : nil
+                    currentHRV: currentAbsoluteHRV
                 )
                 logInfo(
                     "LearningStore: processed event -- calm=\(String(format: "%.2f", calmImpact)), "

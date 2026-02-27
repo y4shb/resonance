@@ -153,7 +153,7 @@ private struct DimensionBar: View {
                         .frame(height: 8)
                     RoundedRectangle(cornerRadius: 4)
                         .fill(color)
-                        .frame(width: geo.size.width * value, height: 8)
+                        .frame(width: geo.size.width * min(1, max(0, value)), height: 8)
                 }
             }
             .frame(height: 8)

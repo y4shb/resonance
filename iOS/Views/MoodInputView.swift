@@ -15,6 +15,7 @@ struct MoodInputView: View {
     @State private var energy: Double = 0.5
     @State private var valence: Double = 0.5
     @State private var hasSubmitted = false
+    @State private var hasInitializedFromState = false
 
     @Environment(\.dismiss) private var dismiss
 
@@ -108,6 +109,15 @@ struct MoodInputView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
+                }
+            }
+            .onAppear {
+                // Initialize sliders from the current state so the user sees their
+                // actual estimated mood rather than a default 0.5.
+                if !hasInitializedFromState {
+                    hasInitializedFromState = true
+                    energy = stateEngine.currentState.energy
+                    valence = stateEngine.currentState.valence
                 }
             }
         }

@@ -47,6 +47,7 @@ final class PhoneConnectivityService: NSObject, ObservableObject {
 
     private var cancellables = Set<AnyCancellable>()
     private var pendingBiometricData: [BiometricPacket] = []
+    private let pendingDataLock = NSLock()
     private let maxPendingBiometricEntries = 10
 
     // MARK: - Initialization
@@ -84,11 +85,12 @@ final class PhoneConnectivityService: NSObject, ObservableObject {
     func sendBiometricUpdate(_ packet: BiometricPacket) {
         guard let session = session, session.activationState == .activated, session.isReachable else {
             logWarning("Phone not reachable, queuing biometric data for later", category: .watchConnectivity)
+            pendingDataLock.lock()
             pendingBiometricData.append(packet)
-            // Limit to last N entries to avoid memory issues
             if pendingBiometricData.count > maxPendingBiometricEntries {
                 pendingBiometricData = Array(pendingBiometricData.suffix(maxPendingBiometricEntries))
             }
+            pendingDataLock.unlock()
             return
         }
 
@@ -98,16 +100,28 @@ final class PhoneConnectivityService: NSObject, ObservableObject {
 
     /// Sends all pending biometric data that was queued while the phone was unreachable.
     func flushPendingData() {
-        guard !pendingBiometricData.isEmpty else { return }
+        pendingDataLock.lock()
+        guard !pendingBiometricData.isEmpty else {
+            pendingDataLock.unlock()
+            return
+        }
+        let dataToSend = pendingBiometricData
+        pendingBiometricData.removeAll()
+        pendingDataLock.unlock()
+
         guard let session = session, session.activationState == .activated, session.isReachable else {
+            // Put data back since we can't send it
+            pendingDataLock.lock()
+            pendingBiometricData = dataToSend + pendingBiometricData
+            if pendingBiometricData.count > maxPendingBiometricEntries {
+                pendingBiometricData = Array(pendingBiometricData.suffix(maxPendingBiometricEntries))
+            }
+            pendingDataLock.unlock()
             logWarning("Cannot flush pending data: phone still not reachable", category: .watchConnectivity)
             return
         }
 
-        logInfo("Flushing \(pendingBiometricData.count) pending biometric entries", category: .watchConnectivity)
-        let dataToSend = pendingBiometricData
-        pendingBiometricData.removeAll()
-
+        logInfo("Flushing \(dataToSend.count) pending biometric entries", category: .watchConnectivity)
         for packet in dataToSend {
             let message = WatchMessage.biometricUpdate(packet)
             sendMessageGuaranteed(message)
@@ -142,8 +156,13 @@ final class PhoneConnectivityService: NSObject, ObservableObject {
                 }
                 logDebug("Message sent via sendMessage (reachable)", category: .watchConnectivity)
             } else {
-                // Phone not reachable; use application context
-                try session.updateApplicationContext(dict)
+                // Phone not reachable; use application context.
+                // Merge with existing context to avoid overwriting unrelated keys.
+                var merged = session.applicationContext
+                for (key, value) in dict {
+                    merged[key] = value
+                }
+                try session.updateApplicationContext(merged)
                 logDebug("Message sent via applicationContext (not reachable)", category: .watchConnectivity)
             }
         } catch {

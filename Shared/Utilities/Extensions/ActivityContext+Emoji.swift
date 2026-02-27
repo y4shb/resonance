@@ -19,7 +19,8 @@ extension ActivityContext {
         case .preSleep: return "\u{1F319}"
         case .morning: return "\u{2600}\u{FE0F}"
         case .relaxation: return "\u{1F9D8}"
-        default: return "\u{1F3B5}"
+        case .social: return "\u{1F389}"
+        case .unknown: return "\u{1F3B5}"
         }
     }
 }

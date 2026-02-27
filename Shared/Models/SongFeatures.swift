@@ -102,8 +102,9 @@ extension SongFeatures {
         return String(format: "%d:%02d", minutes, seconds)
     }
 
-    /// Tempo category
-    public var tempoCategory: TempoCategory {
+    /// Tempo category (nil if BPM is unknown/not analyzed)
+    public var tempoCategory: TempoCategory? {
+        guard bpm > 0 else { return nil }
         switch bpm {
         case ..<70: return .verySlow
         case 70..<90: return .slow

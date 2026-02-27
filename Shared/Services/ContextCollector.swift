@@ -55,7 +55,10 @@ final class ContextCollector: ObservableObject {
     }
 
     deinit {
-        macOSPollTimer?.invalidate()
+        let timer = macOSPollTimer
+        DispatchQueue.main.async {
+            timer?.invalidate()
+        }
     }
 
     /// Starts listening for biometric updates from the Watch.

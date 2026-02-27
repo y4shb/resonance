@@ -134,8 +134,7 @@ public final class MusicKitService: MusicKitServiceProtocol {
 
     private let player = ApplicationMusicPlayer.shared
     private var cancellables = Set<AnyCancellable>()
-    private var stateObservationTask: Task<Void, Never>?
-    private var queueObservationTask: Task<Void, Never>?
+    private var observationTask: Task<Void, Never>?
 
     // MARK: - Computed Properties
 
@@ -158,8 +157,7 @@ public final class MusicKitService: MusicKitServiceProtocol {
     }
 
     deinit {
-        stateObservationTask?.cancel()
-        queueObservationTask?.cancel()
+        observationTask?.cancel()
     }
 
     // MARK: - Authorization
@@ -370,17 +368,27 @@ public final class MusicKitService: MusicKitServiceProtocol {
 
     // MARK: - State Observation
 
+    /// Observes both player state and queue changes in a single consolidated task
+    /// to avoid race conditions from dual observers updating nowPlayingEntry simultaneously.
     private func observePlayerState() {
         logDebug("Starting player state observation", category: .musicKit)
 
-        // Observe playback status changes and also check for entry changes.
-        // State changes fire after queue changes settle, so entry.item is resolved.
-        stateObservationTask = Task { [weak self] in
+        observationTask = Task { [weak self] in
             guard let player = self?.player else { return }
 
-            for await _ in player.state.objectWillChange.values {
+            // Merge both change streams into one to handle them sequentially,
+            // preventing race conditions from two observers firing simultaneously.
+            let stateChanges = player.state.objectWillChange.values.map { _ in "state" }
+            let queueChanges = player.queue.objectWillChange.values.map { _ in "queue" }
+
+            for await source in merge(stateChanges, queueChanges) {
                 guard !Task.isCancelled else { break }
                 guard let self else { break }
+
+                // For queue changes, yield to allow the property change to commit
+                if source == "queue" {
+                    await Task.yield()
+                }
 
                 let newStatus = player.state.playbackStatus
                 let newEntry = player.queue.currentEntry
@@ -396,7 +404,7 @@ public final class MusicKitService: MusicKitServiceProtocol {
                     if self.nowPlayingEntry?.id != newEntry?.id {
                         self.nowPlayingEntry = newEntry
                         if let entry = newEntry {
-                            logDebug("Now playing entry changed (via state): \(entry.title)", category: .musicKit)
+                            logDebug("Now playing entry changed (via \(source)): \(entry.title)", category: .musicKit)
                         } else {
                             logDebug("Now playing entry cleared", category: .musicKit)
                         }
@@ -404,33 +412,33 @@ public final class MusicKitService: MusicKitServiceProtocol {
                 }
             }
         }
+    }
 
-        // Observe queue changes for faster song transition detection.
-        // Uses Task.yield() to let the change commit before reading currentEntry.
-        queueObservationTask = Task { [weak self] in
-            guard let player = self?.player else { return }
-
-            for await _ in player.queue.objectWillChange.values {
-                guard !Task.isCancelled else { break }
-                guard let self else { break }
-
-                // Yield to allow the property change to commit
-                await Task.yield()
-
-                let newEntry = player.queue.currentEntry
-
-                await MainActor.run { [weak self] in
-                    guard let self else { return }
-
-                    if self.nowPlayingEntry?.id != newEntry?.id {
-                        self.nowPlayingEntry = newEntry
-                        if let entry = newEntry {
-                            logDebug("Now playing entry changed (via queue): \(entry.title)", category: .musicKit)
-                        } else {
-                            logDebug("Now playing entry cleared", category: .musicKit)
-                        }
+    /// Merges two AsyncSequences into a single AsyncStream, emitting values from both.
+    private func merge<T>(
+        _ s1: some AsyncSequence<T, Never>,
+        _ s2: some AsyncSequence<T, Never>
+    ) -> AsyncStream<T> {
+        AsyncStream { continuation in
+            let task1 = Task {
+                do {
+                    for try await value in s1 {
+                        guard !Task.isCancelled else { break }
+                        continuation.yield(value)
                     }
-                }
+                } catch {}
+            }
+            let task2 = Task {
+                do {
+                    for try await value in s2 {
+                        guard !Task.isCancelled else { break }
+                        continuation.yield(value)
+                    }
+                } catch {}
+            }
+            continuation.onTermination = { _ in
+                task1.cancel()
+                task2.cancel()
             }
         }
     }

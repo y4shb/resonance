@@ -55,9 +55,11 @@ struct ImpactScore {
         let listenPct = event.listenPercentage
         let wasSkipped = event.wasSkipped
 
-        // Determine biometric availability
-        let hasHR = hrDelta != 0.0
-        let hasHRV = hrvDelta != 0.0
+        // Determine biometric availability by checking whether start values
+        // were recorded (non-zero start means the sensor was active).
+        // A delta of 0.0 is valid data meaning "no change", not "no data".
+        let hasHR = event.hrAtStart > 0.0
+        let hasHRV = event.hrvAtStart > 0.0
         let hasBiometric = hasHR || hasHRV
 
         // Normalize biometric signals

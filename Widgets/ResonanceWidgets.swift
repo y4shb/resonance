@@ -106,7 +106,7 @@ struct NowPlayingWidgetView: View {
     var smallView: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Image(systemName: entry.isPlaying ? "music.note" : "pause.fill")
+                Image(systemName: entry.isPlaying ? "pause.fill" : "play.fill")
                     .foregroundStyle(.blue)
                 Text("Resonance")
                     .font(.caption2)
@@ -141,7 +141,7 @@ struct NowPlayingWidgetView: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
-                    Image(systemName: entry.isPlaying ? "play.fill" : "pause.fill")
+                    Image(systemName: entry.isPlaying ? "pause.fill" : "play.fill")
                         .foregroundStyle(.blue)
                     Text("Resonance")
                         .font(.caption)
@@ -279,7 +279,7 @@ struct StateWidgetView: View {
                         .fill(.gray.opacity(0.3))
                     RoundedRectangle(cornerRadius: 4)
                         .fill(.blue)
-                        .frame(width: geo.size.width * entry.energy)
+                        .frame(width: geo.size.width * min(max(entry.energy, 0), 1))
                 }
             }
             .frame(height: 8)

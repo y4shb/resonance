@@ -70,9 +70,9 @@ extension DecisionContext {
         Calendar.current.component(.hour, from: currentTime)
     }
 
-    /// Returns true if it's nighttime (after 9 PM or before 6 AM)
+    /// Returns true if it's nighttime (after nightStartHour or before 6 AM)
     public var isNighttime: Bool {
-        currentHour >= 21 || currentHour < 6
+        currentHour >= preferences.nightStartHour || currentHour < 6
     }
 
     /// Returns true if it's morning (6 AM - 10 AM)

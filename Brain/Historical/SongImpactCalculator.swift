@@ -139,11 +139,8 @@ final class SongImpactCalculator {
         // Recompute song-level aggregate scores across all effects
         SongEffectHelper.updateSongAggregates(song, in: context)
 
-        // Update play/skip counts and familiarity
-        song.totalPlayCount += 1
-        if impact.wasSkipped {
-            song.totalSkipCount += 1
-        }
+        // Update familiarity (play/skip counts are managed by
+        // SongRepository.updatePlaybackStats to avoid double-counting)
         SongEffectHelper.updateFamiliarity(song)
     }
 

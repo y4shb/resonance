@@ -100,6 +100,13 @@ enum SongEffectHelper {
             song.focusScore = weightedFocus / totalWeight
             song.activationScore = weightedActivation / totalWeight
             song.confidenceLevel = maxConfidence
+        } else {
+            // No confident effects — reset to neutral defaults so stale
+            // scores don't persist from a previous state.
+            song.calmScore = 0.5
+            song.focusScore = 0.5
+            song.activationScore = 0.5
+            song.confidenceLevel = 0.0
         }
     }
 

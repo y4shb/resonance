@@ -118,15 +118,10 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WatchConnectiv
     func sendNowPlaying(_ packet: NowPlayingPacket) {
         let message = WatchMessage.nowPlayingUpdate(packet)
         sendMessage(message)
-
-        // Also persist via transferUserInfo for guaranteed delivery
-        // when the Watch app isn't in the foreground
-        do {
-            let dict = try message.toDictionary()
-            session?.transferUserInfo(dict)
-        } catch {
-            logError("Failed to encode NowPlaying for transferUserInfo", error: error, category: .watchConnectivity)
-        }
+        // sendMessage already falls back to applicationContext when Watch is
+        // unreachable, which is persistent. Avoid transferUserInfo here because
+        // it queues every call for guaranteed delivery, creating duplicate
+        // deliveries and filling the transfer queue with stale now-playing data.
     }
 
     func sendStateUpdate(_ packet: StatePacket) {
@@ -208,7 +203,13 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WatchConnectiv
             return
         }
 
-        try session.updateApplicationContext(context)
+        // Merge with existing context to avoid overwriting unrelated keys.
+        // updateApplicationContext replaces the entire dictionary.
+        var merged = session.applicationContext
+        for (key, value) in context {
+            merged[key] = value
+        }
+        try session.updateApplicationContext(merged)
         logDebug("Application context updated", category: .watchConnectivity)
     }
 
@@ -261,7 +262,13 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WatchConnectiv
     private func fallbackToApplicationContext(_ dict: [String: Any]) {
         guard let session = session else { return }
         do {
-            try session.updateApplicationContext(dict)
+            // Merge with existing context to avoid overwriting unrelated keys.
+            // updateApplicationContext replaces the entire dictionary.
+            var merged = session.applicationContext
+            for (key, value) in dict {
+                merged[key] = value
+            }
+            try session.updateApplicationContext(merged)
         } catch {
             logError("Failed to update application context as fallback",
                      error: error, category: .watchConnectivity)
@@ -327,8 +334,10 @@ extension WatchConnectivityManager: WCSessionDelegate {
 
     func sessionDidDeactivate(_ session: WCSession) {
         logInfo("WCSession deactivated, reactivating", category: .watchConnectivity)
-        // Reactivate for device switching scenarios
-        session.activate()
+        // Reactivate for device switching scenarios.
+        // Must use WCSession.default, not the parameter — the parameter is the
+        // deactivated session and cannot be reused.
+        WCSession.default.activate()
     }
 
     func sessionReachabilityDidChange(_ session: WCSession) {

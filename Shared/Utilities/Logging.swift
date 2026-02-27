@@ -280,6 +280,9 @@ public struct LogEntry: Identifiable, Sendable {
     public let function: String
     public let line: Int
 
+    /// Thread-safe timestamp formatter. Using `static let` ensures it is lazily
+    /// initialized exactly once (Swift guarantees thread-safe initialization of
+    /// static stored properties via dispatch_once semantics).
     private static let timestampFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm:ss.SSS"
@@ -287,7 +290,7 @@ public struct LogEntry: Identifiable, Sendable {
     }()
 
     public var formattedTimestamp: String {
-        Self.timestampFormatter.string(from: timestamp)
+        LogEntry.timestampFormatter.string(from: timestamp)
     }
 
     public var summary: String {

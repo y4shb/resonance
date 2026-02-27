@@ -24,7 +24,9 @@ final class SongScorer {
     func scoreSong(
         _ song: Song,
         context: DecisionContext
-    ) -> SongScore {
+    ) -> SongScore? {
+        guard let songId = song.id else { return nil }
+
         let weights = context.preferences
         let state = context.stateVector
 
@@ -84,6 +86,9 @@ final class SongScorer {
         // Time of day as multiplier
         finalScore = finalScore * (0.5 + timeOfDayScore * 0.5)
 
+        // Clamp finalScore to non-negative
+        finalScore = max(0.0, finalScore)
+
         // Confidence in this score
         let confidence = calculateConfidence(song: song, state: state)
 
@@ -100,7 +105,7 @@ final class SongScorer {
         )
 
         return SongScore(
-            songId: song.id ?? UUID(),
+            songId: songId,
             songTitle: song.title ?? "Unknown",
             artistName: song.artistName ?? "Unknown",
             albumName: song.albumName ?? "",
@@ -123,7 +128,7 @@ final class SongScorer {
         _ songs: [Song],
         context: DecisionContext
     ) -> [SongScore] {
-        let scores = songs.map { song in
+        let scores = songs.compactMap { song in
             scoreSong(song, context: context)
         }
         return scores.sorted { $0.finalScore > $1.finalScore }
@@ -327,8 +332,8 @@ final class SongScorer {
             return (energyFit * 0.6 + valenceFit * 0.4)
 
         case .commute:
-            // Upbeat, moderate-high energy
-            let energyFit = energy > 0.4 ? min(1.0, energy / 0.7) : energy / 0.4
+            // Upbeat, moderate-high energy (continuous curve peaking at energy ~0.7+)
+            let energyFit = min(1.0, energy / 0.7)
             return energyFit
 
         case .social:

@@ -184,6 +184,10 @@ final class PlaylistViewModel: ObservableObject {
                 try await musicService.setQueue(playlist: playlistInfo.playlist)
                 logInfo("Queue set from playlist '\(playlistInfo.name)'", category: .musicKit)
             } catch {
+                // Queue load failed — clear the optimistically-set playlist name
+                activePlaylistName = nil
+                nowPlayingViewModel?.activePlaylistName = nil
+                nowPlayingViewModel?.activePlaylistId = nil
                 errorMessage = error.localizedDescription
                 logError("Failed to set queue from playlist '\(playlistInfo.name)'", error: error, category: .musicKit)
             }
@@ -196,6 +200,10 @@ final class PlaylistViewModel: ObservableObject {
         // Set the active playlist ID for AI selection
         if let cdPlaylist = cdPlaylist, let playlistId = cdPlaylist.id {
             nowPlayingViewModel?.activePlaylistId = playlistId
+        } else {
+            // Core Data lookup failed — clear the stale playlist ID
+            nowPlayingViewModel?.activePlaylistId = nil
+            logWarning("Core Data lookup failed for playlist '\(playlistInfo.name)'; activePlaylistId cleared", category: .musicKit)
         }
 
         // Capture the thread-safe objectID on the main thread;

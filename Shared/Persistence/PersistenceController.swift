@@ -44,6 +44,14 @@ public final class PersistenceController: @unchecked Sendable {
     /// Whether the store is in-memory only
     private let inMemory: Bool
 
+    /// Indicates whether the persistent store failed to load.
+    public private(set) var storeLoadError: NSError?
+
+    /// Whether the persistent store loaded successfully.
+    public var isStoreLoaded: Bool {
+        storeLoadError == nil
+    }
+
     // MARK: - Initialization
 
     /// Creates a new PersistenceController
@@ -82,15 +90,14 @@ public final class PersistenceController: @unchecked Sendable {
         }
 
         // Load persistent stores
-        container.loadPersistentStores { storeDescription, error in
+        container.loadPersistentStores { [weak self] storeDescription, error in
             if let error = error as NSError? {
                 logCritical(
                     "Failed to load persistent store: \(storeDescription)",
                     error: error,
                     category: .persistence
                 )
-                // In production, you might want to handle this more gracefully
-                // For now, we'll crash in debug to catch issues early
+                self?.storeLoadError = error
                 #if DEBUG
                 fatalError("Core Data store failed to load: \(error)")
                 #endif
@@ -147,25 +154,29 @@ public final class PersistenceController: @unchecked Sendable {
 
     /// Saves the view context if there are changes
     public func save() {
-        guard viewContext.hasChanges else { return }
+        viewContext.performAndWait {
+            guard viewContext.hasChanges else { return }
 
-        do {
-            try viewContext.save()
-            logDebug("View context saved successfully", category: .persistence)
-        } catch {
-            logError("Failed to save view context", error: error, category: .persistence)
+            do {
+                try viewContext.save()
+                logDebug("View context saved successfully", category: .persistence)
+            } catch {
+                logError("Failed to save view context", error: error, category: .persistence)
+            }
         }
     }
 
     /// Saves a specific context if there are changes
     public func save(context: NSManagedObjectContext) {
-        guard context.hasChanges else { return }
+        context.performAndWait {
+            guard context.hasChanges else { return }
 
-        do {
-            try context.save()
-            logDebug("Context '\(context.name ?? "unnamed")' saved successfully", category: .persistence)
-        } catch {
-            logError("Failed to save context '\(context.name ?? "unnamed")'", error: error, category: .persistence)
+            do {
+                try context.save()
+                logDebug("Context '\(context.name ?? "unnamed")' saved successfully", category: .persistence)
+            } catch {
+                logError("Failed to save context '\(context.name ?? "unnamed")'", error: error, category: .persistence)
+            }
         }
     }
 
@@ -271,11 +282,13 @@ extension PersistenceController {
     /// Fetches all objects of a given entity
     public func fetchAll<T: NSManagedObject>(_ type: T.Type) -> [T] {
         let request = T.fetchRequest()
-        do {
-            return try viewContext.fetch(request) as? [T] ?? []
-        } catch {
-            logError("Failed to fetch \(T.self)", error: error, category: .persistence)
-            return []
+        return viewContext.performAndWait {
+            do {
+                return try viewContext.fetch(request) as? [T] ?? []
+            } catch {
+                logError("Failed to fetch \(T.self)", error: error, category: .persistence)
+                return []
+            }
         }
     }
 
@@ -293,11 +306,13 @@ extension PersistenceController {
             request.fetchLimit = limit
         }
 
-        do {
-            return try viewContext.fetch(request) as? [T] ?? []
-        } catch {
-            logError("Failed to fetch \(T.self) with predicate", error: error, category: .persistence)
-            return []
+        return viewContext.performAndWait {
+            do {
+                return try viewContext.fetch(request) as? [T] ?? []
+            } catch {
+                logError("Failed to fetch \(T.self) with predicate", error: error, category: .persistence)
+                return []
+            }
         }
     }
 
@@ -306,11 +321,13 @@ extension PersistenceController {
         let request = T.fetchRequest()
         request.predicate = predicate
 
-        do {
-            return try viewContext.count(for: request)
-        } catch {
-            logError("Failed to count \(T.self)", error: error, category: .persistence)
-            return 0
+        return viewContext.performAndWait {
+            do {
+                return try viewContext.count(for: request)
+            } catch {
+                logError("Failed to count \(T.self)", error: error, category: .persistence)
+                return 0
+            }
         }
     }
 }

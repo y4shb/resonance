@@ -184,10 +184,10 @@ final class TransitionController {
         let request = NSFetchRequest<Song>(entityName: "Song")
         request.predicate = NSPredicate(format: "id IN %@", songIds)
         guard let results = try? context.fetch(request) else { return [:] }
-        return Dictionary(uniqueKeysWithValues: results.compactMap { song in
+        return Dictionary(results.compactMap { song -> (UUID, Song)? in
             guard let id = song.id else { return nil }
             return (id, song)
-        })
+        }, uniquingKeysWith: { first, _ in first })
     }
 
     /// Fetches a Song by its UUID.

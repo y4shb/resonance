@@ -128,9 +128,10 @@ struct ResonanceApp: App {
         decisionEngine.guardAdjuster = guardAdjuster
 
         // Wire mood input from Watch → StateEngine
+        // Normalize [1,5] scale to [0.0,1.0] using (value - 1) / 4.0
         contextCollector.onMoodInput = { [weak stateEngine] packet in
-            let energy = Double(packet.energyLevel) / 5.0
-            let valence = Double(packet.moodLevel) / 5.0
+            let energy = (Double(packet.energyLevel) - 1.0) / 4.0
+            let valence = (Double(packet.moodLevel) - 1.0) / 4.0
             Task { @MainActor in
                 stateEngine?.setManualMood(energy: energy, valence: valence)
             }

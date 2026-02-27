@@ -166,15 +166,17 @@ final class SongRepository {
             NSSortDescriptor(key: "title", ascending: true)
         ]
 
-        do {
-            return try persistence.viewContext.fetch(request)
-        } catch {
-            logError(
-                "Failed to fetch songs for playlist '\(playlist.name ?? "unknown")'",
-                error: error,
-                category: .persistence
-            )
-            return []
+        return persistence.viewContext.performAndWait {
+            do {
+                return try persistence.viewContext.fetch(request)
+            } catch {
+                logError(
+                    "Failed to fetch songs for playlist '\(playlist.name ?? "unknown")'",
+                    error: error,
+                    category: .persistence
+                )
+                return []
+            }
         }
     }
 
@@ -189,15 +191,17 @@ final class SongRepository {
         )
         request.fetchLimit = 1
 
-        do {
-            return try persistence.viewContext.fetch(request).first
-        } catch {
-            logError(
-                "Failed to find song with appleMusicId '\(appleMusicId)'",
-                error: error,
-                category: .persistence
-            )
-            return nil
+        return persistence.viewContext.performAndWait {
+            do {
+                return try persistence.viewContext.fetch(request).first
+            } catch {
+                logError(
+                    "Failed to find song with appleMusicId '\(appleMusicId)'",
+                    error: error,
+                    category: .persistence
+                )
+                return nil
+            }
         }
     }
 
@@ -223,15 +227,17 @@ final class SongRepository {
         ]
         request.fetchLimit = limit
 
-        do {
-            return try persistence.viewContext.fetch(request)
-        } catch {
-            logError(
-                "Failed to fetch songs needing features",
-                error: error,
-                category: .persistence
-            )
-            return []
+        return persistence.viewContext.performAndWait {
+            do {
+                return try persistence.viewContext.fetch(request)
+            } catch {
+                logError(
+                    "Failed to fetch songs needing features",
+                    error: error,
+                    category: .persistence
+                )
+                return []
+            }
         }
     }
 

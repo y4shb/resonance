@@ -185,14 +185,16 @@ extension StateVector {
         return "\(contextDesc) - Need: \(needDesc) (\(confidencePercent)% confidence)"
     }
 
-    /// Returns the dominant characteristic of the current state
+    /// Returns the dominant characteristic of the current state.
+    /// Ordered alphabetically for deterministic tie-breaking.
     public var dominantCharacteristic: String {
         let characteristics: [(String, Double)] = [
-            ("High Energy", energy),
-            ("Stressed", stress),
+            ("Alert", arousal),
             ("Focused", focus),
+            ("High Energy", energy),
+            ("Positive", valence),
             ("Relaxed", 1.0 - stress),
-            ("Alert", arousal)
+            ("Stressed", stress)
         ]
 
         return characteristics.max(by: { $0.1 < $1.1 })?.0 ?? "Balanced"

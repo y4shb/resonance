@@ -188,7 +188,7 @@ final class UserPreferencesTests: XCTestCase {
 
     func test_validated_clampsNightMaxBPM() {
         let tooHigh = UserPreferences(nightMaxBPM: 999)
-        XCTAssertLessThanOrEqual(tooHigh.validated().nightMaxBPM, 150)
+        XCTAssertLessThanOrEqual(tooHigh.validated().nightMaxBPM, 200)
 
         let tooLow = UserPreferences(nightMaxBPM: 10)
         XCTAssertGreaterThanOrEqual(tooLow.validated().nightMaxBPM, 40)

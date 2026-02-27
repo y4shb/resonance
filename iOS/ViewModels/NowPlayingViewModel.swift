@@ -87,6 +87,9 @@ final class NowPlayingViewModel: ObservableObject {
     /// Guards against triggering auto-advance more than once per song.
     private var hasTriggeredAutoAdvance: Bool = false
 
+    /// Guards against auto-advance triggering during a user seek operation.
+    private var isSeeking: Bool = false
+
     private var cancellables = Set<AnyCancellable>()
     private var progressTimer: Timer?
 
@@ -271,6 +274,8 @@ final class NowPlayingViewModel: ObservableObject {
         hasTriggeredAutoAdvance = false
         // Clear cached artwork so the new song's artwork gets fetched
         cachedWatchArtworkData = nil
+        // Clear stale explanation from the previous song
+        currentExplanation = nil
 
         guard let entry = entry else {
             currentSong = .placeholder
@@ -362,8 +367,9 @@ final class NowPlayingViewModel: ObservableObject {
         // Auto-advance: when the song is near its end, trigger AI selection for the next song
         if aiAutoAdvanceEnabled
             && !hasTriggeredAutoAdvance
+            && !isSeeking
             && duration > 0
-            && playbackProgress > 0.95
+            && playbackProgress > 0.99
             && activePlaylistId != nil
             && decisionEngine != nil {
             hasTriggeredAutoAdvance = true
@@ -428,9 +434,15 @@ final class NowPlayingViewModel: ObservableObject {
         }
     }
 
+    /// Marks the start of a user seek operation (prevents auto-advance during seek).
+    func seekStarted() {
+        isSeeking = true
+    }
+
     /// Seeks to a specific progress position (0.0 to 1.0).
     func seek(to progress: Double) {
         errorMessage = nil
+        isSeeking = false
         guard duration > 0 else { return }
         let targetTime = progress * duration
         ApplicationMusicPlayer.shared.playbackTime = targetTime

@@ -153,7 +153,7 @@ extension UserPreferences {
         copy.avoidRecentMinutes = max(0, min(480, copy.avoidRecentMinutes))
         copy.maxSameArtistInRow = max(1, min(10, copy.maxSameArtistInRow))
         copy.morningMaxBPM = max(60, min(200, copy.morningMaxBPM))
-        copy.nightMaxBPM = max(40, min(150, copy.nightMaxBPM))
+        copy.nightMaxBPM = max(40, min(200, copy.nightMaxBPM))
         copy.nightStartHour = max(18, min(23, copy.nightStartHour))
         copy.morningEndHour = max(5, min(12, copy.morningEndHour))
         copy.skipPenaltyWeight = max(0, min(1, copy.skipPenaltyWeight))

@@ -67,6 +67,8 @@ final class ResponseCreditCalculatorTests: XCTestCase {
         let result = ResponseCreditCalculator.calculate(
             hrvDelta: 10.0,  // Significant positive HRV change
             hrDelta: -5.0,   // Slight HR decrease
+            hrAtStart: 70.0,
+            hrvAtStart: 40.0,
             listenPercentage: 0.95,
             wasSkipped: false
         )

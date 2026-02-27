@@ -49,12 +49,16 @@ struct ResponseCreditCalculator {
     static func calculate(
         hrvDelta: Double,
         hrDelta: Double,
+        hrAtStart: Double = 0,
+        hrvAtStart: Double = 0,
         listenPercentage: Double,
         wasSkipped: Bool,
         preferences: UserPreferences = .load()
     ) -> ResponseResult {
-        let hasHRV = abs(hrvDelta) > 0.001
-        let hasHR = abs(hrDelta) > 0.001
+        // Determine biometric availability from start values, not deltas.
+        // A delta of 0.0 is valid data meaning "no change", not "no data".
+        let hasHRV = hrvAtStart > 0.0
+        let hasHR = hrAtStart > 0.0
         let hasBiometricData = hasHRV || hasHR
 
         // Normalize biometric deltas using constants from plan.md

@@ -80,7 +80,10 @@ final class StateEngine: ObservableObject {
     }
 
     deinit {
-        updateTimer?.invalidate()
+        let timer = updateTimer
+        DispatchQueue.main.async {
+            timer?.invalidate()
+        }
     }
 
     // MARK: - Lifecycle
@@ -178,7 +181,10 @@ final class StateEngine: ObservableObject {
             isWeekend: context.isWeekend
         )
 
-        // 4. Synthesize full StateVector
+        // 4. Save previous state before synthesizing (so inferMusicNeed sees correct previous)
+        previousState = currentState
+
+        // 5. Synthesize full StateVector
         let state = synthesizeStateVector(
             arousal: arousalResult,
             stress: stressResult,
@@ -188,8 +194,7 @@ final class StateEngine: ObservableObject {
             timeSlot: context.timeSlot
         )
 
-        // 5. Publish
-        previousState = currentState
+        // 6. Publish
         currentState = state
 
         logDebug(

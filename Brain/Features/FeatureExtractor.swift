@@ -109,7 +109,7 @@ final class FeatureExtractor {
         // Derived scores
         let bpmNormalized = min(max((bpm - 60.0) / 120.0, 0.0), 1.0)
         song.calmScore = (1.0 - energy) * 0.5 + (1.0 - bpmNormalized) * 0.3 + instrumentalness * 0.2
-        song.focusScore = instrumentalness * 0.4 + (1.0 - energy) * 0.3 + acousticDensity * 0.3
+        song.focusScore = instrumentalness * 0.4 + (1.0 - energy) * 0.3 + (1.0 - acousticDensity) * 0.3
         song.activationScore = energy * 0.5 + bpmNormalized * 0.3 + valence * 0.2
 
         logDebug(
@@ -169,7 +169,7 @@ final class FeatureExtractor {
         guard let category = genreCategory else { return 0.5 }
         let genreEnergy = FeatureExtractor.genreEnergy[category] ?? 0.5
         // Factor in BPM: higher BPM tends to increase perceived energy
-        let bpmFactor = min(max((bpm - 60.0) / 140.0, 0.0), 1.0)
+        let bpmFactor = min(max((bpm - 60.0) / 120.0, 0.0), 1.0)
         return genreEnergy * 0.7 + bpmFactor * 0.3
     }
 

@@ -95,8 +95,10 @@ final class RealTimeGuardAdjuster: ObservableObject {
     ///   - heartRate: Current heart rate
     ///   - currentNeed: The current music need from StateEngine
     func recordHeartRate(_ heartRate: Double, currentNeed: MusicNeed?) {
-        // Initialize baseline
-        if heartRateBaseline == nil {
+        // Initialize or update baseline via EMA (alpha=0.1 for slow adaptation)
+        if let baseline = heartRateBaseline {
+            heartRateBaseline = baseline * 0.9 + heartRate * 0.1
+        } else {
             heartRateBaseline = heartRate
         }
 
@@ -134,8 +136,16 @@ final class RealTimeGuardAdjuster: ObservableObject {
 
     /// Record a non-skip (full listen) to decay skip tracking.
     func recordFullListen() {
-        // Successful listen reduces skip pressure
-        recentSkipCount = max(0, recentSkipCount - 1)
+        // Prune expired entries first
+        let now = Date()
+        recentSkipWindow = recentSkipWindow.filter {
+            now.timeIntervalSince($0) < skipWindowSeconds
+        }
+        // Remove the oldest skip to reduce pressure on full listen
+        if !recentSkipWindow.isEmpty {
+            recentSkipWindow.removeFirst()
+        }
+        recentSkipCount = recentSkipWindow.count
     }
 
     /// Get BPM adjustment for the next song selection.

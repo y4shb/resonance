@@ -117,57 +117,58 @@ public enum AppCategory: String, Codable, CaseIterable, Sendable {
     public static func categorize(bundleId: String?) -> AppCategory {
         guard let bundleId = bundleId?.lowercased() else { return .unknown }
 
-        let mappings: [String: AppCategory] = [
-            // Development
-            "xcode": .development,
-            "com.apple.dt.xcode": .development,
-            "vscode": .development,
-            "com.microsoft.vscode": .development,
-            "terminal": .development,
-            "com.apple.terminal": .development,
-            "iterm": .development,
+        // Ordered array for deterministic matching; more specific matches first
+        let mappings: [(String, AppCategory)] = [
+            // Development (specific bundle IDs first)
+            ("com.apple.dt.xcode", .development),
+            ("com.microsoft.vscode", .development),
+            ("com.apple.terminal", .development),
+            ("xcode", .development),
+            ("vscode", .development),
+            ("terminal", .development),
+            ("iterm", .development),
 
             // Productivity
-            "pages": .productivity,
-            "numbers": .productivity,
-            "keynote": .productivity,
-            "word": .productivity,
-            "excel": .productivity,
-            "notion": .productivity,
+            ("pages", .productivity),
+            ("numbers", .productivity),
+            ("keynote", .productivity),
+            ("word", .productivity),
+            ("excel", .productivity),
+            ("notion", .productivity),
 
             // Creative
-            "photoshop": .creative,
-            "illustrator": .creative,
-            "figma": .creative,
-            "sketch": .creative,
-            "logic": .creative,
-            "garageband": .creative,
-            "final cut": .creative,
+            ("photoshop", .creative),
+            ("illustrator", .creative),
+            ("figma", .creative),
+            ("sketch", .creative),
+            ("logic", .creative),
+            ("garageband", .creative),
+            ("final cut", .creative),
 
             // Communication
-            "mail": .communication,
-            "slack": .communication,
-            "zoom": .communication,
-            "teams": .communication,
-            "messages": .communication,
+            ("mail", .communication),
+            ("slack", .communication),
+            ("zoom", .communication),
+            ("teams", .communication),
+            ("messages", .communication),
 
             // Browsers
-            "safari": .browser,
-            "chrome": .browser,
-            "firefox": .browser,
-            "arc": .browser,
+            ("safari", .browser),
+            ("chrome", .browser),
+            ("firefox", .browser),
+            ("arc", .browser),
 
             // Entertainment
-            "music": .entertainment,
-            "spotify": .entertainment,
-            "netflix": .entertainment,
-            "youtube": .entertainment,
+            ("music", .entertainment),
+            ("spotify", .entertainment),
+            ("netflix", .entertainment),
+            ("youtube", .entertainment),
 
             // Social
-            "twitter": .social,
-            "facebook": .social,
-            "instagram": .social,
-            "discord": .social
+            ("twitter", .social),
+            ("facebook", .social),
+            ("instagram", .social),
+            ("discord", .social),
         ]
 
         for (keyword, category) in mappings {

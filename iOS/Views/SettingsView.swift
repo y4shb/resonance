@@ -421,7 +421,7 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                         .monospacedDigit()
                 }
-                Slider(value: $preferences.nightMaxBPM, in: 40...150, step: 5) { editing in
+                Slider(value: $preferences.nightMaxBPM, in: 40...200, step: 5) { editing in
                     if !editing {
                         savePreferences()
                     }
@@ -504,13 +504,15 @@ struct SettingsView: View {
                     savePreferences()
                 }
 
-            Link(destination: URL(string: "https://resonance.app/privacy")!) {
-                HStack {
-                    Text("Privacy Policy")
-                    Spacer()
-                    Image(systemName: "arrow.up.right.square")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+            if let privacyURL = URL(string: "https://resonance.app/privacy") {
+                Link(destination: privacyURL) {
+                    HStack {
+                        Text("Privacy Policy")
+                        Spacer()
+                        Image(systemName: "arrow.up.right.square")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
         } header: {
@@ -543,13 +545,15 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
-            Link(destination: URL(string: "mailto:support@resonance.app")!) {
-                HStack {
-                    Text("Contact Support")
-                    Spacer()
-                    Image(systemName: "envelope")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+            if let supportURL = URL(string: "mailto:support@resonance.app") {
+                Link(destination: supportURL) {
+                    HStack {
+                        Text("Contact Support")
+                        Spacer()
+                        Image(systemName: "envelope")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
         } header: {

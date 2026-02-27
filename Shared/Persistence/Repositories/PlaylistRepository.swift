@@ -125,15 +125,17 @@ final class PlaylistRepository {
             NSSortDescriptor(key: "lastPlayedAt", ascending: false)
         ]
 
-        do {
-            return try persistence.viewContext.fetch(request)
-        } catch {
-            logError(
-                "Failed to fetch all playlists",
-                error: error,
-                category: .persistence
-            )
-            return []
+        return persistence.viewContext.performAndWait {
+            do {
+                return try persistence.viewContext.fetch(request)
+            } catch {
+                logError(
+                    "Failed to fetch all playlists",
+                    error: error,
+                    category: .persistence
+                )
+                return []
+            }
         }
     }
 
@@ -148,15 +150,17 @@ final class PlaylistRepository {
         )
         request.fetchLimit = 1
 
-        do {
-            return try persistence.viewContext.fetch(request).first
-        } catch {
-            logError(
-                "Failed to find playlist with appleMusicId '\(appleMusicId)'",
-                error: error,
-                category: .persistence
-            )
-            return nil
+        return persistence.viewContext.performAndWait {
+            do {
+                return try persistence.viewContext.fetch(request).first
+            } catch {
+                logError(
+                    "Failed to find playlist with appleMusicId '\(appleMusicId)'",
+                    error: error,
+                    category: .persistence
+                )
+                return nil
+            }
         }
     }
 
@@ -179,15 +183,17 @@ final class PlaylistRepository {
             NSSortDescriptor(key: "name", ascending: true)
         ]
 
-        do {
-            return try persistence.viewContext.fetch(request)
-        } catch {
-            logError(
-                "Failed to search playlists for query '\(query)'",
-                error: error,
-                category: .persistence
-            )
-            return []
+        return persistence.viewContext.performAndWait {
+            do {
+                return try persistence.viewContext.fetch(request)
+            } catch {
+                logError(
+                    "Failed to search playlists for query '\(query)'",
+                    error: error,
+                    category: .persistence
+                )
+                return []
+            }
         }
     }
 

@@ -176,10 +176,38 @@ final class DecisionEngine: ObservableObject {
         }
 
         // 3. Score all remaining candidates
-        let scores = songScorer.scoreAllCandidates(
+        var scores = songScorer.scoreAllCandidates(
             filterResult.accepted,
             context: decisionContext
         )
+
+        // Apply familiarity boost from guard adjuster (if active)
+        if let adjuster = guardAdjuster, adjuster.hasActiveAdjustments {
+            let boost = adjuster.familiarityBoost
+            if boost > 0 {
+                scores = scores.map { score in
+                    let adjustedFinalScore = score.finalScore + score.familiarityScore * boost
+                    return SongScore(
+                        songId: score.songId,
+                        songTitle: score.songTitle,
+                        artistName: score.artistName,
+                        albumName: score.albumName,
+                        bpm: score.bpm,
+                        bpmMatchScore: score.bpmMatchScore,
+                        energyMatchScore: score.energyMatchScore,
+                        familiarityScore: score.familiarityScore,
+                        historicalEffectScore: score.historicalEffectScore,
+                        contextAlignmentScore: score.contextAlignmentScore,
+                        recencyPenalty: score.recencyPenalty,
+                        timeOfDayScore: score.timeOfDayScore,
+                        finalScore: adjustedFinalScore,
+                        confidence: score.confidence,
+                        explanationComponents: score.explanationComponents
+                    )
+                }.sorted { $0.finalScore > $1.finalScore }
+            }
+        }
+
         let lastPlayedSong = fetchLastPlayedSong(in: context)
 
         guard !scores.isEmpty else {
@@ -212,7 +240,7 @@ final class DecisionEngine: ObservableObject {
             songId: selectedScore.songId,
             score: selectedScore,
             explanation: explanation,
-            candidatesConsidered: filterResult.acceptedCount,
+            candidatesConsidered: filterResult.totalCandidates,
             candidatesFiltered: filterResult.rejected.count
         )
 
@@ -275,6 +303,21 @@ final class DecisionEngine: ObservableObject {
         sessionSongIds.append(songId)
         recentlyPlayed[songId] = Date()
         sessionArtists.append(artistName)
+        trimSessionData()
+    }
+
+    /// Prevents session tracking arrays from growing unbounded in long sessions.
+    private func trimSessionData() {
+        let maxEntries = 500
+        if sessionSongIds.count > maxEntries {
+            sessionSongIds = Array(sessionSongIds.suffix(maxEntries))
+        }
+        if sessionArtists.count > maxEntries {
+            sessionArtists = Array(sessionArtists.suffix(maxEntries))
+        }
+        // Prune recentlyPlayed entries older than 16 hours
+        let cutoff = Date().addingTimeInterval(-960.0 * 60.0)
+        recentlyPlayed = recentlyPlayed.filter { $0.value > cutoff }
     }
 
     /// Fallback selection when all candidates are filtered.

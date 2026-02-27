@@ -100,7 +100,7 @@ public struct SongScore: Identifiable, Comparable, Sendable {
     }
 
     public static func == (lhs: SongScore, rhs: SongScore) -> Bool {
-        lhs.id == rhs.id
+        lhs.finalScore == rhs.finalScore
     }
 }
 

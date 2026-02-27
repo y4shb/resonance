@@ -32,6 +32,7 @@ final class ContextBroadcaster: ObservableObject {
     private var lastFailedSignal: MacOSContextSignal?
     private var isRunning = false
     private var activeSaveCount = 0
+    private var activeRetryTask: Task<Void, Never>?
 
     // CloudKit
     private lazy var container = CKContainer(identifier: "iCloud.com.y4sh.resonance")
@@ -52,6 +53,7 @@ final class ContextBroadcaster: ObservableObject {
 
     deinit {
         broadcastTimer?.invalidate()
+        activeRetryTask?.cancel()
     }
 
     // MARK: - Lifecycle
@@ -88,6 +90,8 @@ final class ContextBroadcaster: ObservableObject {
         isRunning = false
         broadcastTimer?.invalidate()
         broadcastTimer = nil
+        activeRetryTask?.cancel()
+        activeRetryTask = nil
         focusModeProvider.stopMonitoring()
         activeAppProvider.stopMonitoring()
         calendarProvider.stopMonitoring()
@@ -198,8 +202,10 @@ final class ContextBroadcaster: ObservableObject {
                     if attempt < maxAttempts {
                         logInfo("Retrying failed context broadcast (attempt \(attempt + 1)/\(maxAttempts))", category: .macOSContext)
                         let delaySeconds = pow(2.0, Double(attempt - 1)) // 1s, 2s, 4s
-                        Task {
+                        self?.activeRetryTask?.cancel()
+                        self?.activeRetryTask = Task { [weak self] in
                             try? await Task.sleep(nanoseconds: UInt64(delaySeconds * 1_000_000_000))
+                            guard !Task.isCancelled else { return }
                             await MainActor.run {
                                 self?.saveSignalToCloudKit(signal, attempt: attempt + 1, maxAttempts: maxAttempts)
                             }

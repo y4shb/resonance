@@ -144,6 +144,12 @@ public final class HealthKitService: HealthKitServiceProtocol, ObservableObject 
 
     private let healthStore = HKHealthStore()
 
+    /// Tracks all running HKQueries so they can be stopped on deinit.
+    private var runningQueries: [HKQuery] = []
+
+    /// Lock to protect access to runningQueries and heartRateStream initialization.
+    private let lock = NSLock()
+
     /// The set of HKSampleType values this service requests read access to.
     private let readTypes: Set<HKObjectType> = {
         var types = Set<HKObjectType>()
@@ -188,10 +194,99 @@ public final class HealthKitService: HealthKitServiceProtocol, ObservableObject 
     /// HRV unit: milliseconds
     private let hrvUnit = HKUnit.secondUnit(with: .milli)
 
+    // MARK: - Heart Rate Stream (thread-safe lazy initialization)
+
+    private var _heartRateStream: AsyncStream<Double>?
+
+    public var heartRateStream: AsyncStream<Double> {
+        lock.lock()
+        defer { lock.unlock() }
+
+        if let existing = _heartRateStream {
+            return existing
+        }
+
+        let stream = AsyncStream<Double> { [weak self] continuation in
+            guard let self = self else {
+                continuation.finish()
+                return
+            }
+
+            logDebug("Starting heart rate AsyncStream via anchored object query", category: .healthKit)
+
+            let updateHandler: (HKAnchoredObjectQuery, [HKSample]?, [HKDeletedObject]?, HKQueryAnchor?, Error?) -> Void
+            updateHandler = { [weak self] _, samples, _, _, error in
+                guard let self = self else { return }
+                if let error = error {
+                    logError("Heart rate stream query error", error: error, category: .healthKit)
+                    continuation.finish()
+                    return
+                }
+                guard let quantitySamples = samples as? [HKQuantitySample] else { return }
+                for sample in quantitySamples {
+                    let bpm = sample.quantity.doubleValue(for: self.heartRateUnit)
+                    logDebug("Heart rate stream emitting: \(bpm) BPM", category: .healthKit)
+                    continuation.yield(bpm)
+                }
+            }
+
+            let startDate = Date().addingTimeInterval(-3600) // Last hour
+            let predicate = HKQuery.predicateForSamples(withStart: startDate, end: nil, options: .strictStartDate)
+
+            let query = HKAnchoredObjectQuery(
+                type: self.heartRateType,
+                predicate: predicate,
+                anchor: nil,
+                limit: HKObjectQueryNoLimit,
+                resultsHandler: updateHandler
+            )
+            query.updateHandler = updateHandler
+
+            self.trackQuery(query)
+            self.healthStore.execute(query)
+
+            continuation.onTermination = { [weak self] _ in
+                logDebug("Heart rate stream terminated — stopping anchored object query", category: .healthKit)
+                self?.healthStore.stop(query)
+                self?.untrackQuery(query)
+            }
+        }
+
+        _heartRateStream = stream
+        return stream
+    }
+
     // MARK: - Initialization
 
     public init() {
         logInfo("HealthKitService initializing", category: .healthKit)
+    }
+
+    deinit {
+        // Stop all running queries to prevent them from continuing after deallocation.
+        lock.lock()
+        let queries = runningQueries
+        runningQueries.removeAll()
+        lock.unlock()
+
+        for query in queries {
+            healthStore.stop(query)
+        }
+        logInfo("HealthKitService deallocated — stopped \(queries.count) running queries", category: .healthKit)
+    }
+
+    // MARK: - Query Tracking
+
+    private func trackQuery(_ query: HKQuery) {
+        lock.lock()
+        defer { lock.unlock() }
+        runningQueries.append(query)
+    }
+
+    private func untrackQuery(_ query: HKQuery) {
+        lock.lock()
+        defer { lock.unlock() }
+        runningQueries.removeAll { $0 === query }
     }
 
     // MARK: - Authorization
@@ -380,54 +475,6 @@ public final class HealthKitService: HealthKitServiceProtocol, ObservableObject 
             }
         }
     }
-
-    // MARK: - Heart Rate Stream
-
-    public lazy var heartRateStream: AsyncStream<Double> = {
-        AsyncStream<Double> { [weak self] continuation in
-            guard let self = self else {
-                continuation.finish()
-                return
-            }
-
-            logDebug("Starting heart rate AsyncStream via anchored object query", category: .healthKit)
-
-            let updateHandler: (HKAnchoredObjectQuery, [HKSample]?, [HKDeletedObject]?, HKQueryAnchor?, Error?) -> Void
-            updateHandler = { [weak self] _, samples, _, _, error in
-                guard let self = self else { return }
-                if let error = error {
-                    logError("Heart rate stream query error", error: error, category: .healthKit)
-                    continuation.finish()
-                    return
-                }
-                guard let quantitySamples = samples as? [HKQuantitySample] else { return }
-                for sample in quantitySamples {
-                    let bpm = sample.quantity.doubleValue(for: self.heartRateUnit)
-                    logDebug("Heart rate stream emitting: \(bpm) BPM", category: .healthKit)
-                    continuation.yield(bpm)
-                }
-            }
-
-            let startDate = Date().addingTimeInterval(-3600) // Last hour
-            let predicate = HKQuery.predicateForSamples(withStart: startDate, end: nil, options: .strictStartDate)
-
-            let query = HKAnchoredObjectQuery(
-                type: self.heartRateType,
-                predicate: predicate,
-                anchor: nil,
-                limit: HKObjectQueryNoLimit,
-                resultsHandler: updateHandler
-            )
-            query.updateHandler = updateHandler
-
-            self.healthStore.execute(query)
-
-            continuation.onTermination = { [weak self] _ in
-                logDebug("Heart rate stream terminated — stopping anchored object query", category: .healthKit)
-                self?.healthStore.stop(query)
-            }
-        }
-    }()
 
     // MARK: - Sleep Analysis
 
