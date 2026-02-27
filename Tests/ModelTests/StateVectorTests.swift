@@ -119,6 +119,88 @@ final class StateVectorTests: XCTestCase {
         let b = StateVector(energy: 0.7)
         XCTAssertNotEqual(a, b)
     }
+
+    // MARK: - Additional Dominant Characteristic Tests
+
+    func test_dominantCharacteristic_alert() {
+        let state = StateVector(
+            arousal: 0.95,
+            energy: 0.3,
+            focus: 0.3,
+            stress: 0.4,
+            valence: 0.3
+        )
+        XCTAssertEqual(state.dominantCharacteristic, "Alert")
+    }
+
+    func test_dominantCharacteristic_positive() {
+        let state = StateVector(
+            arousal: 0.3,
+            energy: 0.3,
+            focus: 0.3,
+            stress: 0.4,
+            valence: 0.95
+        )
+        XCTAssertEqual(state.dominantCharacteristic, "Positive")
+    }
+
+    func test_dominantCharacteristic_neutralState_isDeterministic() {
+        // All dimensions at 0.5 — Relaxed is also 1.0 - 0.5 = 0.5
+        // All characteristics are equal; verify it returns a deterministic result
+        let state = StateVector(
+            arousal: 0.5,
+            energy: 0.5,
+            focus: 0.5,
+            stress: 0.5,
+            valence: 0.5
+        )
+        let result = state.dominantCharacteristic
+        XCTAssertFalse(result.isEmpty, "dominantCharacteristic should never be empty")
+
+        // Verify determinism: calling it again yields the same value
+        let resultAgain = state.dominantCharacteristic
+        XCTAssertEqual(result, resultAgain, "dominantCharacteristic should be deterministic for neutral state")
+    }
+
+    // MARK: - StateVector Custom DataSources
+
+    func test_customDataSources_areStored() {
+        let sources: Set<DataSource> = [.heartRate, .motion, .hrv]
+        let state = StateVector(dataSources: sources)
+        XCTAssertEqual(state.dataSources, sources)
+        XCTAssertTrue(state.dataSources.contains(.heartRate))
+        XCTAssertTrue(state.dataSources.contains(.motion))
+        XCTAssertTrue(state.dataSources.contains(.hrv))
+        XCTAssertEqual(state.dataSources.count, 3)
+    }
+
+    // MARK: - StateVector Timestamp
+
+    func test_timestamp_isSetCorrectly() {
+        let specificDate = Date(timeIntervalSince1970: 1_000_000)
+        let state = StateVector(timestamp: specificDate)
+        XCTAssertEqual(state.timestamp, specificDate)
+    }
+
+    func test_timestamp_defaultIsNow() {
+        let before = Date()
+        let state = StateVector()
+        let after = Date()
+        XCTAssertGreaterThanOrEqual(state.timestamp, before)
+        XCTAssertLessThanOrEqual(state.timestamp, after)
+    }
+
+    // MARK: - StateVector Confidence Boundaries
+
+    func test_confidence_zeroValue() {
+        let state = StateVector(confidence: 0.0)
+        XCTAssertEqual(state.confidence, 0.0)
+    }
+
+    func test_confidence_oneValue() {
+        let state = StateVector(confidence: 1.0)
+        XCTAssertEqual(state.confidence, 1.0)
+    }
 }
 
 // MARK: - ActivityContext Tests
@@ -154,6 +236,14 @@ final class ActivityContextTests: XCTestCase {
     func test_rawValues_areNonEmpty() {
         for context in ActivityContext.allCases {
             XCTAssertFalse(context.rawValue.isEmpty, "\(context) should have a non-empty rawValue")
+        }
+    }
+
+    func test_codableRoundTrip() throws {
+        for context in ActivityContext.allCases {
+            let encoded = try JSONEncoder().encode(context)
+            let decoded = try JSONDecoder().decode(ActivityContext.self, from: encoded)
+            XCTAssertEqual(decoded, context, "\(context) should survive Codable round-trip")
         }
     }
 }
@@ -197,6 +287,25 @@ final class MusicNeedTests: XCTestCase {
             XCTAssertFalse(need.displayName.isEmpty, "\(need) should have a non-empty displayName")
         }
     }
+
+    func test_description_containsMeaningfulText() {
+        // Verify each description contains more than just the raw case name
+        for need in MusicNeed.allCases {
+            let desc = need.description
+            XCTAssertNotEqual(desc, need.rawValue,
+                "\(need).description should contain meaningful text, not just the rawValue")
+            XCTAssertGreaterThan(desc.count, need.rawValue.count,
+                "\(need).description should be longer than just the rawValue")
+        }
+    }
+
+    func test_codableRoundTrip() throws {
+        for need in MusicNeed.allCases {
+            let encoded = try JSONEncoder().encode(need)
+            let decoded = try JSONDecoder().decode(MusicNeed.self, from: encoded)
+            XCTAssertEqual(decoded, need, "\(need) should survive Codable round-trip")
+        }
+    }
 }
 
 // MARK: - DataSource Tests
@@ -219,5 +328,99 @@ final class DataSourceTests: XCTestCase {
 
     func test_displayName_crownInput() {
         XCTAssertEqual(DataSource.crownInput.displayName, "Crown Input")
+    }
+}
+
+// MARK: - TimeSlot Tests
+
+final class TimeSlotTests: XCTestCase {
+
+    func test_suggestedMaxBPM_earlyMorning() {
+        XCTAssertEqual(TimeSlot.earlyMorning.suggestedMaxBPM, 100)
+    }
+
+    func test_suggestedMaxBPM_morning() {
+        XCTAssertEqual(TimeSlot.morning.suggestedMaxBPM, 130)
+    }
+
+    func test_suggestedMaxBPM_midday() {
+        XCTAssertEqual(TimeSlot.midday.suggestedMaxBPM, 140)
+    }
+
+    func test_suggestedMaxBPM_afternoon() {
+        XCTAssertEqual(TimeSlot.afternoon.suggestedMaxBPM, 140)
+    }
+
+    func test_suggestedMaxBPM_evening() {
+        XCTAssertEqual(TimeSlot.evening.suggestedMaxBPM, 120)
+    }
+
+    func test_suggestedMaxBPM_night() {
+        XCTAssertEqual(TimeSlot.night.suggestedMaxBPM, 90)
+    }
+
+    func test_suggestedMaxBPM_unknown() {
+        XCTAssertEqual(TimeSlot.unknown.suggestedMaxBPM, 120)
+    }
+
+    func test_allCases_existAndHaveSuggestedMaxBPM() {
+        // TimeSlot has 7 cases
+        XCTAssertEqual(TimeSlot.allCases.count, 7)
+
+        for slot in TimeSlot.allCases {
+            XCTAssertGreaterThan(slot.suggestedMaxBPM, 0,
+                "\(slot) should have a positive suggestedMaxBPM")
+        }
+    }
+
+    func test_rawValue_roundTrip() {
+        for slot in TimeSlot.allCases {
+            let rawValue = slot.rawValue
+            let reconstructed = TimeSlot(rawValue: rawValue)
+            XCTAssertNotNil(reconstructed, "\(slot) rawValue '\(rawValue)' should produce a valid TimeSlot")
+            XCTAssertEqual(reconstructed, slot, "\(slot) should survive rawValue round-trip")
+        }
+    }
+
+    func test_initFromHour_earlyMorning() {
+        for hour in 5..<9 {
+            XCTAssertEqual(TimeSlot(hour: hour), .earlyMorning,
+                "Hour \(hour) should map to earlyMorning")
+        }
+    }
+
+    func test_initFromHour_morning() {
+        for hour in 9..<12 {
+            XCTAssertEqual(TimeSlot(hour: hour), .morning,
+                "Hour \(hour) should map to morning")
+        }
+    }
+
+    func test_initFromHour_midday() {
+        for hour in 12..<14 {
+            XCTAssertEqual(TimeSlot(hour: hour), .midday,
+                "Hour \(hour) should map to midday")
+        }
+    }
+
+    func test_initFromHour_afternoon() {
+        for hour in 14..<17 {
+            XCTAssertEqual(TimeSlot(hour: hour), .afternoon,
+                "Hour \(hour) should map to afternoon")
+        }
+    }
+
+    func test_initFromHour_evening() {
+        for hour in 17..<21 {
+            XCTAssertEqual(TimeSlot(hour: hour), .evening,
+                "Hour \(hour) should map to evening")
+        }
+    }
+
+    func test_initFromHour_night() {
+        for hour in [21, 22, 23, 0, 1, 2, 3, 4] {
+            XCTAssertEqual(TimeSlot(hour: hour), .night,
+                "Hour \(hour) should map to night")
+        }
     }
 }

@@ -408,9 +408,10 @@ final class NowPlayingViewModel: ObservableObject {
         hasTriggeredAutoAdvance = true  // Prevent auto-advance from also firing
         Task {
             do {
+                try await musicService.skipToNext()
+                // Log after successful skip — if skip fails, the current song is still playing
                 eventLogger?.logPlaybackEnd(wasSkipped: true, skipReason: "manual_skip", currentHeartRate: nil, currentHRV: nil)
                 guardAdjuster?.recordSkip()
-                try await musicService.skipToNext()
             } catch {
                 logError("Skip failed", error: error, category: .musicKit)
                 errorMessage = error.localizedDescription
@@ -424,9 +425,10 @@ final class NowPlayingViewModel: ObservableObject {
         hasTriggeredAutoAdvance = true  // Prevent auto-advance from also firing
         Task {
             do {
+                try await musicService.skipToPrevious()
+                // Log after successful previous — if it fails, the current song is still playing
                 eventLogger?.logPlaybackEnd(wasSkipped: true, skipReason: "manual_previous", currentHeartRate: nil, currentHRV: nil)
                 guardAdjuster?.recordSkip()
-                try await musicService.skipToPrevious()
             } catch {
                 logError("Previous failed", error: error, category: .musicKit)
                 errorMessage = error.localizedDescription

@@ -279,7 +279,7 @@ struct HealthKitPermissionPage: View {
     @State private var isRequesting = false
     @State private var healthKitAvailable = HKHealthStore.isHealthDataAvailable()
 
-    private let healthStore = HKHealthStore()
+    private static let healthStore = HKHealthStore()
 
     var body: some View {
         ScrollView {
@@ -404,7 +404,7 @@ struct HealthKitPermissionPage: View {
         Task {
             do {
                 let readTypes = healthKitReadTypes()
-                try await healthStore.requestAuthorization(toShare: [], read: readTypes)
+                try await Self.healthStore.requestAuthorization(toShare: [], read: readTypes)
 
                 await MainActor.run {
                     isRequesting = false

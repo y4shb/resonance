@@ -217,4 +217,444 @@ final class WatchMessagesTests: XCTestCase {
         XCTAssertNotNil(WatchMessageError.decodingFailed.errorDescription)
         XCTAssertNotNil(WatchMessageError.unknownMessageType.errorDescription)
     }
+
+    // MARK: - BiometricPacket Edge Cases
+
+    func test_biometricUpdate_workoutActive_roundTrip() throws {
+        let packet = BiometricPacket(
+            heartRate: 145.0,
+            hrv: 28.0,
+            isStationary: false,
+            isInWorkout: true,
+            workoutType: "running",
+            timestamp: Date()
+        )
+        let message = WatchMessage.biometricUpdate(packet)
+
+        let dict = try message.toDictionary()
+        let decoded = try WatchMessage.fromDictionary(dict)
+
+        if case .biometricUpdate(let decodedPacket) = decoded {
+            XCTAssertEqual(decodedPacket.heartRate, 145.0)
+            XCTAssertEqual(decodedPacket.hrv, 28.0)
+            XCTAssertFalse(decodedPacket.isStationary)
+            XCTAssertTrue(decodedPacket.isInWorkout)
+            XCTAssertEqual(decodedPacket.workoutType, "running")
+        } else {
+            XCTFail("Expected biometricUpdate case")
+        }
+    }
+
+    func test_biometricUpdate_nilHeartRateAndHrv_roundTrip() throws {
+        let packet = BiometricPacket(
+            heartRate: nil,
+            hrv: nil,
+            isStationary: true,
+            isInWorkout: false,
+            workoutType: nil,
+            timestamp: Date()
+        )
+        let message = WatchMessage.biometricUpdate(packet)
+
+        let dict = try message.toDictionary()
+        let decoded = try WatchMessage.fromDictionary(dict)
+
+        if case .biometricUpdate(let decodedPacket) = decoded {
+            XCTAssertNil(decodedPacket.heartRate)
+            XCTAssertNil(decodedPacket.hrv)
+            XCTAssertTrue(decodedPacket.isStationary)
+            XCTAssertFalse(decodedPacket.isInWorkout)
+            XCTAssertNil(decodedPacket.workoutType)
+        } else {
+            XCTFail("Expected biometricUpdate case")
+        }
+    }
+
+    // MARK: - NowPlayingPacket Edge Cases
+
+    func test_nowPlayingUpdate_withArtworkData_roundTrip() throws {
+        let artwork = Data([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])
+        let packet = NowPlayingPacket(
+            songTitle: "Song With Art",
+            artistName: "Artist",
+            artworkData: artwork,
+            isPlaying: true,
+            progress: 0.5,
+            duration: 180,
+            explanation: "Matching tempo"
+        )
+        let message = WatchMessage.nowPlayingUpdate(packet)
+
+        let dict = try message.toDictionary()
+        let decoded = try WatchMessage.fromDictionary(dict)
+
+        if case .nowPlayingUpdate(let decodedPacket) = decoded {
+            XCTAssertEqual(decodedPacket.songTitle, "Song With Art")
+            XCTAssertEqual(decodedPacket.artistName, "Artist")
+            XCTAssertNotNil(decodedPacket.artworkData)
+            XCTAssertEqual(decodedPacket.artworkData, artwork)
+            XCTAssertTrue(decodedPacket.isPlaying)
+            XCTAssertEqual(decodedPacket.progress, 0.5, accuracy: 0.001)
+            XCTAssertEqual(decodedPacket.duration, 180, accuracy: 0.1)
+            XCTAssertEqual(decodedPacket.explanation, "Matching tempo")
+        } else {
+            XCTFail("Expected nowPlayingUpdate case")
+        }
+    }
+
+    func test_nowPlayingUpdate_nilExplanation_roundTrip() throws {
+        let packet = NowPlayingPacket(
+            songTitle: "No Explanation Song",
+            artistName: "Unknown Artist",
+            artworkData: nil,
+            isPlaying: false,
+            progress: 0.0,
+            duration: 300,
+            explanation: nil
+        )
+        let message = WatchMessage.nowPlayingUpdate(packet)
+
+        let dict = try message.toDictionary()
+        let decoded = try WatchMessage.fromDictionary(dict)
+
+        if case .nowPlayingUpdate(let decodedPacket) = decoded {
+            XCTAssertEqual(decodedPacket.songTitle, "No Explanation Song")
+            XCTAssertEqual(decodedPacket.artistName, "Unknown Artist")
+            XCTAssertNil(decodedPacket.artworkData)
+            XCTAssertFalse(decodedPacket.isPlaying)
+            XCTAssertEqual(decodedPacket.progress, 0.0, accuracy: 0.001)
+            XCTAssertEqual(decodedPacket.duration, 300, accuracy: 0.1)
+            XCTAssertNil(decodedPacket.explanation)
+        } else {
+            XCTFail("Expected nowPlayingUpdate case")
+        }
+    }
+
+    func test_nowPlayingUpdate_emptyStrings_roundTrip() throws {
+        let packet = NowPlayingPacket(
+            songTitle: "",
+            artistName: "",
+            artworkData: nil,
+            isPlaying: false,
+            progress: 0.0,
+            duration: 0,
+            explanation: ""
+        )
+        let message = WatchMessage.nowPlayingUpdate(packet)
+
+        let dict = try message.toDictionary()
+        let decoded = try WatchMessage.fromDictionary(dict)
+
+        if case .nowPlayingUpdate(let decodedPacket) = decoded {
+            XCTAssertEqual(decodedPacket.songTitle, "")
+            XCTAssertEqual(decodedPacket.artistName, "")
+            XCTAssertNil(decodedPacket.artworkData)
+            XCTAssertFalse(decodedPacket.isPlaying)
+            XCTAssertEqual(decodedPacket.progress, 0.0, accuracy: 0.001)
+            XCTAssertEqual(decodedPacket.duration, 0, accuracy: 0.1)
+            XCTAssertEqual(decodedPacket.explanation, "")
+        } else {
+            XCTFail("Expected nowPlayingUpdate case")
+        }
+    }
+
+    // MARK: - MoodPacket Boundary Values
+
+    func test_moodInput_boundaryLow_roundTrip() throws {
+        let packet = MoodPacket(
+            moodLevel: 1,
+            energyLevel: 1,
+            timestamp: Date()
+        )
+        let message = WatchMessage.moodInput(packet)
+
+        let dict = try message.toDictionary()
+        let decoded = try WatchMessage.fromDictionary(dict)
+
+        if case .moodInput(let decodedPacket) = decoded {
+            XCTAssertEqual(decodedPacket.moodLevel, 1)
+            XCTAssertEqual(decodedPacket.energyLevel, 1)
+        } else {
+            XCTFail("Expected moodInput case")
+        }
+    }
+
+    func test_moodInput_boundaryHigh_roundTrip() throws {
+        let packet = MoodPacket(
+            moodLevel: 5,
+            energyLevel: 5,
+            timestamp: Date()
+        )
+        let message = WatchMessage.moodInput(packet)
+
+        let dict = try message.toDictionary()
+        let decoded = try WatchMessage.fromDictionary(dict)
+
+        if case .moodInput(let decodedPacket) = decoded {
+            XCTAssertEqual(decodedPacket.moodLevel, 5)
+            XCTAssertEqual(decodedPacket.energyLevel, 5)
+        } else {
+            XCTFail("Expected moodInput case")
+        }
+    }
+
+    // MARK: - CrownAdjustment Edge Cases
+
+    func test_crownAdjustment_negativeDelta_roundTrip() throws {
+        let adjustment = CrownAdjustment(delta: -0.75, adjustmentType: "intensity")
+        let message = WatchMessage.crownAdjustment(adjustment)
+
+        let dict = try message.toDictionary()
+        let decoded = try WatchMessage.fromDictionary(dict)
+
+        if case .crownAdjustment(let decodedAdj) = decoded {
+            XCTAssertEqual(decodedAdj.delta, -0.75, accuracy: 0.001)
+            XCTAssertEqual(decodedAdj.adjustmentType, "intensity")
+        } else {
+            XCTFail("Expected crownAdjustment case")
+        }
+    }
+
+    func test_crownAdjustment_zeroDelta_roundTrip() throws {
+        let adjustment = CrownAdjustment(delta: 0.0, adjustmentType: "energy")
+        let message = WatchMessage.crownAdjustment(adjustment)
+
+        let dict = try message.toDictionary()
+        let decoded = try WatchMessage.fromDictionary(dict)
+
+        if case .crownAdjustment(let decodedAdj) = decoded {
+            XCTAssertEqual(decodedAdj.delta, 0.0, accuracy: 0.001)
+            XCTAssertEqual(decodedAdj.adjustmentType, "energy")
+        } else {
+            XCTFail("Expected crownAdjustment case")
+        }
+    }
+
+    // MARK: - StatePacket Edge Cases
+
+    func test_stateUpdate_nilHeartRateAndContext_roundTrip() throws {
+        let packet = StatePacket(
+            energyLevel: 0.5,
+            calmLevel: 0.5,
+            focusLevel: 0.5,
+            heartRate: nil,
+            currentContext: nil,
+            timestamp: Date()
+        )
+        let message = WatchMessage.stateUpdate(packet)
+
+        let dict = try message.toDictionary()
+        let decoded = try WatchMessage.fromDictionary(dict)
+
+        if case .stateUpdate(let decodedPacket) = decoded {
+            XCTAssertEqual(decodedPacket.energyLevel, 0.5, accuracy: 0.001)
+            XCTAssertEqual(decodedPacket.calmLevel, 0.5, accuracy: 0.001)
+            XCTAssertEqual(decodedPacket.focusLevel, 0.5, accuracy: 0.001)
+            XCTAssertNil(decodedPacket.heartRate)
+            XCTAssertNil(decodedPacket.currentContext)
+        } else {
+            XCTFail("Expected stateUpdate case")
+        }
+    }
+
+    // MARK: - ComplicationData Edge Cases
+
+    func test_complicationUpdate_nilAndEmptyFields_roundTrip() throws {
+        let data = ComplicationData(
+            songTitle: nil,
+            artistName: nil,
+            stateEmoji: "",
+            heartRate: nil,
+            isPlaying: false,
+            timestamp: Date()
+        )
+        let message = WatchMessage.complicationUpdate(data)
+
+        let dict = try message.toDictionary()
+        let decoded = try WatchMessage.fromDictionary(dict)
+
+        if case .complicationUpdate(let decodedData) = decoded {
+            XCTAssertNil(decodedData.songTitle)
+            XCTAssertNil(decodedData.artistName)
+            XCTAssertEqual(decodedData.stateEmoji, "")
+            XCTAssertNil(decodedData.heartRate)
+            XCTAssertFalse(decodedData.isPlaying)
+        } else {
+            XCTFail("Expected complicationUpdate case")
+        }
+    }
+
+    // MARK: - Timestamp Preservation
+
+    func test_biometricUpdate_timestampPreservation() throws {
+        let now = Date()
+        let packet = BiometricPacket(
+            heartRate: 80.0,
+            hrv: 50.0,
+            isStationary: false,
+            isInWorkout: false,
+            workoutType: nil,
+            timestamp: now
+        )
+        let message = WatchMessage.biometricUpdate(packet)
+
+        let dict = try message.toDictionary()
+        let decoded = try WatchMessage.fromDictionary(dict)
+
+        if case .biometricUpdate(let decodedPacket) = decoded {
+            let timeDifference = abs(decodedPacket.timestamp.timeIntervalSince(now))
+            XCTAssertLessThan(timeDifference, 1.0, "Decoded timestamp should be within 1 second of the original")
+        } else {
+            XCTFail("Expected biometricUpdate case")
+        }
+    }
+
+    func test_stateUpdate_timestampPreservation() throws {
+        let now = Date()
+        let packet = StatePacket(
+            energyLevel: 0.6,
+            calmLevel: 0.4,
+            focusLevel: 0.9,
+            heartRate: 72,
+            currentContext: "workout",
+            timestamp: now
+        )
+        let message = WatchMessage.stateUpdate(packet)
+
+        let dict = try message.toDictionary()
+        let decoded = try WatchMessage.fromDictionary(dict)
+
+        if case .stateUpdate(let decodedPacket) = decoded {
+            let timeDifference = abs(decodedPacket.timestamp.timeIntervalSince(now))
+            XCTAssertLessThan(timeDifference, 1.0, "Decoded timestamp should be within 1 second of the original")
+        } else {
+            XCTFail("Expected stateUpdate case")
+        }
+    }
+
+    func test_moodInput_timestampPreservation() throws {
+        let now = Date()
+        let packet = MoodPacket(
+            moodLevel: 3,
+            energyLevel: 2,
+            timestamp: now
+        )
+        let message = WatchMessage.moodInput(packet)
+
+        let dict = try message.toDictionary()
+        let decoded = try WatchMessage.fromDictionary(dict)
+
+        if case .moodInput(let decodedPacket) = decoded {
+            let timeDifference = abs(decodedPacket.timestamp.timeIntervalSince(now))
+            XCTAssertLessThan(timeDifference, 1.0, "Decoded timestamp should be within 1 second of the original")
+        } else {
+            XCTFail("Expected moodInput case")
+        }
+    }
+
+    // MARK: - Multiple Consecutive Encode/Decode Cycles
+
+    func test_biometricUpdate_multipleEncodeDecode_maintainsIntegrity() throws {
+        let original = BiometricPacket(
+            heartRate: 95.0,
+            hrv: 38.5,
+            isStationary: false,
+            isInWorkout: true,
+            workoutType: "cycling",
+            timestamp: Date()
+        )
+        var message = WatchMessage.biometricUpdate(original)
+
+        // Perform 3 consecutive encode/decode cycles
+        for _ in 0..<3 {
+            let dict = try message.toDictionary()
+            message = try WatchMessage.fromDictionary(dict)
+        }
+
+        if case .biometricUpdate(let finalPacket) = message {
+            XCTAssertEqual(finalPacket.heartRate, 95.0)
+            XCTAssertEqual(finalPacket.hrv, 38.5)
+            XCTAssertFalse(finalPacket.isStationary)
+            XCTAssertTrue(finalPacket.isInWorkout)
+            XCTAssertEqual(finalPacket.workoutType, "cycling")
+        } else {
+            XCTFail("Expected biometricUpdate case after multiple cycles")
+        }
+    }
+
+    func test_nowPlayingUpdate_multipleEncodeDecode_maintainsIntegrity() throws {
+        let artwork = Data([0xAA, 0xBB, 0xCC, 0xDD])
+        var message: WatchMessage = .nowPlayingUpdate(NowPlayingPacket(
+            songTitle: "Cycle Test",
+            artistName: "Encode Artist",
+            artworkData: artwork,
+            isPlaying: true,
+            progress: 0.33,
+            duration: 210,
+            explanation: "Multi-cycle test"
+        ))
+
+        for _ in 0..<3 {
+            let dict = try message.toDictionary()
+            message = try WatchMessage.fromDictionary(dict)
+        }
+
+        if case .nowPlayingUpdate(let finalPacket) = message {
+            XCTAssertEqual(finalPacket.songTitle, "Cycle Test")
+            XCTAssertEqual(finalPacket.artistName, "Encode Artist")
+            XCTAssertEqual(finalPacket.artworkData, artwork)
+            XCTAssertTrue(finalPacket.isPlaying)
+            XCTAssertEqual(finalPacket.progress, 0.33, accuracy: 0.001)
+            XCTAssertEqual(finalPacket.duration, 210, accuracy: 0.1)
+            XCTAssertEqual(finalPacket.explanation, "Multi-cycle test")
+        } else {
+            XCTFail("Expected nowPlayingUpdate case after multiple cycles")
+        }
+    }
+
+    // MARK: - toDictionary Structure
+
+    func test_toDictionary_producesNonEmptyDictWithCorrectKey() throws {
+        let message = WatchMessage.requestNowPlaying
+
+        let dict = try message.toDictionary()
+
+        XCTAssertFalse(dict.isEmpty, "toDictionary should produce a non-empty dictionary")
+        XCTAssertNotNil(dict["watchMessage"], "Dictionary should contain the 'watchMessage' key")
+        XCTAssertTrue(dict["watchMessage"] is Data, "The 'watchMessage' value should be Data")
+    }
+
+    func test_toDictionary_biometricUpdate_containsWatchMessageKey() throws {
+        let packet = BiometricPacket(
+            heartRate: 60.0,
+            hrv: 40.0,
+            isStationary: true,
+            isInWorkout: false,
+            workoutType: nil,
+            timestamp: Date()
+        )
+        let message = WatchMessage.biometricUpdate(packet)
+
+        let dict = try message.toDictionary()
+
+        XCTAssertFalse(dict.isEmpty)
+        XCTAssertNotNil(dict["watchMessage"])
+        XCTAssertTrue(dict["watchMessage"] is Data)
+        XCTAssertEqual(dict.count, 1, "Dictionary should contain exactly one key")
+    }
+
+    // MARK: - requestNowPlaying Round-Trip
+
+    func test_requestNowPlaying_roundTrip() throws {
+        let message = WatchMessage.requestNowPlaying
+
+        let dict = try message.toDictionary()
+        let decoded = try WatchMessage.fromDictionary(dict)
+
+        if case .requestNowPlaying = decoded {
+            // success
+        } else {
+            XCTFail("Expected requestNowPlaying case")
+        }
+    }
 }

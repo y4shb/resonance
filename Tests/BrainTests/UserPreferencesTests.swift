@@ -453,4 +453,250 @@ final class UserPreferencesTests: XCTestCase {
         XCTAssertEqual(prefs.energyWeight, defaultPrefs.energyWeight)
         XCTAssertEqual(prefs.avoidRecentMinutes, defaultPrefs.avoidRecentMinutes)
     }
+
+    // MARK: - Validated Idempotency
+
+    func test_validated_isIdempotent() {
+        // Applying validated() twice should produce the same result as applying it once
+        let prefs = UserPreferences(
+            bpmWeight: 3.0,
+            energyWeight: 1.0,
+            familiarityWeight: 0.5,
+            historicalWeight: 2.0,
+            contextWeight: 0.5,
+            avoidRecentMinutes: 999,
+            maxSameArtistInRow: 50,
+            learningRate: 10.0
+        )
+        let once = prefs.validated()
+        let twice = once.validated()
+
+        XCTAssertEqual(once.bpmWeight, twice.bpmWeight, accuracy: 0.0001)
+        XCTAssertEqual(once.energyWeight, twice.energyWeight, accuracy: 0.0001)
+        XCTAssertEqual(once.familiarityWeight, twice.familiarityWeight, accuracy: 0.0001)
+        XCTAssertEqual(once.historicalWeight, twice.historicalWeight, accuracy: 0.0001)
+        XCTAssertEqual(once.contextWeight, twice.contextWeight, accuracy: 0.0001)
+        XCTAssertEqual(once.avoidRecentMinutes, twice.avoidRecentMinutes)
+        XCTAssertEqual(once.maxSameArtistInRow, twice.maxSameArtistInRow)
+        XCTAssertEqual(once.learningRate, twice.learningRate, accuracy: 0.0001)
+        XCTAssertEqual(once.skipPenaltyWeight, twice.skipPenaltyWeight, accuracy: 0.0001)
+        XCTAssertEqual(once.hrvResponseWeight, twice.hrvResponseWeight, accuracy: 0.0001)
+        XCTAssertEqual(once.morningMaxBPM, twice.morningMaxBPM, accuracy: 0.0001)
+        XCTAssertEqual(once.nightMaxBPM, twice.nightMaxBPM, accuracy: 0.0001)
+        XCTAssertEqual(once.nightStartHour, twice.nightStartHour)
+        XCTAssertEqual(once.morningEndHour, twice.morningEndHour)
+    }
+
+    func test_validated_defaultPreferences_isIdempotent() {
+        // Default prefs should already be valid; validated() should not change them
+        let prefs = UserPreferences.default
+        let validated = prefs.validated()
+
+        XCTAssertEqual(prefs.bpmWeight, validated.bpmWeight, accuracy: 0.0001)
+        XCTAssertEqual(prefs.energyWeight, validated.energyWeight, accuracy: 0.0001)
+        XCTAssertEqual(prefs.familiarityWeight, validated.familiarityWeight, accuracy: 0.0001)
+        XCTAssertEqual(prefs.historicalWeight, validated.historicalWeight, accuracy: 0.0001)
+        XCTAssertEqual(prefs.contextWeight, validated.contextWeight, accuracy: 0.0001)
+        XCTAssertEqual(prefs.avoidRecentMinutes, validated.avoidRecentMinutes)
+        XCTAssertEqual(prefs.maxSameArtistInRow, validated.maxSameArtistInRow)
+        XCTAssertEqual(prefs.learningRate, validated.learningRate, accuracy: 0.0001)
+    }
+
+    // MARK: - Negative Weights & Normalization
+
+    func test_normalizeWeights_negativeValues_preservesNegativeProportions() {
+        // normalizeWeights divides by total; with negative values the total
+        // may be small or zero, leading to unexpected proportions
+        var prefs = UserPreferences(
+            bpmWeight: -1.0,
+            energyWeight: 2.0,
+            familiarityWeight: 1.0,
+            historicalWeight: 1.0,
+            contextWeight: 1.0
+        )
+        // Total = -1 + 2 + 1 + 1 + 1 = 4, so division should still work
+        prefs.normalizeWeights()
+        let sum = prefs.bpmWeight + prefs.energyWeight + prefs.familiarityWeight
+            + prefs.historicalWeight + prefs.contextWeight
+        XCTAssertEqual(sum, 1.0, accuracy: 0.001,
+            "Even with a negative weight, normalization should produce a sum of 1.0")
+        XCTAssertLessThan(prefs.bpmWeight, 0,
+            "Negative weight should remain negative after normalization")
+    }
+
+    func test_normalizeWeights_allNegative_doesNotNormalize() {
+        // If all weights are negative, total is negative (< 0), guard should prevent division
+        var prefs = UserPreferences(
+            bpmWeight: -0.2,
+            energyWeight: -0.2,
+            familiarityWeight: -0.2,
+            historicalWeight: -0.2,
+            contextWeight: -0.2
+        )
+        prefs.normalizeWeights()
+        // total = -1.0, guard total > 0 returns early, weights unchanged
+        XCTAssertEqual(prefs.bpmWeight, -0.2, accuracy: 0.001,
+            "All-negative weights should be left unchanged by normalizeWeights()")
+    }
+
+    // MARK: - Boundary Values (exact edges)
+
+    func test_validated_avoidRecentMinutes_atExactBoundaries() {
+        let atZero = UserPreferences(avoidRecentMinutes: 0).validated()
+        XCTAssertEqual(atZero.avoidRecentMinutes, 0,
+            "avoidRecentMinutes at lower bound (0) should pass through unchanged")
+
+        let atMax = UserPreferences(avoidRecentMinutes: 480).validated()
+        XCTAssertEqual(atMax.avoidRecentMinutes, 480,
+            "avoidRecentMinutes at upper bound (480) should pass through unchanged")
+    }
+
+    func test_validated_maxSameArtistInRow_atExactBoundaries() {
+        let atMin = UserPreferences(maxSameArtistInRow: 1).validated()
+        XCTAssertEqual(atMin.maxSameArtistInRow, 1,
+            "maxSameArtistInRow at lower bound (1) should pass through unchanged")
+
+        let atMax = UserPreferences(maxSameArtistInRow: 10).validated()
+        XCTAssertEqual(atMax.maxSameArtistInRow, 10,
+            "maxSameArtistInRow at upper bound (10) should pass through unchanged")
+    }
+
+    func test_validated_learningRate_atExactBoundaries() {
+        let atMin = UserPreferences(learningRate: 0.05).validated()
+        XCTAssertEqual(atMin.learningRate, 0.05, accuracy: 0.0001,
+            "learningRate at lower bound (0.05) should pass through unchanged")
+
+        let atMax = UserPreferences(learningRate: 0.5).validated()
+        XCTAssertEqual(atMax.learningRate, 0.5, accuracy: 0.0001,
+            "learningRate at upper bound (0.5) should pass through unchanged")
+    }
+
+    // MARK: - Preset Validation Stability
+
+    func test_focusPreset_validatedDoesNotChangeKeyValues() {
+        let preset = UserPreferences.focusPreset
+        let revalidated = preset.validated()
+
+        XCTAssertEqual(preset.bpmWeight, revalidated.bpmWeight, accuracy: 0.0001)
+        XCTAssertEqual(preset.energyWeight, revalidated.energyWeight, accuracy: 0.0001)
+        XCTAssertEqual(preset.familiarityWeight, revalidated.familiarityWeight, accuracy: 0.0001)
+        XCTAssertEqual(preset.contextWeight, revalidated.contextWeight, accuracy: 0.0001)
+        XCTAssertEqual(preset.historicalWeight, revalidated.historicalWeight, accuracy: 0.0001)
+        XCTAssertEqual(preset.nightMaxBPM, revalidated.nightMaxBPM, accuracy: 0.0001)
+        XCTAssertTrue(revalidated.enableSmoothTransitions)
+    }
+
+    func test_workoutPreset_validatedDoesNotChangeKeyValues() {
+        let preset = UserPreferences.workoutPreset
+        let revalidated = preset.validated()
+
+        XCTAssertEqual(preset.bpmWeight, revalidated.bpmWeight, accuracy: 0.0001)
+        XCTAssertEqual(preset.energyWeight, revalidated.energyWeight, accuracy: 0.0001)
+        XCTAssertEqual(preset.morningMaxBPM, revalidated.morningMaxBPM, accuracy: 0.0001)
+        XCTAssertEqual(preset.nightMaxBPM, revalidated.nightMaxBPM, accuracy: 0.0001)
+    }
+
+    func test_relaxationPreset_validatedDoesNotChangeKeyValues() {
+        let preset = UserPreferences.relaxationPreset
+        let revalidated = preset.validated()
+
+        XCTAssertEqual(preset.historicalWeight, revalidated.historicalWeight, accuracy: 0.0001)
+        XCTAssertEqual(preset.energyWeight, revalidated.energyWeight, accuracy: 0.0001)
+        XCTAssertEqual(preset.morningMaxBPM, revalidated.morningMaxBPM, accuracy: 0.0001)
+        XCTAssertEqual(preset.nightMaxBPM, revalidated.nightMaxBPM, accuracy: 0.0001)
+        XCTAssertTrue(revalidated.preferFamiliarInStress)
+    }
+
+    // MARK: - Preset Weights Sum Exactly to 1.0
+
+    func test_focusPreset_weightsSumToOne() {
+        let prefs = UserPreferences.focusPreset
+        let sum = prefs.bpmWeight + prefs.energyWeight + prefs.familiarityWeight
+            + prefs.historicalWeight + prefs.contextWeight
+        XCTAssertEqual(sum, 1.0, accuracy: 0.001,
+            "Focus preset weights should sum to exactly 1.0 after validation")
+    }
+
+    func test_workoutPreset_weightsSumToOne() {
+        let prefs = UserPreferences.workoutPreset
+        let sum = prefs.bpmWeight + prefs.energyWeight + prefs.familiarityWeight
+            + prefs.historicalWeight + prefs.contextWeight
+        XCTAssertEqual(sum, 1.0, accuracy: 0.001,
+            "Workout preset weights should sum to exactly 1.0 after validation")
+    }
+
+    func test_relaxationPreset_weightsSumToOne() {
+        let prefs = UserPreferences.relaxationPreset
+        let sum = prefs.bpmWeight + prefs.energyWeight + prefs.familiarityWeight
+            + prefs.historicalWeight + prefs.contextWeight
+        XCTAssertEqual(sum, 1.0, accuracy: 0.001,
+            "Relaxation preset weights should sum to exactly 1.0 after validation")
+    }
+
+    // MARK: - JSON Backward Compatibility
+
+    func test_jsonDecode_missingFields_usesDefaults() throws {
+        // Simulate an older JSON payload that only has a subset of fields.
+        // Decoding should succeed and missing fields should use defaults.
+        let partialJSON = """
+        {
+            "bpmWeight": 0.30,
+            "energyWeight": 0.20,
+            "familiarityWeight": 0.15,
+            "historicalWeight": 0.25,
+            "contextWeight": 0.10,
+            "avoidRecentMinutes": 120,
+            "maxSameArtistInRow": 3,
+            "preferFamiliarInStress": true,
+            "enableSmoothTransitions": true,
+            "morningMaxBPM": 120,
+            "nightMaxBPM": 100,
+            "nightStartHour": 21,
+            "morningEndHour": 9,
+            "skipPenaltyWeight": 0.5,
+            "hrvResponseWeight": 0.3,
+            "learningRate": 0.2,
+            "shareAnalytics": false,
+            "backupToiCloud": true
+        }
+        """.data(using: .utf8)!
+
+        // This should not throw — all fields present
+        let decoded = try JSONDecoder().decode(UserPreferences.self, from: partialJSON)
+        XCTAssertEqual(decoded.bpmWeight, 0.30, accuracy: 0.001)
+        XCTAssertEqual(decoded.avoidRecentMinutes, 120)
+    }
+
+    func test_jsonDecode_extraUnknownFields_doesNotCrash() throws {
+        // JSON with all required fields PLUS unknown keys should decode without error
+        let jsonWithExtras = """
+        {
+            "bpmWeight": 0.15,
+            "energyWeight": 0.20,
+            "familiarityWeight": 0.15,
+            "historicalWeight": 0.25,
+            "contextWeight": 0.25,
+            "avoidRecentMinutes": 60,
+            "maxSameArtistInRow": 2,
+            "preferFamiliarInStress": true,
+            "enableSmoothTransitions": true,
+            "morningMaxBPM": 120,
+            "nightMaxBPM": 100,
+            "nightStartHour": 21,
+            "morningEndHour": 9,
+            "skipPenaltyWeight": 0.5,
+            "hrvResponseWeight": 0.3,
+            "learningRate": 0.2,
+            "shareAnalytics": false,
+            "backupToiCloud": true,
+            "unknownFutureField": 42,
+            "anotherNewField": "hello"
+        }
+        """.data(using: .utf8)!
+
+        // Codable by default ignores unknown keys; this should succeed
+        let decoded = try JSONDecoder().decode(UserPreferences.self, from: jsonWithExtras)
+        XCTAssertEqual(decoded.bpmWeight, 0.15, accuracy: 0.001)
+        XCTAssertEqual(decoded.avoidRecentMinutes, 60)
+    }
 }

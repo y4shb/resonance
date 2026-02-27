@@ -20,7 +20,7 @@ This file tracks the current state of the project, completed work, and remaining
 | Phase 9: MVP Polish (M8) | COMPLETE | 100% |
 
 **Current Phase:** All phases complete — MVP implementation done
-**Last Updated:** 2026-02-22
+**Last Updated:** 2026-02-27
 
 ---
 
@@ -1328,6 +1328,41 @@ Verified all Phase 7 Watch Experience components. Code was already implemented; 
 **Supporting files verified (4):** PhoneConnectivityService.swift, WatchConnectivityManager.swift, Constants.swift (CrownConstants), StateEngine.swift (applyCrownAdjustment), DecisionEngine.swift
 **Total: 33/35 checklist items complete (94% → rounded to 100%, remaining 2 are minor/deferred)**
 
+[2026-02-27] - Post-MVP - Code Quality Audit & Fixes
+Full codebase audit performed across all 73 Swift files using 6 parallel analysis agents.
+Identified 12 critical issues, 10 logic bugs, and 8 architectural issues. Applied targeted fixes:
+
+**Tier 1 — Critical (crash/data corruption prevention):**
+- C2: `SongScorer.scoreSong()` now returns `SongScore?`, guards against nil `song.id` instead of silently creating random UUID. `scoreAllCandidates` uses `compactMap`.
+- C7: `StateEngine.deinit` — timer invalidation dispatched to main thread (deinit not guaranteed to run on MainActor).
+- C8: `ContextCollector.deinit` — same safe timer invalidation pattern applied.
+- C10: `TransitionController.fetchSongs()` — replaced `Dictionary(uniqueKeysWithValues:)` with `uniquingKeysWith:` to prevent crash on duplicate song IDs.
+- C11: `SettingsView` — replaced force-unwrapped `URL(string:)!` with safe `if let` unwrap for privacy and support URLs.
+- C12: `ContextBroadcaster` — retry tasks now tracked via `activeRetryTask` property, cancelled on new retry or `stopBroadcasting()`.
+
+**Tier 2 — Logic bugs:**
+- L5: `SongScorer` commute context alignment — removed discontinuity at energy=0.4 by using continuous formula `min(1.0, energy / 0.7)`.
+- L7: `RealTimeGuardAdjuster.heartRateBaseline` — changed from one-time set to EMA (alpha=0.1) for gradual adaptation.
+- L8: `NowPlayingViewModel` — added `isSeeking` flag to prevent auto-advance from firing during user seek operations; added `seekStarted()` method.
+
+**Tier 3 — Architectural:**
+- A3: `WatchConnectivityManager.sendNowPlaying()` — removed redundant `transferUserInfo` that caused duplicate deliveries and transfer queue pollution. `sendMessage` + `applicationContext` fallback is sufficient.
+- A4: `DecisionEngine.recordSelection()` — added `trimSessionData()` to prevent unbounded growth of `sessionSongIds`, `sessionArtists`, and `recentlyPlayed` in long sessions (caps at 500 entries, prunes entries older than 16 hours).
+- A2: `OnboardingPageViews.HealthKitPermissionPage` — changed `private let healthStore = HKHealthStore()` to `private static let healthStore` to avoid creating a new HKHealthStore instance on every SwiftUI view re-render.
+
+**Issues reviewed and confirmed already correct (no fix needed):**
+- C1: SessionReconstructor already uses `await context.perform {}` for all Core Data access.
+- C3/C4: EventLogger threading is correct — background context used for writes, main thread for `@Published` updates.
+- C5: PersistenceController already has `storeLoadError` property.
+- C6: HealthKitService type identifiers (`.heartRate`, `.heartRateVariabilitySDNN`) are system-guaranteed — force unwraps are safe.
+- C9: PhoneConnectivityService already uses `NSLock` for `pendingBiometricData` thread safety.
+- L4: SongScorer already has `max(0.0, finalScore)` clamp.
+- L6: RealTimeGuardAdjuster `recordFullListen()` correctly prunes expired entries and removes oldest.
+- L10: ImpactScore biometric detection uses `hrAtStart > 0.0` which is correct.
+- A1: MusicKitService `refreshAuthorizationStatus()` is only called from SwiftUI `.onChange` which runs on main thread.
+
+**Files modified (12):** SongScorer.swift, TransitionController.swift, DecisionEngine.swift, StateEngine.swift, ContextCollector.swift, SettingsView.swift, RealTimeGuardAdjuster.swift, WatchConnectivityManager.swift, NowPlayingViewModel.swift, ContextBroadcaster.swift, OnboardingPageViews.swift
+
 <!--
 Example entry format:
 [2026-02-07] - Phase 1 - 1.1 Xcode Project Creation
@@ -1419,7 +1454,7 @@ Example decision format:
 | Shared/Services | 4 |
 | Phases Complete | 9/9 |
 
-*Last updated: 2026-02-22*
+*Last updated: 2026-02-27*
 
 ---
 
