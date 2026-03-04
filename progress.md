@@ -1363,6 +1363,24 @@ Identified 12 critical issues, 10 logic bugs, and 8 architectural issues. Applie
 
 **Files modified (12):** SongScorer.swift, TransitionController.swift, DecisionEngine.swift, StateEngine.swift, ContextCollector.swift, SettingsView.swift, RealTimeGuardAdjuster.swift, WatchConnectivityManager.swift, NowPlayingViewModel.swift, ContextBroadcaster.swift, OnboardingPageViews.swift
 
+[2026-02-28] - Watch Connectivity Fix — "Waiting for music" bug
+
+**Root cause:** Application context key collision. All WatchMessage types (`nowPlayingUpdate`, `stateUpdate`, `complicationUpdate`) were encoded under a single `"watchMessage"` key. When the Watch was unreachable (most of the time), the iPhone fell back to `updateApplicationContext()`. But `sendNowPlayingToWatch()` sent both a `nowPlayingUpdate` and a `complicationUpdate` in sequence — the complication overwrote the now-playing data in context. When the Watch woke up, it only saw the complication data, which it couldn't use to set `currentNowPlaying`, so it displayed "Waiting for music..." indefinitely.
+
+**Fix (4 changes across 4 files):**
+
+1. **WatchMessages.swift** — Added message-type-specific context keys (`wm_nowPlaying`, `wm_state`, `wm_complication`) so different message types coexist in application context without overwriting each other. Added `toContextDictionary()` for persistent context encoding and `allFromContextDictionary()` to decode multiple messages from a single context dict. Preserved backwards compatibility with the old single `"watchMessage"` key.
+
+2. **WatchConnectivityManager.swift (iOS)** — Changed `fallbackToApplicationContext()` to accept a `WatchMessage` instead of a raw dict, and use `toContextDictionary()` so each message type writes to its own key. Refactored `handleReceivedMessage` into `handleReceivedMessage` + `handleDecodedMessage` so `didReceiveApplicationContext` can use `allFromContextDictionary()` for multi-key context handling.
+
+3. **PhoneConnectivityService.swift (watchOS)** — Refactored `handleReceivedMessage` into `handleReceivedMessage` (single realtime message) + `handleReceivedContext` (multi-key context). Updated `activationDidCompleteWith` and `didReceiveApplicationContext` to use `handleReceivedContext` so the Watch processes all message types from context simultaneously.
+
+4. **ResonanceWatchApp.swift** — Added `connectivityService.requestNowPlaying()` call in `.onChange(of: scenePhase)` when Watch becomes `.active`, so the Watch re-requests now-playing data every time the user raises their wrist (not just on first session activation).
+
+**Tests:** Added 7 new tests to `WatchMessagesTests.swift` covering `applicationContextKey`, `toContextDictionary`, `allFromContextDictionary` (multi-key, empty, legacy fallback).
+
+**Files modified (4):** WatchMessages.swift, WatchConnectivityManager.swift, PhoneConnectivityService.swift, ResonanceWatchApp.swift
+
 <!--
 Example entry format:
 [2026-02-07] - Phase 1 - 1.1 Xcode Project Creation

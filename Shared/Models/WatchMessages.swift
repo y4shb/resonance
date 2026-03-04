@@ -85,18 +85,72 @@ struct ComplicationData: Codable {
 // MARK: - Encoding Helpers
 
 extension WatchMessage {
-    /// Encode to dictionary for WCSession transport
-    func toDictionary() throws -> [String: Any] {
-        let data = try JSONEncoder().encode(self)
-        return ["watchMessage": data]
+    /// Key used in the WCSession dictionary for real-time messages (sendMessage).
+    /// All message types share this key because sendMessage is per-delivery —
+    /// there is no overwrite concern.
+    private static let realtimeKey = "watchMessage"
+
+    /// Key used in application context for now-playing data.
+    /// Separate from stateUpdate/complicationUpdate so they don't overwrite each other.
+    private static let contextKeyNowPlaying = "wm_nowPlaying"
+    private static let contextKeyState = "wm_state"
+    private static let contextKeyComplication = "wm_complication"
+
+    /// The application-context key for this specific message type.
+    /// Returns nil for watch→phone messages (they don't use context persistence).
+    var applicationContextKey: String? {
+        switch self {
+        case .nowPlayingUpdate: return Self.contextKeyNowPlaying
+        case .stateUpdate: return Self.contextKeyState
+        case .complicationUpdate: return Self.contextKeyComplication
+        case .biometricUpdate, .moodInput, .playbackCommand, .crownAdjustment, .requestNowPlaying:
+            return nil
+        }
     }
 
-    /// Decode from WCSession dictionary
-    static func fromDictionary(_ dict: [String: Any]) throws -> WatchMessage {
-        guard let data = dict["watchMessage"] as? Data else {
-            throw WatchMessageError.decodingFailed
+    /// Encode to dictionary for WCSession real-time transport (sendMessage).
+    func toDictionary() throws -> [String: Any] {
+        let data = try JSONEncoder().encode(self)
+        return [Self.realtimeKey: data]
+    }
+
+    /// Encode to dictionary for WCSession application context (persistent).
+    /// Uses a message-type-specific key so different message types coexist.
+    func toContextDictionary() throws -> [String: Any] {
+        let data = try JSONEncoder().encode(self)
+        guard let key = applicationContextKey else {
+            // Fallback for watch→phone messages that shouldn't use context
+            return [Self.realtimeKey: data]
         }
-        return try JSONDecoder().decode(WatchMessage.self, from: data)
+        return [key: data]
+    }
+
+    /// Decode from WCSession dictionary (handles both realtime and context keys).
+    static func fromDictionary(_ dict: [String: Any]) throws -> WatchMessage {
+        // Try the realtime key first (used by sendMessage)
+        if let data = dict[realtimeKey] as? Data {
+            return try JSONDecoder().decode(WatchMessage.self, from: data)
+        }
+        throw WatchMessageError.decodingFailed
+    }
+
+    /// Decode all messages from an application context dictionary.
+    /// Application context can contain multiple message-type keys simultaneously.
+    static func allFromContextDictionary(_ dict: [String: Any]) -> [WatchMessage] {
+        var messages: [WatchMessage] = []
+        let contextKeys = [contextKeyNowPlaying, contextKeyState, contextKeyComplication]
+        for key in contextKeys {
+            if let data = dict[key] as? Data,
+               let message = try? JSONDecoder().decode(WatchMessage.self, from: data) {
+                messages.append(message)
+            }
+        }
+        // Also check legacy single-key format for backwards compatibility
+        if messages.isEmpty, let data = dict[realtimeKey] as? Data,
+           let message = try? JSONDecoder().decode(WatchMessage.self, from: data) {
+            messages.append(message)
+        }
+        return messages
     }
 }
 

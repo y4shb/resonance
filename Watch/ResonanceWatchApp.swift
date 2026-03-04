@@ -67,7 +67,10 @@ struct ResonanceWatchApp: App {
                     switch newPhase {
                     case .active:
                         sensorCoordinator.startAllSensors()
-                        logInfo("Watch became active — sensors started", category: .healthKit)
+                        // Re-request now playing data whenever the Watch app comes
+                        // to the foreground so it always shows current state.
+                        connectivityService.requestNowPlaying()
+                        logInfo("Watch became active — sensors started, requested now playing", category: .healthKit)
                     case .background:
                         sensorCoordinator.stopAllSensors()
                         logInfo("Watch entered background — sensors stopped", category: .healthKit)

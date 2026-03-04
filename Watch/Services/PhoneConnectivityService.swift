@@ -186,37 +186,55 @@ final class PhoneConnectivityService: NSObject, ObservableObject {
         }
     }
 
+    /// Handle a single decoded WatchMessage.
+    private func handleDecodedMessage(_ message: WatchMessage) {
+        switch message {
+        case .nowPlayingUpdate(let packet):
+            logDebug("Received now playing: \(packet.songTitle) - \(packet.artistName)", category: .watchConnectivity)
+            DispatchQueue.main.async { [weak self] in
+                self?.currentNowPlaying = packet
+                self?.nowPlayingSubject.send(packet)
+            }
+
+        case .stateUpdate(let packet):
+            logDebug("Received state update: context=\(packet.currentContext ?? "none")", category: .watchConnectivity)
+            DispatchQueue.main.async { [weak self] in
+                self?.currentState = packet
+                self?.stateSubject.send(packet)
+            }
+
+        case .complicationUpdate(let data):
+            logDebug("Received complication update", category: .watchConnectivity)
+            DispatchQueue.main.async { [weak self] in
+                self?.complicationSubject.send(data)
+            }
+
+        case .biometricUpdate, .moodInput, .playbackCommand, .crownAdjustment, .requestNowPlaying:
+            // These are watch -> phone messages; should not be received on watchOS
+            logWarning("Received unexpected watch->phone message on watchOS side", category: .watchConnectivity)
+        }
+    }
+
+    /// Handle a real-time message dictionary (from sendMessage).
     private func handleReceivedMessage(_ dict: [String: Any]) {
         do {
             let message = try WatchMessage.fromDictionary(dict)
-
-            switch message {
-            case .nowPlayingUpdate(let packet):
-                logDebug("Received now playing: \(packet.songTitle) - \(packet.artistName)", category: .watchConnectivity)
-                DispatchQueue.main.async { [weak self] in
-                    self?.currentNowPlaying = packet
-                    self?.nowPlayingSubject.send(packet)
-                }
-
-            case .stateUpdate(let packet):
-                logDebug("Received state update: context=\(packet.currentContext ?? "none")", category: .watchConnectivity)
-                DispatchQueue.main.async { [weak self] in
-                    self?.currentState = packet
-                    self?.stateSubject.send(packet)
-                }
-
-            case .complicationUpdate(let data):
-                logDebug("Received complication update", category: .watchConnectivity)
-                DispatchQueue.main.async { [weak self] in
-                    self?.complicationSubject.send(data)
-                }
-
-            case .biometricUpdate, .moodInput, .playbackCommand, .crownAdjustment, .requestNowPlaying:
-                // These are watch -> phone messages; should not be received on watchOS
-                logWarning("Received unexpected watch->phone message on watchOS side", category: .watchConnectivity)
-            }
+            handleDecodedMessage(message)
         } catch {
             logError("Failed to decode received message", error: error, category: .watchConnectivity)
+        }
+    }
+
+    /// Handle an application context dictionary that may contain multiple
+    /// message-type keys (nowPlaying, state, complication) simultaneously.
+    private func handleReceivedContext(_ dict: [String: Any]) {
+        let messages = WatchMessage.allFromContextDictionary(dict)
+        if messages.isEmpty {
+            logDebug("Application context contained no decodable messages", category: .watchConnectivity)
+            return
+        }
+        for message in messages {
+            handleDecodedMessage(message)
         }
     }
 }
@@ -237,12 +255,13 @@ extension PhoneConnectivityService: WCSessionDelegate {
             logInfo("WCSession activation completed (watchOS): \(activationState.rawValue)", category: .watchConnectivity)
         }
 
-        // Check for any application context that arrived before activation
+        // Check for any application context that arrived before activation.
+        // Context may contain multiple message-type keys (nowPlaying, state, etc.).
         if activationState == .activated {
             let context = session.receivedApplicationContext
             if !context.isEmpty {
                 logDebug("Processing application context received before activation", category: .watchConnectivity)
-                handleReceivedMessage(context)
+                handleReceivedContext(context)
             }
         }
     }
@@ -271,7 +290,7 @@ extension PhoneConnectivityService: WCSessionDelegate {
 
     func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
         logDebug("Received application context update (watchOS)", category: .watchConnectivity)
-        handleReceivedMessage(applicationContext)
+        handleReceivedContext(applicationContext)
     }
 
     func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any] = [:]) {

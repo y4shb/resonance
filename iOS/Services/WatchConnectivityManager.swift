@@ -238,20 +238,20 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WatchConnectiv
         }
 
         do {
-            let dict = try watchMessage.toDictionary()
+            let realtimeDict = try watchMessage.toDictionary()
 
             if session.isReachable {
                 // Real-time delivery when Watch app is in foreground
-                session.sendMessage(dict, replyHandler: nil) { [weak self] error in
+                session.sendMessage(realtimeDict, replyHandler: nil) { [weak self] error in
                     logError("sendMessage failed, falling back to application context",
                              error: error, category: .watchConnectivity)
                     // Fall back to application context for persistent delivery
-                    self?.fallbackToApplicationContext(dict)
+                    self?.fallbackToApplicationContext(watchMessage)
                 }
                 logDebug("Message sent via sendMessage (reachable)", category: .watchConnectivity)
             } else {
                 // Watch not reachable; use application context for persistent state
-                fallbackToApplicationContext(dict)
+                fallbackToApplicationContext(watchMessage)
                 logDebug("Message sent via applicationContext (not reachable)", category: .watchConnectivity)
             }
         } catch {
@@ -259,13 +259,14 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WatchConnectiv
         }
     }
 
-    private func fallbackToApplicationContext(_ dict: [String: Any]) {
+    private func fallbackToApplicationContext(_ watchMessage: WatchMessage) {
         guard let session = session else { return }
         do {
-            // Merge with existing context to avoid overwriting unrelated keys.
-            // updateApplicationContext replaces the entire dictionary.
+            // Use message-type-specific key so nowPlaying, state, and complication
+            // data coexist in application context without overwriting each other.
+            let contextDict = try watchMessage.toContextDictionary()
             var merged = session.applicationContext
-            for (key, value) in dict {
+            for (key, value) in contextDict {
                 merged[key] = value
             }
             try session.updateApplicationContext(merged)
@@ -278,34 +279,37 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WatchConnectiv
     private func handleReceivedMessage(_ dict: [String: Any]) {
         do {
             let message = try WatchMessage.fromDictionary(dict)
-
-            switch message {
-            case .biometricUpdate(let packet):
-                logDebug("Received biometric update: HR=\(packet.heartRate ?? 0)", category: .watchConnectivity)
-                biometricSubject.send(packet)
-
-            case .moodInput(let packet):
-                logDebug("Received mood input: mood=\(packet.moodLevel), energy=\(packet.energyLevel)", category: .watchConnectivity)
-                moodSubject.send(packet)
-
-            case .playbackCommand(let command):
-                logDebug("Received playback command: \(command.command.rawValue)", category: .watchConnectivity)
-                playbackCommandSubject.send(command)
-
-            case .crownAdjustment(let adjustment):
-                logDebug("Received crown adjustment: \(adjustment.adjustmentType) delta=\(adjustment.delta)", category: .watchConnectivity)
-                crownAdjustmentSubject.send(adjustment)
-
-            case .requestNowPlaying:
-                logInfo("Watch requested current NowPlaying state", category: .watchConnectivity)
-                nowPlayingRequestSubject.send(())
-
-            case .nowPlayingUpdate, .stateUpdate, .complicationUpdate:
-                // These are phone -> watch messages; should not be received on iOS
-                logWarning("Received unexpected phone->watch message on iOS side", category: .watchConnectivity)
-            }
+            handleDecodedMessage(message)
         } catch {
             logError("Failed to decode received message", error: error, category: .watchConnectivity)
+        }
+    }
+
+    private func handleDecodedMessage(_ message: WatchMessage) {
+        switch message {
+        case .biometricUpdate(let packet):
+            logDebug("Received biometric update: HR=\(packet.heartRate ?? 0)", category: .watchConnectivity)
+            biometricSubject.send(packet)
+
+        case .moodInput(let packet):
+            logDebug("Received mood input: mood=\(packet.moodLevel), energy=\(packet.energyLevel)", category: .watchConnectivity)
+            moodSubject.send(packet)
+
+        case .playbackCommand(let command):
+            logDebug("Received playback command: \(command.command.rawValue)", category: .watchConnectivity)
+            playbackCommandSubject.send(command)
+
+        case .crownAdjustment(let adjustment):
+            logDebug("Received crown adjustment: \(adjustment.adjustmentType) delta=\(adjustment.delta)", category: .watchConnectivity)
+            crownAdjustmentSubject.send(adjustment)
+
+        case .requestNowPlaying:
+            logInfo("Watch requested current NowPlaying state", category: .watchConnectivity)
+            nowPlayingRequestSubject.send(())
+
+        case .nowPlayingUpdate, .stateUpdate, .complicationUpdate:
+            // These are phone -> watch messages; should not be received on iOS
+            logWarning("Received unexpected phone->watch message on iOS side", category: .watchConnectivity)
         }
     }
 }
@@ -360,7 +364,16 @@ extension WatchConnectivityManager: WCSessionDelegate {
 
     func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
         logDebug("Received application context update", category: .watchConnectivity)
-        handleReceivedMessage(applicationContext)
+        // Application context may contain multiple message-type keys.
+        // Try the multi-key approach first, fall back to single-key.
+        let messages = WatchMessage.allFromContextDictionary(applicationContext)
+        if !messages.isEmpty {
+            for message in messages {
+                handleDecodedMessage(message)
+            }
+        } else {
+            handleReceivedMessage(applicationContext)
+        }
     }
 
     func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any] = [:]) {

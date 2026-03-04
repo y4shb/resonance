@@ -44,6 +44,7 @@
 		4378CA04318AAC40CA25A39B /* StateVector.swift in Sources */ = {isa = PBXBuildFile; fileRef = F241DEEB8268A1779CC2935D /* StateVector.swift */; };
 		4618DA4CC7DB5A210E22C895 /* StateEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A125697A71C7A42ED71514C /* StateEngine.swift */; };
 		4A14B1A3FD2828BFF498DEE1 /* SongRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70D39772E4F3B940A6620F0D /* SongRepository.swift */; };
+		4BE06E4F36540825D6A82756 /* GuardFiltersTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48EE0D68589F955D9E9894D1 /* GuardFiltersTests.swift */; };
 		4E446F663EE7E7B58A2A34C4 /* StateEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3363A3BC2B8AE16B46465C6E /* StateEngineTests.swift */; };
 		4EFB2B45A0F96C2FF7C8AA60 /* OnboardingPageViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED6E2902E4841A0245D79D08 /* OnboardingPageViews.swift */; };
 		52A4FD530D1979F3662AD12B /* MusicKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC8908CCD706784EBE056C6F /* MusicKitService.swift */; };
@@ -86,6 +87,7 @@
 		949241CB93F7BCA405DB8EFA /* WatchMessages.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6540C50B867AE3A9DC75F79 /* WatchMessages.swift */; };
 		A16F9811CC03A331D5A6F9BC /* WatchMessages.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6540C50B867AE3A9DC75F79 /* WatchMessages.swift */; };
 		A4C39655C199204D63950FCD /* PhoneConnectivityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 774E6162E40AD4FFB45A7B86 /* PhoneConnectivityService.swift */; };
+		A52F0491B427B4ECCD346738 /* DecisionContextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82D2D39111132BB07D961808 /* DecisionContextTests.swift */; };
 		A6940570512D73480A36D5D2 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5486784FF7066093E97EB3E0 /* Constants.swift */; };
 		A7247D65C358851844443F4A /* UserPreferencesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4098E44B7AC73B63AAFA1A /* UserPreferencesTests.swift */; };
 		A805F382D6543CD73055C3E1 /* UserPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAE93DA52394CFC35E670B7B /* UserPreferences.swift */; };
@@ -205,6 +207,7 @@
 		3B0525F25E51CC9E525A9092 /* ExplanationGeneratorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExplanationGeneratorTests.swift; sourceTree = "<group>"; };
 		3D4C7A3BFA492FD3B57677E7 /* SkipPenaltyCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkipPenaltyCalculator.swift; sourceTree = "<group>"; };
 		41D0912BAFF9AA34648AD389 /* SongScoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SongScoreTests.swift; sourceTree = "<group>"; };
+		48EE0D68589F955D9E9894D1 /* GuardFiltersTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuardFiltersTests.swift; sourceTree = "<group>"; };
 		4B3004AF8E3B77BE7F4AABF2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		54179EE7727B64E8823AC417 /* WidgetDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetDataStore.swift; sourceTree = "<group>"; };
 		5486784FF7066093E97EB3E0 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
@@ -219,6 +222,7 @@
 		7950BC1C06A11CB12EC9F865 /* SongEffectHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SongEffectHelper.swift; sourceTree = "<group>"; };
 		7E0B826229674100DEE2F127 /* ResonanceWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ResonanceWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7FF638D1478E3FB11FE0DACE /* PersistenceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceController.swift; sourceTree = "<group>"; };
+		82D2D39111132BB07D961808 /* DecisionContextTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecisionContextTests.swift; sourceTree = "<group>"; };
 		8408383041679F7AFD01CBEF /* SessionQualityScorer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionQualityScorer.swift; sourceTree = "<group>"; };
 		84790847771FAB5E992479CD /* HeartRateSensor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeartRateSensor.swift; sourceTree = "<group>"; };
 		872196410405005EB0142CD1 /* ResonanceMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ResonanceMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -577,6 +581,7 @@
 		D46CE4F2CA0AAA259331F881 /* ModelTests */ = {
 			isa = PBXGroup;
 			children = (
+				82D2D39111132BB07D961808 /* DecisionContextTests.swift */,
 				41D0912BAFF9AA34648AD389 /* SongScoreTests.swift */,
 				B43E463EFD0084E0EF98F34C /* StateVectorTests.swift */,
 				A248E4B7944A77BA978883E7 /* WatchMessagesTests.swift */,
@@ -647,6 +652,7 @@
 			children = (
 				E5EE1284A51F8A794FD5B823 /* DecisionEngineTests.swift */,
 				3B0525F25E51CC9E525A9092 /* ExplanationGeneratorTests.swift */,
+				48EE0D68589F955D9E9894D1 /* GuardFiltersTests.swift */,
 				BFDBBA3C8BC97BE5B2198FC1 /* LearningTests.swift */,
 				E5F18D092F401A4FE98DFE1F /* SongScorerTests.swift */,
 				3363A3BC2B8AE16B46465C6E /* StateEngineTests.swift */,
@@ -850,8 +856,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A52F0491B427B4ECCD346738 /* DecisionContextTests.swift in Sources */,
 				07472650BCC0E006F0A1BA78 /* DecisionEngineTests.swift in Sources */,
 				FDAD514CCA716CCA1882256E /* ExplanationGeneratorTests.swift in Sources */,
+				4BE06E4F36540825D6A82756 /* GuardFiltersTests.swift in Sources */,
 				1DB3FE0761125C9857678F2C /* LearningTests.swift in Sources */,
 				C40DD5752B1106FFC6ACAB93 /* SongScoreTests.swift in Sources */,
 				05B5F5D0C7497AE4CDD09C21 /* SongScorerTests.swift in Sources */,

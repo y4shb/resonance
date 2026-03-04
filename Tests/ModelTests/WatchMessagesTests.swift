@@ -657,4 +657,104 @@ final class WatchMessagesTests: XCTestCase {
             XCTFail("Expected requestNowPlaying case")
         }
     }
+
+    // MARK: - Application Context Keys
+
+    func test_applicationContextKey_nowPlaying() {
+        let message = WatchMessage.nowPlayingUpdate(NowPlayingPacket(
+            songTitle: "T", artistName: "A", artworkData: nil,
+            isPlaying: true, progress: 0, duration: 0, explanation: nil))
+        XCTAssertEqual(message.applicationContextKey, "wm_nowPlaying")
+    }
+
+    func test_applicationContextKey_stateUpdate() {
+        let message = WatchMessage.stateUpdate(StatePacket(
+            energyLevel: 0.5, calmLevel: 0.5, focusLevel: 0.5,
+            heartRate: nil, currentContext: nil, timestamp: Date()))
+        XCTAssertEqual(message.applicationContextKey, "wm_state")
+    }
+
+    func test_applicationContextKey_complicationUpdate() {
+        let message = WatchMessage.complicationUpdate(ComplicationData(
+            songTitle: nil, artistName: nil, stateEmoji: "",
+            heartRate: nil, isPlaying: false, timestamp: Date()))
+        XCTAssertEqual(message.applicationContextKey, "wm_complication")
+    }
+
+    func test_applicationContextKey_watchToPhoneMessages_nil() {
+        XCTAssertNil(WatchMessage.requestNowPlaying.applicationContextKey)
+        let bio = WatchMessage.biometricUpdate(BiometricPacket(
+            heartRate: 70, hrv: 40, isStationary: true, isInWorkout: false,
+            workoutType: nil, timestamp: Date()))
+        XCTAssertNil(bio.applicationContextKey)
+    }
+
+    // MARK: - toContextDictionary
+
+    func test_toContextDictionary_usesTypeSpecificKey() throws {
+        let packet = NowPlayingPacket(
+            songTitle: "Song", artistName: "Artist", artworkData: nil,
+            isPlaying: true, progress: 0.5, duration: 200, explanation: nil)
+        let message = WatchMessage.nowPlayingUpdate(packet)
+
+        let dict = try message.toContextDictionary()
+        XCTAssertNotNil(dict["wm_nowPlaying"])
+        XCTAssertNil(dict["watchMessage"], "Context dict should not use the realtime key")
+    }
+
+    func test_toContextDictionary_stateUsesStateKey() throws {
+        let packet = StatePacket(
+            energyLevel: 0.7, calmLevel: 0.3, focusLevel: 0.8,
+            heartRate: 68, currentContext: "focus", timestamp: Date())
+        let message = WatchMessage.stateUpdate(packet)
+
+        let dict = try message.toContextDictionary()
+        XCTAssertNotNil(dict["wm_state"])
+        XCTAssertNil(dict["wm_nowPlaying"])
+    }
+
+    // MARK: - allFromContextDictionary
+
+    func test_allFromContextDictionary_multipleKeys() throws {
+        let nowPlaying = WatchMessage.nowPlayingUpdate(NowPlayingPacket(
+            songTitle: "Song", artistName: "Artist", artworkData: nil,
+            isPlaying: true, progress: 0.5, duration: 200, explanation: nil))
+        let state = WatchMessage.stateUpdate(StatePacket(
+            energyLevel: 0.7, calmLevel: 0.3, focusLevel: 0.8,
+            heartRate: 68, currentContext: "focus", timestamp: Date()))
+
+        // Merge both into a single context dict (simulating applicationContext)
+        var merged: [String: Any] = [:]
+        for (k, v) in try nowPlaying.toContextDictionary() { merged[k] = v }
+        for (k, v) in try state.toContextDictionary() { merged[k] = v }
+
+        let decoded = WatchMessage.allFromContextDictionary(merged)
+        XCTAssertEqual(decoded.count, 2)
+
+        let hasNowPlaying = decoded.contains { if case .nowPlayingUpdate = $0 { return true }; return false }
+        let hasState = decoded.contains { if case .stateUpdate = $0 { return true }; return false }
+        XCTAssertTrue(hasNowPlaying, "Should decode nowPlayingUpdate from context")
+        XCTAssertTrue(hasState, "Should decode stateUpdate from context")
+    }
+
+    func test_allFromContextDictionary_emptyDict() {
+        let decoded = WatchMessage.allFromContextDictionary([:])
+        XCTAssertTrue(decoded.isEmpty)
+    }
+
+    func test_allFromContextDictionary_legacySingleKey() throws {
+        // Test backwards compatibility with old single "watchMessage" key
+        let message = WatchMessage.nowPlayingUpdate(NowPlayingPacket(
+            songTitle: "Legacy", artistName: "Old", artworkData: nil,
+            isPlaying: false, progress: 0, duration: 100, explanation: nil))
+        let dict = try message.toDictionary() // uses "watchMessage" key
+
+        let decoded = WatchMessage.allFromContextDictionary(dict)
+        XCTAssertEqual(decoded.count, 1)
+        if case .nowPlayingUpdate(let p) = decoded.first {
+            XCTAssertEqual(p.songTitle, "Legacy")
+        } else {
+            XCTFail("Expected nowPlayingUpdate from legacy dict")
+        }
+    }
 }
