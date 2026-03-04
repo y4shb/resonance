@@ -28,6 +28,7 @@
         <attribute name="calmScore" attributeType="Double" defaultValueString="0.5" usesScalarValueType="YES"/>
         <attribute name="focusScore" attributeType="Double" defaultValueString="0.5" usesScalarValueType="YES"/>
         <attribute name="activationScore" attributeType="Double" defaultValueString="0.5" usesScalarValueType="YES"/>
+        <attribute name="moodLiftScore" attributeType="Double" defaultValueString="0.5" usesScalarValueType="YES"/>
         <attribute name="familiarityScore" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="confidenceLevel" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
 
@@ -61,6 +62,7 @@
         <attribute name="avgCalmEffect" attributeType="Double" defaultValueString="0.5" usesScalarValueType="YES"/>
         <attribute name="avgFocusEffect" attributeType="Double" defaultValueString="0.5" usesScalarValueType="YES"/>
         <attribute name="avgEnergyEffect" attributeType="Double" defaultValueString="0.5" usesScalarValueType="YES"/>
+        <attribute name="avgMoodLiftEffect" attributeType="Double" defaultValueString="0.5" usesScalarValueType="YES"/>
         <attribute name="avgBPM" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="effectConfidence" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
 
@@ -165,6 +167,9 @@
         <attribute name="wasAISelected" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
         <attribute name="selectionScore" optional="YES" attributeType="Double" usesScalarValueType="NO"/>
         <attribute name="selectionReason" optional="YES" attributeType="String"/>
+
+        <!-- Processing State -->
+        <attribute name="isImpactProcessed" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
 
         <!-- Relationships -->
         <relationship name="song" maxCount="1" deletionRule="Nullify" destinationEntity="Song" inverseName="playbackEvents" inverseEntity="Song"/>

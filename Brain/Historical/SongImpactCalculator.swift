@@ -92,7 +92,8 @@ final class SongImpactCalculator {
             let request = NSFetchRequest<PlaybackEvent>(entityName: "PlaybackEvent")
 
             var predicates: [NSPredicate] = [
-                NSPredicate(format: "session != nil")
+                NSPredicate(format: "session != nil"),
+                NSPredicate(format: "isImpactProcessed == NO")
             ]
 
             if let since = since {
@@ -135,6 +136,9 @@ final class SongImpactCalculator {
 
         // Update the effect scores using EMA
         updateEffect(effect, with: impact)
+
+        // Mark event as processed to prevent double-counting
+        event.isImpactProcessed = true
 
         // Recompute song-level aggregate scores across all effects
         SongEffectHelper.updateSongAggregates(song, in: context)

@@ -90,6 +90,7 @@ final class PlaylistImpactCalculator {
         var weightedCalm = 0.0
         var weightedFocus = 0.0
         var weightedEnergy = 0.0
+        var weightedMoodLift = 0.0
         var songsWithEffects = 0
 
         for song in songs {
@@ -104,6 +105,7 @@ final class PlaylistImpactCalculator {
             let songCalm = effects.reduce(0.0) { $0 + $1.calmScore * $1.confidenceLevel } / songWeight
             let songFocus = effects.reduce(0.0) { $0 + $1.focusScore * $1.confidenceLevel } / songWeight
             let songEnergy = effects.reduce(0.0) { $0 + $1.energyScore * $1.confidenceLevel } / songWeight
+            let songMoodLift = effects.reduce(0.0) { $0 + $1.moodLiftScore * $1.confidenceLevel } / songWeight
 
             // Average confidence for this song (used as weight at playlist level)
             let avgConfidence = songWeight / Double(effects.count)
@@ -111,6 +113,7 @@ final class PlaylistImpactCalculator {
             weightedCalm += songCalm * avgConfidence
             weightedFocus += songFocus * avgConfidence
             weightedEnergy += songEnergy * avgConfidence
+            weightedMoodLift += songMoodLift * avgConfidence
             totalWeight += avgConfidence
             songsWithEffects += 1
         }
@@ -127,6 +130,7 @@ final class PlaylistImpactCalculator {
         playlist.avgCalmEffect = weightedCalm / totalWeight
         playlist.avgFocusEffect = weightedFocus / totalWeight
         playlist.avgEnergyEffect = weightedEnergy / totalWeight
+        playlist.avgMoodLiftEffect = weightedMoodLift / totalWeight
 
         // Overall playlist confidence: average weight scaled by coverage
         let coverage = Double(songsWithEffects) / Double(songs.count)
@@ -145,6 +149,7 @@ final class PlaylistImpactCalculator {
             + "calm=\(String(format: "%.3f", playlist.avgCalmEffect)), "
             + "focus=\(String(format: "%.3f", playlist.avgFocusEffect)), "
             + "energy=\(String(format: "%.3f", playlist.avgEnergyEffect)), "
+            + "moodLift=\(String(format: "%.3f", playlist.avgMoodLiftEffect)), "
             + "confidence=\(String(format: "%.3f", playlist.effectConfidence)), "
             + "songsWithEffects=\(songsWithEffects)/\(songs.count)",
             category: .background

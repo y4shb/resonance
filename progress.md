@@ -1381,6 +1381,27 @@ Identified 12 critical issues, 10 logic bugs, and 8 architectural issues. Applie
 
 **Files modified (4):** WatchMessages.swift, WatchConnectivityManager.swift, PhoneConnectivityService.swift, ResonanceWatchApp.swift
 
+[2026-03-04] - Core Data Model Fixes — EMA Double-Counting & moodLiftScore Aggregation
+
+**Bug 1: EMA double-counting between LearningStore and SongImpactCalculator**
+
+Both `LearningStore` (real-time) and `SongImpactCalculator` (batch backfill) applied EMA updates to the same `SongEffect` entities for the same PlaybackEvents. This inflated sample counts and biased learned scores.
+
+**Fix:** Added `isImpactProcessed` Boolean attribute to the `PlaybackEvent` Core Data entity (default: NO). `LearningStore` now sets `isImpactProcessed = true` after processing each event in real-time. `SongImpactCalculator` filters its fetch with `isImpactProcessed == NO` and also marks events after batch processing. This prevents the same event from having its EMA contribution applied twice.
+
+**Bug 2: moodLiftScore not aggregated at Song and Playlist levels**
+
+`SongEffect` entities had `moodLiftScore` updated via EMA, but the `Song` and `Playlist` entities lacked the attribute entirely. The confidence-weighted averaging in `SongEffectHelper.updateSongAggregates()` and `PlaylistImpactCalculator.processPlaylist()` only aggregated calm, focus, and energy — moodLift was silently dropped.
+
+**Fix:** Added `moodLiftScore` (Double, default 0.5) to the `Song` entity and `avgMoodLiftEffect` (Double, default 0.5) to the `Playlist` entity in the Core Data model. Updated `SongEffectHelper.updateSongAggregates()` and `PlaylistImpactCalculator.processPlaylist()` to include moodLift in their confidence-weighted averaging.
+
+**Core Data model changes (3 new attributes):**
+- `PlaybackEvent.isImpactProcessed` — Boolean, default NO
+- `Song.moodLiftScore` — Double, default 0.5
+- `Playlist.avgMoodLiftEffect` — Double, default 0.5
+
+**Files modified (4):** Resonance.xcdatamodel/contents, LearningStore.swift, SongImpactCalculator.swift, SongEffectHelper.swift, PlaylistImpactCalculator.swift
+
 <!--
 Example entry format:
 [2026-02-07] - Phase 1 - 1.1 Xcode Project Creation
@@ -1472,7 +1493,7 @@ Example decision format:
 | Shared/Services | 4 |
 | Phases Complete | 9/9 |
 
-*Last updated: 2026-02-27*
+*Last updated: 2026-03-04*
 
 ---
 

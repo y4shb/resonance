@@ -690,14 +690,15 @@ The batch counterpart to `LearningStore`. Processes all PlaybackEvents that have
 #### Processing Pipeline:
 
 ```
-1. Fetch events with session != nil (optionally since watermark)
+1. Fetch events with session != nil AND isImpactProcessed == NO
 2. Process in batches of 100
 3. For each event:
    a. Compute ImpactScore from event biometrics/behavior
    b. Find or create SongEffect for (song, contextType)
    c. Apply EMA update with two-tier learning rate
-   d. Update Song aggregate scores
-   e. Update familiarity
+   d. Mark event as isImpactProcessed = true
+   e. Update Song aggregate scores
+   f. Update familiarity
 4. Save after each batch
 5. Support cooperative cancellation between batches
 ```
@@ -718,10 +719,11 @@ For each playlist:
 
         Accumulate into playlist totals weighted by songWeight
 
-    playlist.avgCalmEffect   = weightedCalm / totalWeight
-    playlist.avgFocusEffect  = weightedFocus / totalWeight
-    playlist.avgEnergyEffect = weightedEnergy / totalWeight
-    playlist.effectConfidence = (totalWeight / songsWithEffects) * coverage
+    playlist.avgCalmEffect     = weightedCalm / totalWeight
+    playlist.avgFocusEffect    = weightedFocus / totalWeight
+    playlist.avgEnergyEffect   = weightedEnergy / totalWeight
+    playlist.avgMoodLiftEffect = weightedMoodLift / totalWeight
+    playlist.effectConfidence  = (totalWeight / songsWithEffects) * coverage
 ```
 
 Context associations are built by grouping linked sessions by context type and computing frequency proportions.
@@ -752,9 +754,10 @@ The central real-time learning coordinator. When a song finishes or is skipped, 
 5. Find or create SongEffect for (song, contextType)
 6. Apply EMA update (two-tier learning rate)
 7. Update Song aggregates and familiarity
-8. Save context
-9. Publish ProcessedImpact on main thread
-10. Update RunningSession tracker
+8. Mark event as isImpactProcessed = true (prevents SongImpactCalculator from double-counting)
+9. Save context
+10. Publish ProcessedImpact on main thread
+11. Update RunningSession tracker
 ```
 
 ### 5.2 Exponential Moving Average (EMA)
@@ -923,12 +926,13 @@ Shared Core Data helpers used by both `LearningStore` and `SongImpactCalculator`
 **`updateSongAggregates`:** Recomputes the song's aggregate scores as a confidence-weighted average across all of its `SongEffect` entities:
 ```
 For each effect with confidence > 0:
-    Accumulate weightedCalm, weightedFocus, weightedActivation
+    Accumulate weightedCalm, weightedFocus, weightedActivation, weightedMoodLift
     Track maxConfidence
 
 song.calmScore       = weightedCalm / totalWeight
 song.focusScore      = weightedFocus / totalWeight
 song.activationScore = weightedActivation / totalWeight
+song.moodLiftScore   = weightedMoodLift / totalWeight
 song.confidenceLevel = maxConfidence
 ```
 
@@ -942,11 +946,11 @@ The Brain interacts with these Core Data entities:
 
 | Entity            | Purpose                                    | Key Attributes                                           |
 |-------------------|--------------------------------------------|----------------------------------------------------------|
-| `Song`            | Individual track                           | bpm, energyEstimate, calmScore, focusScore, activationScore, familiarityScore, confidenceLevel, totalPlayCount |
+| `Song`            | Individual track                           | bpm, energyEstimate, calmScore, focusScore, activationScore, moodLiftScore, familiarityScore, confidenceLevel, totalPlayCount |
 | `SongEffect`      | Per-song per-context learned effectiveness | calmScore, focusScore, energyScore, moodLiftScore, sampleCount, confidenceLevel, contextType, timeOfDaySlot |
-| `PlaybackEvent`   | Single play/skip event                     | startedAt, endedAt, listenPercentage, wasSkipped, hrvDelta, hrDelta, hrAtStart, hrvAtStart |
+| `PlaybackEvent`   | Single play/skip event                     | startedAt, endedAt, listenPercentage, wasSkipped, hrvDelta, hrDelta, hrAtStart, hrvAtStart, isImpactProcessed |
 | `HistoricalSession` | Group of events forming a session        | avgHeartRate, deltaHRV, skipRate, avgListenPercentage, nextNightSleepScore, contextType |
-| `Playlist`        | User playlist with aggregated scores      | avgCalmEffect, avgFocusEffect, avgEnergyEffect, effectConfidence, contextAssociations |
+| `Playlist`        | User playlist with aggregated scores      | avgCalmEffect, avgFocusEffect, avgEnergyEffect, avgMoodLiftEffect, effectConfidence, contextAssociations |
 
 ---
 

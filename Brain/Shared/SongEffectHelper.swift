@@ -79,6 +79,7 @@ enum SongEffectHelper {
         var weightedCalm: Double = 0.0
         var weightedFocus: Double = 0.0
         var weightedActivation: Double = 0.0
+        var weightedMoodLift: Double = 0.0
         var maxConfidence: Double = 0.0
 
         for effect in effects {
@@ -89,6 +90,7 @@ enum SongEffectHelper {
             weightedCalm += effect.calmScore * weight
             weightedFocus += effect.focusScore * weight
             weightedActivation += effect.energyScore * weight
+            weightedMoodLift += effect.moodLiftScore * weight
 
             if effect.confidenceLevel > maxConfidence {
                 maxConfidence = effect.confidenceLevel
@@ -99,6 +101,7 @@ enum SongEffectHelper {
             song.calmScore = weightedCalm / totalWeight
             song.focusScore = weightedFocus / totalWeight
             song.activationScore = weightedActivation / totalWeight
+            song.moodLiftScore = weightedMoodLift / totalWeight
             song.confidenceLevel = maxConfidence
         } else {
             // No confident effects — reset to neutral defaults so stale
@@ -106,6 +109,7 @@ enum SongEffectHelper {
             song.calmScore = 0.5
             song.focusScore = 0.5
             song.activationScore = 0.5
+            song.moodLiftScore = 0.5
             song.confidenceLevel = 0.0
         }
     }

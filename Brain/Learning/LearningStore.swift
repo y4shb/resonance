@@ -129,6 +129,10 @@ final class LearningStore: ObservableObject {
             // SongRepository.updatePlaybackStats to avoid double-counting)
             SongEffectHelper.updateFamiliarity(song)
 
+            // 8.5. Mark event as impact-processed so SongImpactCalculator
+            // (batch backfill) won't double-count this event's EMA contribution.
+            event.isImpactProcessed = true
+
             // 9. Save
             do {
                 if context.hasChanges {
