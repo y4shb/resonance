@@ -55,19 +55,22 @@ enum BatchInsertHelper {
         let context = container.newBackgroundContext()
         context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
 
-        let result = try context.execute(request) as? NSBatchInsertResult
+        var insertedCount = 0
+        try context.performAndWait {
+            let result = try context.execute(request) as? NSBatchInsertResult
 
-        // Merge changes into the view context so UI updates
-        if let objectIDs = result?.result as? [NSManagedObjectID] {
-            NSManagedObjectContext.mergeChanges(
-                fromRemoteContextSave: [NSInsertedObjectsKey: objectIDs],
-                into: [PersistenceController.shared.viewContext]
-            )
-            logInfo("Batch-inserted \(objectIDs.count) biometric samples", category: .persistence)
-            return objectIDs.count
+            // Merge changes into the view context so UI updates
+            if let objectIDs = result?.result as? [NSManagedObjectID] {
+                NSManagedObjectContext.mergeChanges(
+                    fromRemoteContextSave: [NSInsertedObjectsKey: objectIDs],
+                    into: [PersistenceController.shared.viewContext]
+                )
+                logInfo("Batch-inserted \(objectIDs.count) biometric samples", category: .persistence)
+                insertedCount = objectIDs.count
+            }
         }
 
-        return index
+        return insertedCount > 0 ? insertedCount : index
     }
 
     /// Batch-inserts playback events into Core Data for historical backfill.
@@ -103,17 +106,20 @@ enum BatchInsertHelper {
         let context = container.newBackgroundContext()
         context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
 
-        let result = try context.execute(request) as? NSBatchInsertResult
+        var insertedCount = 0
+        try context.performAndWait {
+            let result = try context.execute(request) as? NSBatchInsertResult
 
-        if let objectIDs = result?.result as? [NSManagedObjectID] {
-            NSManagedObjectContext.mergeChanges(
-                fromRemoteContextSave: [NSInsertedObjectsKey: objectIDs],
-                into: [PersistenceController.shared.viewContext]
-            )
-            logInfo("Batch-inserted \(objectIDs.count) playback events", category: .persistence)
-            return objectIDs.count
+            if let objectIDs = result?.result as? [NSManagedObjectID] {
+                NSManagedObjectContext.mergeChanges(
+                    fromRemoteContextSave: [NSInsertedObjectsKey: objectIDs],
+                    into: [PersistenceController.shared.viewContext]
+                )
+                logInfo("Batch-inserted \(objectIDs.count) playback events", category: .persistence)
+                insertedCount = objectIDs.count
+            }
         }
 
-        return index
+        return insertedCount > 0 ? insertedCount : index
     }
 }

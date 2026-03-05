@@ -17,15 +17,6 @@ import Foundation
 /// falling back to template-based generation.
 final class ConversationalExplanationGenerator {
 
-    /// Whether the on-device Foundation Model is available.
-    /// Checks for iOS 26+ and model availability at runtime.
-    private var isFoundationModelAvailable: Bool {
-        if #available(iOS 26.0, *) {
-            return true  // Foundation Models framework is available on iOS 26+
-        }
-        return false
-    }
-
     // MARK: - Generate Conversational Explanation
 
     /// Generates a conversational explanation for a song selection.
@@ -44,7 +35,8 @@ final class ConversationalExplanationGenerator {
             artistName: artistName
         )
 
-        if isFoundationModelAvailable {
+        // Use Foundation Models on iOS 26+ (compile-time availability check)
+        if #available(iOS 26.0, *) {
             if let conversational = await generateWithFoundationModel(context: context) {
                 return conversational
             }

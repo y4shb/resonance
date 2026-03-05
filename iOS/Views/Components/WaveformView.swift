@@ -36,7 +36,7 @@ struct WaveformView: View {
             let width = geometry.size.width
             let height = geometry.size.height
             let barCount = samples.count
-            let barWidth = max(1, width / CGFloat(barCount) - 1)
+            let barWidth = barCount > 0 ? max(1, width / CGFloat(barCount) - 1) : CGFloat(1)
             let spacing = width / CGFloat(max(barCount, 1))
 
             Canvas { context, size in
@@ -80,9 +80,11 @@ struct WaveformView: View {
             switch direction {
             case .increment:
                 let newProgress = min(1.0, progress + 0.05)
+                progress = newProgress
                 onSeekComplete?(newProgress)
             case .decrement:
                 let newProgress = max(0.0, progress - 0.05)
+                progress = newProgress
                 onSeekComplete?(newProgress)
             @unknown default:
                 break

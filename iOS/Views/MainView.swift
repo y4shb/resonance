@@ -17,7 +17,7 @@ struct MainView: View {
     @Bindable var playlistViewModel: PlaylistViewModel
     let musicService: MusicKitService
     @ObservedObject var historicalEngine: HistoricalEngine
-    var stateEngine: StateEngine
+    @ObservedObject var stateEngine: StateEngine
 
     @State private var selectedTab: Tab = .nowPlaying
 

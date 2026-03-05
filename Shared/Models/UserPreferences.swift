@@ -128,6 +128,45 @@ public struct UserPreferences: Codable, Sendable {
         self.crossfadeDuration = crossfadeDuration
     }
 
+    // MARK: - Codable (Backward Compatible)
+
+    private enum CodingKeys: String, CodingKey {
+        case bpmWeight, energyWeight, familiarityWeight, historicalWeight, contextWeight
+        case avoidRecentMinutes, maxSameArtistInRow, preferFamiliarInStress, enableSmoothTransitions
+        case morningMaxBPM, nightMaxBPM, nightStartHour, morningEndHour
+        case skipPenaltyWeight, hrvResponseWeight, learningRate
+        case shareAnalytics, backupToiCloud
+        case crossfadeEnabled, crossfadeDuration
+    }
+
+    /// Custom decoder that handles missing fields from older saved JSON.
+    /// New fields use defaults when absent, preserving existing user preferences.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+
+        bpmWeight = try c.decodeIfPresent(Double.self, forKey: .bpmWeight) ?? 0.15
+        energyWeight = try c.decodeIfPresent(Double.self, forKey: .energyWeight) ?? 0.20
+        familiarityWeight = try c.decodeIfPresent(Double.self, forKey: .familiarityWeight) ?? 0.15
+        historicalWeight = try c.decodeIfPresent(Double.self, forKey: .historicalWeight) ?? 0.25
+        contextWeight = try c.decodeIfPresent(Double.self, forKey: .contextWeight) ?? 0.25
+        avoidRecentMinutes = try c.decodeIfPresent(Int.self, forKey: .avoidRecentMinutes) ?? 60
+        maxSameArtistInRow = try c.decodeIfPresent(Int.self, forKey: .maxSameArtistInRow) ?? 2
+        preferFamiliarInStress = try c.decodeIfPresent(Bool.self, forKey: .preferFamiliarInStress) ?? true
+        enableSmoothTransitions = try c.decodeIfPresent(Bool.self, forKey: .enableSmoothTransitions) ?? true
+        morningMaxBPM = try c.decodeIfPresent(Double.self, forKey: .morningMaxBPM) ?? 120
+        nightMaxBPM = try c.decodeIfPresent(Double.self, forKey: .nightMaxBPM) ?? 100
+        nightStartHour = try c.decodeIfPresent(Int.self, forKey: .nightStartHour) ?? 21
+        morningEndHour = try c.decodeIfPresent(Int.self, forKey: .morningEndHour) ?? 9
+        skipPenaltyWeight = try c.decodeIfPresent(Double.self, forKey: .skipPenaltyWeight) ?? 0.5
+        hrvResponseWeight = try c.decodeIfPresent(Double.self, forKey: .hrvResponseWeight) ?? 0.3
+        learningRate = try c.decodeIfPresent(Double.self, forKey: .learningRate) ?? 0.2
+        shareAnalytics = try c.decodeIfPresent(Bool.self, forKey: .shareAnalytics) ?? false
+        backupToiCloud = try c.decodeIfPresent(Bool.self, forKey: .backupToiCloud) ?? true
+        // New fields — default gracefully when absent in older JSON
+        crossfadeEnabled = try c.decodeIfPresent(Bool.self, forKey: .crossfadeEnabled) ?? true
+        crossfadeDuration = try c.decodeIfPresent(Double.self, forKey: .crossfadeDuration) ?? 4.0
+    }
+
     // MARK: - Defaults
 
     public static var `default`: UserPreferences {

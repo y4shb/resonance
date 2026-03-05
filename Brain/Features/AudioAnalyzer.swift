@@ -136,7 +136,7 @@ final class AudioAnalyzer {
         let midOffset = max(0, (count - fftSize) / 2)
 
         // Setup FFT
-        guard let fftSetup = vDSP_create_fftsetup(vDSP_Length(log2(Double(fftSize))), FFTRadix(kFFTRadix2)) else {
+        guard let fftSetup = vDSP_create_fftsetup(vDSP_Length(Int(log2(Double(fftSize)))), FFTRadix(kFFTRadix2)) else {
             return 4000.0
         }
         defer { vDSP_destroy_fftsetup(fftSetup) }
@@ -162,7 +162,7 @@ final class AudioAnalyzer {
                 vDSP_ctoz(complexPtr, 2, &splitComplex, 1, vDSP_Length(fftSize / 2))
             }
         }
-        vDSP_fft_zrip(fftSetup, &splitComplex, 1, vDSP_Length(log2(Double(fftSize))), FFTDirection(FFT_FORWARD))
+        vDSP_fft_zrip(fftSetup, &splitComplex, 1, vDSP_Length(Int(log2(Double(fftSize)))), FFTDirection(FFT_FORWARD))
 
         // Compute magnitude spectrum
         var magnitudes = [Float](repeating: 0, count: fftSize / 2)

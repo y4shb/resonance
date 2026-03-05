@@ -115,12 +115,12 @@ final class WorkoutSessionManager: NSObject, ObservableObject {
             limit: HKObjectQueryNoLimit
         ) { [weak self] _, samples, _, newAnchor, _ in
             anchor = newAnchor
-            self?.processHeartRateSamples(samples)
+            self?.processHeartRateSamplesFromBackground(samples)
         }
 
         query.updateHandler = { [weak self] _, samples, _, newAnchor, _ in
             anchor = newAnchor
-            self?.processHeartRateSamples(samples)
+            self?.processHeartRateSamplesFromBackground(samples)
         }
 
         healthStore.execute(query)
@@ -134,12 +134,13 @@ final class WorkoutSessionManager: NSObject, ObservableObject {
         }
     }
 
-    private func processHeartRateSamples(_ samples: [HKSample]?) {
+    /// Called from HealthKit's background queue — hops to @MainActor via Task.
+    nonisolated private func processHeartRateSamplesFromBackground(_ samples: [HKSample]?) {
         guard let samples = samples as? [HKQuantitySample] else { return }
 
         for sample in samples {
             let bpm = sample.quantity.doubleValue(for: HKUnit.count().unitDivided(by: .minute()))
-            DispatchQueue.main.async { [weak self] in
+            Task { @MainActor [weak self] in
                 self?.latestHeartRate = bpm
                 self?.heartRateSubject.send(bpm)
             }

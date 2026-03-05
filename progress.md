@@ -1784,6 +1784,38 @@ Example decision format:
 
 ---
 
+# POST-ENHANCEMENT BUG FIX PASS
+
+> 4 parallel audit agents scanned every file. 38 bugs found, 18 critical/high fixes applied.
+
+| Date | Fix | Details |
+|------|-----|---------|
+| 2026-03-05 | BUILD FIX | WorkoutSessionManager: extracted `processHeartRateSamplesFromBackground` as `nonisolated` with `Task { @MainActor in }` hop |
+| 2026-03-05 | BUILD FIX | FocusModeIntents: added `var displayRepresentation` for `InstanceDisplayRepresentable` conformance |
+| 2026-03-05 | BUILD FIX | FocusModeIntents: added `@AppShortcutsBuilder` to `appShortcuts`, `shortcutTileColor`, `#if os(iOS)` guard |
+| 2026-03-05 | BUILD FIX | ResonanceApp: changed `@StateObject` to `@State` for `@Observable` view models |
+| 2026-03-05 | BUILD FIX | ConversationalExplanation: replaced runtime `isFoundationModelAvailable` with compile-time `#available(iOS 26.0, *)` |
+| 2026-03-05 | CRASH FIX | NowPlayingView: added `viewModel.seekStarted()` call in scrub begin handler |
+| 2026-03-05 | CRASH FIX | NowPlayingView: `.glassEffect(.regular.interactive)` → `.regular.interactive()` |
+| 2026-03-05 | CRASH FIX | BatchInsertHelper: wrapped `context.execute` in `context.performAndWait {}` |
+| 2026-03-05 | DATA FIX | EffectivenessLearner: UUID predicate changed from `CVarArg` to `NSUUID` |
+| 2026-03-05 | DATA FIX | EffectivenessLearner: viewContext access wrapped in `performAndWait` |
+| 2026-03-05 | DATA FIX | EffectivenessLearner: EMA update now targets only the relevant dimension per music need |
+| 2026-03-05 | DATA FIX | UserPreferences: added custom `init(from decoder:)` with `decodeIfPresent` for backward compatibility |
+| 2026-03-05 | LOGIC FIX | MainView: restored `@ObservedObject` on `stateEngine` (was stripped, causing no re-renders) |
+| 2026-03-05 | LOGIC FIX | SessionSummaryView: HRV icon direction fixed (up=improved, down=declined) |
+| 2026-03-05 | LOGIC FIX | HealthCorrelationChart: replaced per-mark `.foregroundStyle` with `.chartForegroundStyleScale` |
+| 2026-03-05 | LOGIC FIX | OnboardingContainerView: MusicKit denial now auto-advances instead of trapping user |
+| 2026-03-05 | LOGIC FIX | UIImage+DominantColor: `premultipliedLast` → `noneSkipLast` for accurate color extraction |
+| 2026-03-05 | LOGIC FIX | LiveActivityManager: `currentActivity` nil'd eagerly before async `end()` call |
+| 2026-03-05 | LOGIC FIX | MoodArcView: added `Equatable` to `MoodArcPoint`, removed unused `currentIndex`, use `geometry.size.height` |
+| 2026-03-05 | LOGIC FIX | WaveformView: accessibility seek now updates `progress` binding; zero-samples guard added |
+| 2026-03-05 | LOGIC FIX | SessionIntentPicker: renamed `description` to `sessionDescription` to avoid `CustomStringConvertible` shadow |
+| 2026-03-05 | THREAD FIX | NowPlayingViewModel: `extractArtworkAccentColor` Task marked `@MainActor` |
+| 2026-03-05 | BUG FIX PASS COMPLETE | 38 bugs found by 4 audit agents, 18 critical/high fixes applied |
+
+---
+
 # ENHANCEMENT TIER 4: FUTURE HORIZON — SHELVED
 
 > **Status:** Shelved as future ideas. Do NOT implement unless explicitly requested.

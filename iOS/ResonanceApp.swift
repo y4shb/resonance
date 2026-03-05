@@ -29,11 +29,11 @@ struct ResonanceApp: App {
     /// MusicKit service for Apple Music integration
     @StateObject private var musicService: MusicKitService
 
-    /// View model for the Now Playing screen
-    @StateObject private var nowPlayingViewModel: NowPlayingViewModel
+    /// View model for the Now Playing screen (@Observable requires @State, not @StateObject)
+    @State private var nowPlayingViewModel: NowPlayingViewModel
 
-    /// View model for the Playlist Browser
-    @StateObject private var playlistViewModel: PlaylistViewModel
+    /// View model for the Playlist Browser (@Observable requires @State, not @StateObject)
+    @State private var playlistViewModel: PlaylistViewModel
 
     /// HealthKit service for biometric data access
     @StateObject private var healthKitService: HealthKitService
@@ -82,8 +82,9 @@ struct ResonanceApp: App {
         let playlists = PlaylistViewModel(musicService: service, nowPlayingViewModel: nowPlaying)
 
         _musicService = StateObject(wrappedValue: service)
-        _nowPlayingViewModel = StateObject(wrappedValue: nowPlaying)
-        _playlistViewModel = StateObject(wrappedValue: playlists)
+        // @Observable types use @State (not @StateObject) — direct assignment
+        _nowPlayingViewModel = State(wrappedValue: nowPlaying)
+        _playlistViewModel = State(wrappedValue: playlists)
 
         // Wire Watch connectivity to NowPlayingViewModel for bidirectional sync
         nowPlaying.connectWatchManager(WatchConnectivityManager.shared)

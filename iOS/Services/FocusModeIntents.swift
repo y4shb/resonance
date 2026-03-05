@@ -6,6 +6,8 @@
 //  Automatically adjusts session mode when iOS Focus Mode changes.
 //
 
+#if os(iOS)
+
 import AppIntents
 
 // MARK: - Focus Mode Session Preset
@@ -37,6 +39,11 @@ struct ResonanceFocusFilter: SetFocusFilterIntent {
         categoryName: "Music"
     )
 
+    /// Display representation for the Focus Filter (required by InstanceDisplayRepresentable)
+    var displayRepresentation: DisplayRepresentation {
+        DisplayRepresentation(title: "Resonance: \(sessionPreset.rawValue)")
+    }
+
     /// The session preset to apply when this Focus Mode activates.
     @Parameter(title: "Session Preset", default: .autoDetect)
     var sessionPreset: FocusSessionPreset
@@ -50,8 +57,6 @@ struct ResonanceFocusFilter: SetFocusFilterIntent {
     var preferFamiliar: Bool
 
     func perform() async throws -> some IntentResult {
-        // Apply the session preset via UserDefaults
-        // The StateEngine reads these on its next 30-second update cycle
         let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier)
         defaults?.set(sessionPreset.rawValue, forKey: "focusFilter.activePreset")
         defaults?.set(maxBPM, forKey: "focusFilter.maxBPM")
@@ -142,6 +147,9 @@ struct GetCurrentStateIntent: AppIntent {
 
 /// Registers Resonance shortcuts for the Shortcuts app and Siri suggestions.
 struct ResonanceShortcuts: AppShortcutsProvider {
+    static var shortcutTileColor: ShortcutTileColor = .blue
+
+    @AppShortcutsBuilder
     static var appShortcuts: [AppShortcut] {
         AppShortcut(
             intent: StartResonanceSessionIntent(),
@@ -176,3 +184,5 @@ struct ResonanceShortcuts: AppShortcutsProvider {
         )
     }
 }
+
+#endif

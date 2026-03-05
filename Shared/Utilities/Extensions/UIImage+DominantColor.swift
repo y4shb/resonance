@@ -34,7 +34,7 @@ extension UIImage {
                   bitsPerComponent: 8,
                   bytesPerRow: bytesPerRow,
                   space: colorSpace,
-                  bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+                  bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue
               ) else { return nil }
 
         context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))

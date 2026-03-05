@@ -149,6 +149,9 @@ final class LiveActivityManager {
     ) {
         guard let activity = currentActivity else { return }
 
+        // Nil out immediately to prevent double-end race
+        currentActivity = nil
+
         let finalState = ResonanceLiveActivityAttributes.ContentState(
             songTitle: songTitle,
             artistName: artistName,
@@ -166,7 +169,6 @@ final class LiveActivityManager {
                 ActivityContent(state: finalState, staleDate: nil),
                 dismissalPolicy: .after(.now.addingTimeInterval(30))
             )
-            currentActivity = nil
             logInfo("Live Activity ended", category: .ui)
         }
     }

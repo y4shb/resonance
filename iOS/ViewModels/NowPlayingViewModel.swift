@@ -541,7 +541,7 @@ final class NowPlayingViewModel {
             return
         }
 
-        Task {
+        Task { @MainActor in
             do {
                 let (data, _) = try await URLSession.shared.data(from: url)
                 guard let image = UIImage(data: data) else {

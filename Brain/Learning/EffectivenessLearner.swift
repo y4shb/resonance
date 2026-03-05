@@ -161,12 +161,17 @@ final class EffectivenessLearner {
         let context = persistence.viewContext
         let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "SongEffect")
         fetchRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
-            NSPredicate(format: "song.id == %@", songId as CVarArg),
+            NSPredicate(format: "song.id == %@", songId as NSUUID),
             NSPredicate(format: "contextType == %@", contextType),
         ])
         fetchRequest.fetchLimit = 1
 
-        guard let effect = try? context.fetch(fetchRequest).first else {
+        // Thread-safe Core Data access via performAndWait
+        var fetchedEffect: NSManagedObject?
+        context.performAndWait {
+            fetchedEffect = try? context.fetch(fetchRequest).first
+        }
+        guard let effect = fetchedEffect else {
             // No data: high uncertainty encourages exploration
             return EffectivenessScore(mean: 0.5, uncertainty: 0.5, observations: 0)
         }
@@ -230,13 +235,13 @@ final class EffectivenessLearner {
     ) async {
         let rewardValue = reward.computeReward(forNeed: musicNeed)
 
-        await persistence.performBackgroundTask { context in
+        try? await persistence.performBackgroundTask { context in
             context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
 
             // Find or create SongEffect
             let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: "SongEffect")
             fetchRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
-                NSPredicate(format: "song.id == %@", songId as CVarArg),
+                NSPredicate(format: "song.id == %@", songId as NSUUID),
                 NSPredicate(format: "contextType == %@", contextType),
             ])
             fetchRequest.fetchLimit = 1
@@ -264,13 +269,19 @@ final class EffectivenessLearner {
                 ? BackfillConstants.coldStartLearningRate  // 0.4
                 : LearningConstants.defaultLearningRate     // 0.2
 
-            // Update scores using EMA with RL reward
-            let dimensions = ["calmScore", "energyScore", "focusScore", "moodLiftScore"]
-            for dimension in dimensions {
-                let current = effect.value(forKey: dimension) as? Double ?? 0.5
-                let updated = (1.0 - alpha) * current + alpha * rewardValue
-                effect.setValue(updated, forKey: dimension)
+            // Update only the dimension relevant to the current music need
+            // to avoid cross-context contamination
+            let targetDimension: String
+            switch musicNeed {
+            case .calm: targetDimension = "calmScore"
+            case .energize: targetDimension = "energyScore"
+            case .focus: targetDimension = "focusScore"
+            case .maintain, .transition: targetDimension = "moodLiftScore"
             }
+
+            let current = effect.value(forKey: targetDimension) as? Double ?? 0.5
+            let updated = (1.0 - alpha) * current + alpha * rewardValue
+            effect.setValue(updated, forKey: targetDimension)
 
             effect.setValue(sampleCount, forKey: "sampleCount")
 

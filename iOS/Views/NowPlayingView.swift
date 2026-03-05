@@ -175,6 +175,7 @@ struct NowPlayingView: View {
                     isScrubbing = editing
                     if editing {
                         scrubProgress = viewModel.playbackProgress
+                        viewModel.seekStarted()
                     } else {
                         viewModel.seek(to: scrubProgress)
                     }
@@ -385,7 +386,7 @@ struct NowPlayingView: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
                 .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
-                .glassEffect(.regular.interactive)
+                .glassEffect(.regular.interactive())
                 .padding(.horizontal, 4)
                 .padding(.bottom, 8)
             }

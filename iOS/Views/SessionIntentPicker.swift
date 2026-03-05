@@ -43,7 +43,7 @@ enum SessionIntent: String, CaseIterable, Identifiable, Codable {
         }
     }
 
-    var description: String {
+    var sessionDescription: String {
         switch self {
         case .deepWork: return "Moderate tempo, high instrumentalness, minimal distraction"
         case .workout: return "High energy BPM-locked to your heart rate zone"
@@ -140,7 +140,7 @@ struct SessionIntentCard: View {
                     .fontWeight(.semibold)
                     .lineLimit(1)
 
-                Text(intent.description)
+                Text(intent.sessionDescription)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
@@ -160,6 +160,6 @@ struct SessionIntentCard: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel("\(intent.rawValue) session mode")
-        .accessibilityHint(intent.description)
+        .accessibilityHint(intent.sessionDescription)
     }
 }

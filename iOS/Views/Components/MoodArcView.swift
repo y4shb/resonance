@@ -12,7 +12,7 @@ import SwiftUI
 // MARK: - Mood Arc Data Point
 
 /// A single point in the mood arc visualization.
-struct MoodArcPoint: Identifiable {
+struct MoodArcPoint: Identifiable, Equatable {
     let id = UUID()
     let songTitle: String
     let targetEnergy: Double  // 0.0 - 1.0
@@ -25,7 +25,6 @@ struct MoodArcPoint: Identifiable {
 /// Horizontal dot chart showing the energy trajectory of upcoming songs.
 struct MoodArcView: View {
     let points: [MoodArcPoint]
-    let currentIndex: Int
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -52,7 +51,7 @@ struct MoodArcView: View {
             // Arc visualization
             GeometryReader { geometry in
                 let width = geometry.size.width
-                let height: CGFloat = 40
+                let height = geometry.size.height
                 let pointCount = max(points.count, 1)
                 let spacing = width / CGFloat(pointCount + 1)
 
@@ -150,8 +149,7 @@ struct MoodArcView: View {
             MoodArcPoint(songTitle: "Song 4", targetEnergy: 0.65, isPlaying: false, isCompleted: false),
             MoodArcPoint(songTitle: "Song 5", targetEnergy: 0.7, isPlaying: false, isCompleted: false),
             MoodArcPoint(songTitle: "Song 6", targetEnergy: 0.6, isPlaying: false, isCompleted: false),
-        ],
-        currentIndex: 2
+        ]
     )
     .padding()
 }

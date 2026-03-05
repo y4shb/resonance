@@ -94,7 +94,7 @@ struct HealthCorrelationChart: View {
                         y: .value("Value", point.value),
                         series: .value("Series", point.series.rawValue)
                     )
-                    .foregroundStyle(point.series.color)
+                    .foregroundStyle(by: .value("Series", point.series.rawValue))
                     .lineStyle(StrokeStyle(
                         lineWidth: point.series == .hrvTrend ? 1.5 : 2,
                         dash: point.series == .hrvTrend ? [4, 4] : []
@@ -102,6 +102,11 @@ struct HealthCorrelationChart: View {
                     .interpolationMethod(.catmullRom)
                 }
             }
+            .chartForegroundStyleScale([
+                CorrelationSeries.songBPM.rawValue: CorrelationSeries.songBPM.color,
+                CorrelationSeries.heartRate.rawValue: CorrelationSeries.heartRate.color,
+                CorrelationSeries.hrvTrend.rawValue: CorrelationSeries.hrvTrend.color,
+            ])
             .chartYAxis {
                 AxisMarks(position: .leading) { value in
                     AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5, dash: [2, 4]))

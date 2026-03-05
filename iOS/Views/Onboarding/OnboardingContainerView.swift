@@ -157,6 +157,10 @@ struct OnboardingContainerView: View {
                 if status == .authorized {
                     musicKitAuthorized = true
                     advanceToNextPage()
+                } else {
+                    // Denied or restricted — advance anyway to avoid trapping the user.
+                    // They can still use the skip button or grant access later in Settings.
+                    advanceToNextPage()
                 }
             }
         } else if currentPage < totalPages - 1 {

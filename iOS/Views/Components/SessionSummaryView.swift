@@ -84,7 +84,7 @@ struct SessionSummaryView: View {
 
             // HRV Trend
             HStack(spacing: 8) {
-                Image(systemName: summary.hrvImproved ? "arrow.down.heart.fill" : "arrow.up.heart.fill")
+                Image(systemName: summary.hrvImproved ? "arrow.up.heart.fill" : "arrow.down.heart.fill")
                     .foregroundStyle(summary.hrvImproved ? .green : .orange)
 
                 Text(summary.hrvImproved
