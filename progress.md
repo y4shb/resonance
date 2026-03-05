@@ -20,8 +20,8 @@ This file tracks the current state of the project, completed work, and remaining
 | Phase 9: MVP Polish (M8) | COMPLETE | 100% |
 | Enhancement Tier 1: Quick Wins | COMPLETE | 100% |
 | Enhancement Tier 2: Core Features | COMPLETE | 100% |
-| Enhancement Tier 3: Strategic | NOT STARTED | 0% |
-| Enhancement Tier 4: Future Horizon | NOT STARTED | 0% |
+| Enhancement Tier 3: Strategic | COMPLETE | 100% |
+| Enhancement Tier 4: Future Horizon | SHELVED | -- |
 
 **Current Phase:** Enhancement Tier 1 — Quick Wins
 **Last Updated:** 2026-03-05
@@ -1689,24 +1689,105 @@ Example decision format:
 
 ---
 
-# ENHANCEMENT TIER 3: STRATEGIC (High Impact, Higher Effort)
+# ENHANCEMENT TIER 3: STRATEGIC (High Impact, Higher Effort) [COMPLETE]
 
-## Planned Items
-- [ ] NF-1: On-device audio feature extraction
-- [ ] ML-1: Foundation Models for explanations
-- [ ] ML-2: Core ML audio feature model
-- [ ] NF-4: Mood arc visualization
-- [ ] UX-3: Waveform visualization scrubber
-- [ ] UX-9: Health correlation chart
-- [ ] NF-6: Post-session summary
-- [ ] PL-3: Dynamic Island / Live Activity
-- [ ] ML-3: RL effectiveness model
+## Checklist
+
+### T3-1: NF-1 — On-Device Audio Feature Extraction [COMPLETE]
+- [x] Created AudioAnalyzer.swift with AVAudioEngine + Accelerate framework
+- [x] BPM estimation via energy-based onset detection + autocorrelation
+- [x] Spectral energy computation using vDSP_rmsqv (Accelerate)
+- [x] Spectral centroid via FFT (valence/brightness proxy)
+- [x] Zero-crossing rate computation (instrumentalness proxy)
+- [x] Confidence: 0.85 (vs 0.4 for genre heuristics)
+
+### T3-2: ML-1 — Foundation Models for Explanations [COMPLETE]
+- [x] Created ConversationalExplanationGenerator.swift
+- [x] Foundation Models framework integration ready (iOS 26+)
+- [x] Prompt structure for on-device LLM (warm, brief, personal tone)
+- [x] Enhanced template fallback with context-aware explanations
+- [x] Templates reference stress, familiarity, BPM match, and historical effect
+
+### T3-3: ML-2 — Core ML Audio Feature Model [COMPLETE]
+- [x] Created AudioFeaturePredictor.swift with Core ML model wrapper
+- [x] MLModel loading from bundle with Neural Engine preference
+- [x] MLDictionaryFeatureProvider for genre/duration/year inputs
+- [x] Enhanced genre heuristic fallback with 25-genre lookup table
+- [x] Duration and era-based adjustments for better heuristics (0.45 confidence)
+- [x] Model prediction confidence: 0.65 (between heuristic 0.4 and audio 0.85)
+
+### T3-4: NF-4 — Mood Arc Visualization [COMPLETE]
+- [x] Created MoodArcView.swift with horizontal dot chart
+- [x] Connected dots showing planned energy trajectory
+- [x] Color coding: blue (playing), green (completed), purple (upcoming)
+- [x] Pulsing animation on current song (respects reduce motion)
+- [x] Accessibility label with song count
+
+### T3-5: UX-3 — Waveform Visualization Scrubber [COMPLETE]
+- [x] Created WaveformView.swift using SwiftUI Canvas rendering
+- [x] Played/unplayed portions in different colors (accent vs gray)
+- [x] Tap and drag gesture for seeking
+- [x] WaveformDataGenerator for synthetic waveforms based on energy/BPM
+- [x] Accessibility: adjustable action for VoiceOver seek
+- [x] 150-sample resolution with per-bar rounded rectangles
+
+### T3-6: UX-9 — Health Correlation Chart [COMPLETE]
+- [x] Created HealthCorrelationChart.swift using Swift Charts
+- [x] Three overlaid series: Song BPM, Heart Rate, HRV Trend
+- [x] Series toggle buttons for show/hide each data layer
+- [x] Catmull-Rom interpolation for smooth curves
+- [x] Summary stats row (avg BPM, avg HR, avg HRV)
+- [x] Custom axis formatting with time labels
+
+### T3-7: NF-6 — Post-Session Summary [COMPLETE]
+- [x] Created SessionSummaryView.swift with session stats card
+- [x] Duration, songs played, skip rate metrics
+- [x] HRV improvement indicator with delta value
+- [x] Best-fit song highlight
+- [x] Session quality progress bar with labels
+- [x] 3-tap feedback system (Great / Okay / Rough) with SessionFeedback enum
+- [x] Accessibility labels on all interactive elements
+
+### T3-8: PL-3 — Dynamic Island / Live Activity [COMPLETE]
+- [x] Created LiveActivityManager.swift with ActivityKit integration
+- [x] ResonanceLiveActivityAttributes with content state model
+- [x] Start, update, and end activity lifecycle management
+- [x] Content state: song title, artist, progress, duration, HRV zone, explanation, heart rate
+- [x] Auto-dismiss after 30 seconds on session end
+- [x] Also appears in macOS menu bar on paired Macs (iOS 26+)
+
+### T3-9: ML-3 — RL Effectiveness Model [COMPLETE]
+- [x] Created EffectivenessLearner.swift with contextual bandit approach
+- [x] EffectivenessScore with UCB score and Thompson Sampling
+- [x] PlaybackReward with composite reward signal (HRV delta, skip penalty, explicit feedback)
+- [x] Context-dependent reward computation (calm needs positive HRV, energize needs activation)
+- [x] Exploration weight decay (1.5 -> 0.3 over time)
+- [x] Two-tier learning rate (0.4 cold-start, 0.2 steady-state)
+- [x] scoreWithExploration() for explore-exploit candidate ranking
 
 ---
 
-# ENHANCEMENT TIER 4: FUTURE HORIZON
+## Tier 3 Change Log
 
-## Planned Items
+| Date | Item | Details |
+|------|------|---------|
+| 2026-03-05 | T3-1 | Created AudioAnalyzer.swift — AVAudioEngine + Accelerate FFT for BPM, energy, spectral centroid, ZCR |
+| 2026-03-05 | T3-2 | Created ConversationalExplanationGenerator.swift — Foundation Models prompt + enhanced template fallback |
+| 2026-03-05 | T3-3 | Created AudioFeaturePredictor.swift — Core ML wrapper + 25-genre enhanced heuristics |
+| 2026-03-05 | T3-4 | Created MoodArcView.swift — horizontal energy dot chart with connecting line |
+| 2026-03-05 | T3-5 | Created WaveformView.swift — Canvas-rendered seek scrubber with drag gesture |
+| 2026-03-05 | T3-6 | Created HealthCorrelationChart.swift — Swift Charts with 3 overlaid series + toggles |
+| 2026-03-05 | T3-7 | Created SessionSummaryView.swift — post-session card with stats, HRV trend, feedback |
+| 2026-03-05 | T3-8 | Created LiveActivityManager.swift — Dynamic Island + Lock Screen Live Activity |
+| 2026-03-05 | T3-9 | Created EffectivenessLearner.swift — Thompson Sampling contextual bandit RL model |
+| 2026-03-05 | TIER 3 COMPLETE | All 9 Tier 3 strategic enhancements implemented |
+
+---
+
+# ENHANCEMENT TIER 4: FUTURE HORIZON — SHELVED
+
+> **Status:** Shelved as future ideas. Do NOT implement unless explicitly requested.
+
 - [ ] PL-4: visionOS companion
 - [ ] PL-6: CarPlay integration
 - [ ] ML-4: Circadian rhythm personalization

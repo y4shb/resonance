@@ -8,11 +8,14 @@
 
 /* Begin PBXBuildFile section */
 		0157D1CC9BBA2B61E3086C6A /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5486784FF7066093E97EB3E0 /* Constants.swift */; };
+		0248D52CFC2DB705C1DA6BF5 /* UIImage+DominantColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 601843871163110F8FA6B0CB /* UIImage+DominantColor.swift */; };
 		043C64226683F133E4FFDBCF /* PlaylistRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0150D2F0A1081187000AF6F7 /* PlaylistRepository.swift */; };
 		05B5F5D0C7497AE4CDD09C21 /* SongScorerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5F18D092F401A4FE98DFE1F /* SongScorerTests.swift */; };
 		07F45BE4CAD115B40DFE93CD /* WidgetDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54179EE7727B64E8823AC417 /* WidgetDataStore.swift */; };
+		07F814E1C3C86447AE90072C /* BatchInsertHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E469CB566095B8F9C40C4BB /* BatchInsertHelper.swift */; };
 		0DBD17308E2D7CC8A1F6C24B /* ContextSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7CEBC645377CAEEE4177E11 /* ContextSignal.swift */; };
 		0F687A5A3C76135575ABF3A6 /* DataPipelineIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 437BEF5FB3370999F2998AF0 /* DataPipelineIntegrationTests.swift */; };
+		100FFD8AF8D36FCB8FC89069 /* WorkoutSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B92AE62B1153F58DD7457EC /* WorkoutSessionManager.swift */; };
 		10962499327021055EC510D9 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5486784FF7066093E97EB3E0 /* Constants.swift */; };
 		10F8D6C96C0586CA8135D664 /* ResonanceWatchComplications.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 548B64C3FCA444DFB6C866F0 /* ResonanceWatchComplications.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		12BD3A20A1C259CD7FE49C00 /* ActivityContext+Emoji.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23C3650D47C23549563D5DB6 /* ActivityContext+Emoji.swift */; };
@@ -35,6 +38,7 @@
 		2DB9E0C77374397CD59288E5 /* HealthKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDBD41A77B0E761822F1FE2E /* HealthKitService.swift */; };
 		2F0601AF672C423DB03E6A29 /* SensorCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9F6C93D86E21EE17EB88B59 /* SensorCoordinator.swift */; };
 		2FE732B56756A518D4C271B3 /* ContextSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7CEBC645377CAEEE4177E11 /* ContextSignal.swift */; };
+		36A3452A1F7716A809ABB71F /* UIImage+DominantColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 601843871163110F8FA6B0CB /* UIImage+DominantColor.swift */; };
 		39805E2F82E4BF1BCEDDA132 /* TimeInterval+Formatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3CBB8CB2176ED52682C780C /* TimeInterval+Formatting.swift */; };
 		39EEAA73E67FDAD04E51A8DA /* ComplicationWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 194814068C7656B22718E136 /* ComplicationWidgets.swift */; };
 		3B2C991FFF5E1D57FB350129 /* Logging.swift in Sources */ = {isa = PBXBuildFile; fileRef = B691E2026B8610C50C4AAACB /* Logging.swift */; };
@@ -48,6 +52,8 @@
 		4E446F663EE7E7B58A2A34C4 /* StateEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3363A3BC2B8AE16B46465C6E /* StateEngineTests.swift */; };
 		4EFB2B45A0F96C2FF7C8AA60 /* OnboardingPageViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED6E2902E4841A0245D79D08 /* OnboardingPageViews.swift */; };
 		52A4FD530D1979F3662AD12B /* MusicKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC8908CCD706784EBE056C6F /* MusicKitService.swift */; };
+		531537A422B383A2CD6017EC /* FocusModeIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4777E7508A9C4823D7A9B090 /* FocusModeIntents.swift */; };
+		540EB69B2DBCD97632E86347 /* UIImage+DominantColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 601843871163110F8FA6B0CB /* UIImage+DominantColor.swift */; };
 		57CA96BEC692840448CA7E8D /* UserPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAE93DA52394CFC35E670B7B /* UserPreferences.swift */; };
 		587E14EF4B789C8B2447DA16 /* SessionReconstructor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0511ACB32B3F8873342A62EE /* SessionReconstructor.swift */; };
 		58B53EE50C1EFBC5CAAD4E1C /* RealTimeGuardAdjuster.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAF9C9176C6C2C2470592674 /* RealTimeGuardAdjuster.swift */; };
@@ -99,6 +105,7 @@
 		B7B661AE605FCA6E0C6873DD /* WidgetDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54179EE7727B64E8823AC417 /* WidgetDataStore.swift */; };
 		BA968E310632896AA9A77CAD /* MenuBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23FB0034847F0A18B4949C23 /* MenuBarController.swift */; };
 		BDDA20F06496272698649A32 /* PopoverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2E9A8AAD3FA362E3020F326 /* PopoverView.swift */; };
+		BDE08F2D2B5B9DAC6D48C3AB /* SessionIntentPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6F10B525ED2209D4B56BC4 /* SessionIntentPicker.swift */; };
 		C03EA5716A0FBB54F27ED72D /* StateVector.swift in Sources */ = {isa = PBXBuildFile; fileRef = F241DEEB8268A1779CC2935D /* StateVector.swift */; };
 		C3490FB249567D71CF1FAF70 /* WatchMoodInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FC374A3EF2291D96F3E00E3 /* WatchMoodInputView.swift */; };
 		C40DD5752B1106FFC6ACAB93 /* SongScoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41D0912BAFF9AA34648AD389 /* SongScoreTests.swift */; };
@@ -206,14 +213,18 @@
 		3A8149FFCF6706C172E042B1 /* ExplanationGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExplanationGenerator.swift; sourceTree = "<group>"; };
 		3B0525F25E51CC9E525A9092 /* ExplanationGeneratorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExplanationGeneratorTests.swift; sourceTree = "<group>"; };
 		3D4C7A3BFA492FD3B57677E7 /* SkipPenaltyCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkipPenaltyCalculator.swift; sourceTree = "<group>"; };
+		3E469CB566095B8F9C40C4BB /* BatchInsertHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatchInsertHelper.swift; sourceTree = "<group>"; };
 		41D0912BAFF9AA34648AD389 /* SongScoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SongScoreTests.swift; sourceTree = "<group>"; };
 		437BEF5FB3370999F2998AF0 /* DataPipelineIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataPipelineIntegrationTests.swift; sourceTree = "<group>"; };
+		4777E7508A9C4823D7A9B090 /* FocusModeIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusModeIntents.swift; sourceTree = "<group>"; };
 		48EE0D68589F955D9E9894D1 /* GuardFiltersTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuardFiltersTests.swift; sourceTree = "<group>"; };
 		4B3004AF8E3B77BE7F4AABF2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		54179EE7727B64E8823AC417 /* WidgetDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetDataStore.swift; sourceTree = "<group>"; };
 		5486784FF7066093E97EB3E0 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		548B64C3FCA444DFB6C866F0 /* ResonanceWatchComplications.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ResonanceWatchComplications.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		5B770AB438979BBDC1644702 /* StatusItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusItemView.swift; sourceTree = "<group>"; };
+		5B92AE62B1153F58DD7457EC /* WorkoutSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutSessionManager.swift; sourceTree = "<group>"; };
+		601843871163110F8FA6B0CB /* UIImage+DominantColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIImage+DominantColor.swift"; sourceTree = "<group>"; };
 		649D1B31F8BF440005D87934 /* MoodInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoodInputView.swift; sourceTree = "<group>"; };
 		67292D04BAE4DBA97DB2C4F0 /* ResonanceWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResonanceWidgets.swift; sourceTree = "<group>"; };
 		688C3FEB7CF667361B387CEB /* WorkoutDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutDetector.swift; sourceTree = "<group>"; };
@@ -221,6 +232,7 @@
 		71C27282C268D98C8607EC57 /* ContextBroadcaster.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextBroadcaster.swift; sourceTree = "<group>"; };
 		774E6162E40AD4FFB45A7B86 /* PhoneConnectivityService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneConnectivityService.swift; sourceTree = "<group>"; };
 		7950BC1C06A11CB12EC9F865 /* SongEffectHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SongEffectHelper.swift; sourceTree = "<group>"; };
+		7D6F10B525ED2209D4B56BC4 /* SessionIntentPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionIntentPicker.swift; sourceTree = "<group>"; };
 		7E0B826229674100DEE2F127 /* ResonanceWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ResonanceWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7FF638D1478E3FB11FE0DACE /* PersistenceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceController.swift; sourceTree = "<group>"; };
 		82D2D39111132BB07D961808 /* DecisionContextTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecisionContextTests.swift; sourceTree = "<group>"; };
@@ -375,6 +387,7 @@
 			isa = PBXGroup;
 			children = (
 				CB00EBAAD0B78A190949997C /* Repositories */,
+				3E469CB566095B8F9C40C4BB /* BatchInsertHelper.swift */,
 				7FF638D1478E3FB11FE0DACE /* PersistenceController.swift */,
 				B01A0531B60ACDDE4F19AE8C /* Resonance.xcdatamodeld */,
 			);
@@ -554,6 +567,7 @@
 			children = (
 				23C3650D47C23549563D5DB6 /* ActivityContext+Emoji.swift */,
 				A3CBB8CB2176ED52682C780C /* TimeInterval+Formatting.swift */,
+				601843871163110F8FA6B0CB /* UIImage+DominantColor.swift */,
 			);
 			path = Extensions;
 			sourceTree = "<group>";
@@ -597,6 +611,7 @@
 				CA5A5ED8847FD4CF2E77B93D /* MotionSensor.swift */,
 				E9F6C93D86E21EE17EB88B59 /* SensorCoordinator.swift */,
 				688C3FEB7CF667361B387CEB /* WorkoutDetector.swift */,
+				5B92AE62B1153F58DD7457EC /* WorkoutSessionManager.swift */,
 			);
 			path = Sensors;
 			sourceTree = "<group>";
@@ -642,6 +657,7 @@
 				649D1B31F8BF440005D87934 /* MoodInputView.swift */,
 				19BA53DF712E3E2C0F0282D1 /* NowPlayingView.swift */,
 				158614189CEBBF0AD2AE00E9 /* PlaylistBrowserView.swift */,
+				7D6F10B525ED2209D4B56BC4 /* SessionIntentPicker.swift */,
 				B892372A1F6A5E1CD575155A /* SettingsView.swift */,
 				DCA0CD7FC6BF9C5855A1C224 /* StateDebugView.swift */,
 			);
@@ -677,6 +693,7 @@
 		F482826BDCB42868FB24921C /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				4777E7508A9C4823D7A9B090 /* FocusModeIntents.swift */,
 				BACB2808ABB266CD884890CC /* WatchConnectivityManager.swift */,
 			);
 			path = Services;
@@ -909,6 +926,7 @@
 				C03EA5716A0FBB54F27ED72D /* StateVector.swift in Sources */,
 				AC1630D80C58C1CE36DCB582 /* StatusItemView.swift in Sources */,
 				39805E2F82E4BF1BCEDDA132 /* TimeInterval+Formatting.swift in Sources */,
+				36A3452A1F7716A809ABB71F /* UIImage+DominantColor.swift in Sources */,
 				57CA96BEC692840448CA7E8D /* UserPreferences.swift in Sources */,
 				18E469D28FD7F4E275E37AB6 /* WatchMessages.swift in Sources */,
 			);
@@ -934,11 +952,13 @@
 				940D52E5C8B5B049036C3B3A /* SongScore.swift in Sources */,
 				23C08DB06D89BEB5F7515607 /* StateVector.swift in Sources */,
 				7199CA108BBD57280A8180D9 /* TimeInterval+Formatting.swift in Sources */,
+				540EB69B2DBCD97632E86347 /* UIImage+DominantColor.swift in Sources */,
 				DAD8FA89D3944F38EE3B6A2C /* UserPreferences.swift in Sources */,
 				A16F9811CC03A331D5A6F9BC /* WatchMessages.swift in Sources */,
 				C3490FB249567D71CF1FAF70 /* WatchMoodInputView.swift in Sources */,
 				F11019181932DA92B5FAFA33 /* WatchNowPlayingView.swift in Sources */,
 				82F498D4AECB861CA5443F92 /* WorkoutDetector.swift in Sources */,
+				100FFD8AF8D36FCB8FC89069 /* WorkoutSessionManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -947,6 +967,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				2429B0EAAE7D88EB87089AD0 /* ActivityContext+Emoji.swift in Sources */,
+				07F814E1C3C86447AE90072C /* BatchInsertHelper.swift in Sources */,
 				0157D1CC9BBA2B61E3086C6A /* Constants.swift in Sources */,
 				7EE4684CDC4DC856CBBF17CF /* ContextCollector.swift in Sources */,
 				0DBD17308E2D7CC8A1F6C24B /* ContextSignal.swift in Sources */,
@@ -956,6 +977,7 @@
 				25B14D89A11A896AFF4139B6 /* ExplanationGenerator.swift in Sources */,
 				6A60FB7F6483348F1CFA9BC6 /* FeatureExtractor.swift in Sources */,
 				CFA7A52C130FA82C3C220B18 /* FeatureNormalizer.swift in Sources */,
+				531537A422B383A2CD6017EC /* FocusModeIntents.swift in Sources */,
 				65E235FAD376CD52FF753A8A /* GuardFilters.swift in Sources */,
 				2DB9E0C77374397CD59288E5 /* HealthKitService.swift in Sources */,
 				3C755B307D4CEC85CD81C19B /* HistoricalEngine.swift in Sources */,
@@ -979,6 +1001,7 @@
 				3B515791B418449660F92B8B /* Resonance.xcdatamodeld in Sources */,
 				67389D3F9FA11CB656E8A5AD /* ResonanceApp.swift in Sources */,
 				6453A2B3CAA627BF88C08848 /* ResponseCreditCalculator.swift in Sources */,
+				BDE08F2D2B5B9DAC6D48C3AB /* SessionIntentPicker.swift in Sources */,
 				E7195009A20BAD5C3BDD50AD /* SessionQualityScorer.swift in Sources */,
 				587E14EF4B789C8B2447DA16 /* SessionReconstructor.swift in Sources */,
 				2CBDA478E078BA253CC6E64F /* SettingsView.swift in Sources */,
@@ -994,6 +1017,7 @@
 				CBDCA92D05EF0491FDF120D3 /* StateVector.swift in Sources */,
 				74C9AE559891068C4C1AAC1B /* TimeInterval+Formatting.swift in Sources */,
 				6A89C006415919AFD582586B /* TransitionController.swift in Sources */,
+				0248D52CFC2DB705C1DA6BF5 /* UIImage+DominantColor.swift in Sources */,
 				A805F382D6543CD73055C3E1 /* UserPreferences.swift in Sources */,
 				93F6283B05AED31F0C824EC9 /* WatchConnectivityManager.swift in Sources */,
 				F55B4FEFF27B21F4B2A391A4 /* WatchMessages.swift in Sources */,
@@ -1146,6 +1170,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 69YKR4K9LC;
 				ENABLE_BITCODE = NO;
@@ -1174,6 +1199,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_VERSION = 5.9;
 				WATCHOS_DEPLOYMENT_TARGET = 26.0;
 			};
@@ -1244,6 +1270,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 69YKR4K9LC;
 				ENABLE_BITCODE = NO;
@@ -1251,6 +1278,7 @@
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
@@ -1258,13 +1286,15 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LLVM_LTO = YES;
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_COMPILATION_MODE = wholemodule;
-				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_OPTIMIZATION_LEVEL = "-Osize";
+				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_VERSION = 5.9;
 				WATCHOS_DEPLOYMENT_TARGET = 26.0;
 			};

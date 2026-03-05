@@ -936,7 +936,7 @@ Use Swift Testing's new Exit Tests for crash/fatal-error paths that were previou
 | 27 | PL-3: Dynamic Island / Live Activity | Platform | Medium |
 | 28 | ML-3: RL effectiveness model | AI/ML | High |
 
-### Tier 4: Future Horizon
+### Tier 4: Future Horizon — SHELVED (Potential future ideas only. Do not implement unless explicitly requested.)
 | # | Enhancement | Category | Effort |
 |---|------------|----------|--------|
 | 29 | PL-4: visionOS companion | Platform | High |
