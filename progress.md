@@ -19,7 +19,7 @@ This file tracks the current state of the project, completed work, and remaining
 | Phase 8: Learning Loop (M7) | COMPLETE | 100% |
 | Phase 9: MVP Polish (M8) | COMPLETE | 100% |
 | Enhancement Tier 1: Quick Wins | COMPLETE | 100% |
-| Enhancement Tier 2: Core Features | NOT STARTED | 0% |
+| Enhancement Tier 2: Core Features | COMPLETE | 100% |
 | Enhancement Tier 3: Strategic | NOT STARTED | 0% |
 | Enhancement Tier 4: Future Horizon | NOT STARTED | 0% |
 
@@ -1602,19 +1602,90 @@ Example decision format:
 
 ---
 
-# ENHANCEMENT TIER 2: CORE FEATURES (High Impact, Moderate Effort)
+# ENHANCEMENT TIER 2: CORE FEATURES (High Impact, Moderate Effort) [COMPLETE]
 
-## Planned Items
-- [ ] PF-1: Migrate ViewModels to @Observable
-- [ ] UX-1: Liquid Glass design adoption
-- [ ] NF-3: Session Intent System
-- [ ] NF-9: Workout session mode (high-freq HRV)
-- [ ] PF-2: NSBatchInsertRequest for HealthKit import
-- [ ] UX-8: Onboarding permission flow optimization
-- [ ] PL-1: App Intents & Siri integration
-- [ ] UX-11: Interactive widgets with App Intents
-- [ ] PF-5: WatchConnectivity reliability hardening
-- [ ] AE-1: Swift 6 strict concurrency
+## Checklist
+
+### T2-1: PF-1 — Migrate ViewModels to @Observable [COMPLETE]
+- [x] Migrated NowPlayingViewModel from ObservableObject to @Observable (Observation framework)
+- [x] Migrated PlaylistViewModel from ObservableObject to @Observable
+- [x] Replaced @Published with plain var properties (per-property tracking)
+- [x] Updated view references from @ObservedObject to @Bindable where needed
+- [x] Fixed Combine assign(to:) pattern that required @Published
+
+### T2-2: UX-1 — Liquid Glass Design Adoption [COMPLETE]
+- [x] Applied .glassEffect(.regular.interactive) to active playlist bar
+- [x] Glass material integrates with iOS 26 Liquid Glass design language
+- [x] Existing .ultraThinMaterial backgrounds provide graceful fallback
+
+### T2-3: NF-3 — Session Intent System [COMPLETE]
+- [x] Created SessionIntent enum with 6 presets (Deep Work, Workout, Wind Down, Morning Ramp-Up, Creative Flow, Auto-Detect)
+- [x] Created SessionIntentPicker view with 2-column grid cards
+- [x] Each intent defines icon, color, description, and scoring weight preset
+- [x] Accessibility labels and hints on all intent cards
+
+### T2-4: NF-9 — Workout Session Mode [COMPLETE]
+- [x] Created WorkoutSessionManager for watchOS with HKWorkoutSession
+- [x] Start/stop background workout session for high-frequency HR streaming
+- [x] HKAnchoredObjectQuery for continuous heart rate updates (every 1-3 seconds)
+- [x] HKWorkoutSessionDelegate and HKLiveWorkoutBuilderDelegate conformance
+- [x] Heart rate updates published via Combine PassthroughSubject
+
+### T2-5: PF-2 — NSBatchInsertRequest [COMPLETE]
+- [x] Created BatchInsertHelper utility with batchInsertBiometricSamples()
+- [x] Created batchInsertPlaybackEvents() for historical backfill
+- [x] Uses managedObjectHandler closure pattern for type safety
+- [x] Merges changes into viewContext via NSManagedObjectContext.mergeChanges()
+- [x] NSMergeByPropertyObjectTrumpMergePolicy for conflict resolution
+
+### T2-6: UX-8 — Onboarding Permission Flow Optimization [COMPLETE]
+- [x] MusicKit page now requests authorization inline (Grant Music Access button)
+- [x] Added "I'll set this up later" skip option on permission pages 2 and 3
+- [x] Skip reduces friction for users who want to explore first
+- [x] Permission pages clearly explain why each permission is needed before requesting
+
+### T2-7: PL-1 — App Intents & Siri Integration [COMPLETE]
+- [x] Created SkipTrackIntent for "Skip song in Resonance" Siri command
+- [x] Created GetCurrentStateIntent for "Check my state in Resonance" Siri query
+- [x] Created ResonanceShortcuts provider with 3 app shortcuts
+- [x] Registered Siri phrases for natural language invocation
+- [x] Shortcuts appear in the Shortcuts app automatically
+
+### T2-8: UX-11 — Interactive Widgets with App Intents [COMPLETE]
+- [x] Created TogglePlayPauseIntent for play/pause button in widgets
+- [x] Created WidgetSkipIntent for skip button in widgets
+- [x] Created WidgetSetMoodIntent for mood quick-set (3 levels: down/neutral/up)
+- [x] Added interactive transport controls to medium Now Playing widget
+- [x] Added mood quick-set buttons to medium widget
+
+### T2-9: PF-5 — WatchConnectivity Reliability Hardening [COMPLETE]
+- [x] Added pending message queue (max 10 messages) for pre-activation buffering
+- [x] Messages queued when session not activated are flushed on activation completion
+- [x] Oldest messages dropped when queue is full (keeps latest state)
+- [x] Flush occurs on main thread after activation callback
+
+### T2-10: AE-1 — Swift 6 Strict Concurrency [COMPLETE]
+- [x] Added SWIFT_STRICT_CONCURRENCY: complete to project.yml base settings
+- [x] Enables compile-time data race detection across all targets
+- [x] Prepares codebase for Swift 6 migration
+
+---
+
+## Tier 2 Change Log
+
+| Date | Item | Details |
+|------|------|---------|
+| 2026-03-05 | T2-1 | Migrated NowPlayingViewModel + PlaylistViewModel to @Observable; updated all view bindings |
+| 2026-03-05 | T2-2 | Applied .glassEffect(.regular.interactive) to active playlist bar in NowPlayingView |
+| 2026-03-05 | T2-3 | Created SessionIntentPicker.swift with 6 session presets and 2-column grid UI |
+| 2026-03-05 | T2-4 | Created WorkoutSessionManager.swift for watchOS high-frequency HR via HKWorkoutSession |
+| 2026-03-05 | T2-5 | Created BatchInsertHelper.swift with NSBatchInsertRequest for biometric samples and playback events |
+| 2026-03-05 | T2-6 | Updated OnboardingContainerView with inline auth, skip options, and improved flow |
+| 2026-03-05 | T2-7 | Extended FocusModeIntents.swift with SkipTrackIntent, GetCurrentStateIntent, ResonanceShortcuts |
+| 2026-03-05 | T2-8 | Updated ResonanceWidgets.swift with interactive play/pause, skip, and mood buttons |
+| 2026-03-05 | T2-9 | Added pending message queue to WatchConnectivityManager with activation flush |
+| 2026-03-05 | T2-10 | Added SWIFT_STRICT_CONCURRENCY: complete to project.yml |
+| 2026-03-05 | TIER 2 COMPLETE | All 10 Tier 2 enhancements implemented |
 
 ---
 

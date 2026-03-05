@@ -13,11 +13,11 @@ import SwiftUI
 struct MainView: View {
     // MARK: - Properties
 
-    @ObservedObject var nowPlayingViewModel: NowPlayingViewModel
-    @ObservedObject var playlistViewModel: PlaylistViewModel
+    @Bindable var nowPlayingViewModel: NowPlayingViewModel
+    @Bindable var playlistViewModel: PlaylistViewModel
     let musicService: MusicKitService
     @ObservedObject var historicalEngine: HistoricalEngine
-    @ObservedObject var stateEngine: StateEngine
+    var stateEngine: StateEngine
 
     @State private var selectedTab: Tab = .nowPlaying
 

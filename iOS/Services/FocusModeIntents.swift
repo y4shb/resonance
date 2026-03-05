@@ -94,3 +94,85 @@ struct StartResonanceSessionIntent: AppIntent {
         return .result(dialog: "Starting \(sessionType.rawValue) session in Resonance.")
     }
 }
+
+// MARK: - Skip Track Intent (Siri / Shortcuts)
+
+/// Siri intent to skip the current track.
+struct SkipTrackIntent: AppIntent {
+    static var title: LocalizedStringResource = "Skip Song"
+    static var description: IntentDescription? = IntentDescription(
+        "Skip the currently playing song in Resonance.",
+        categoryName: "Music"
+    )
+
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier)
+        defaults?.set(true, forKey: "siri.skipRequested")
+        defaults?.synchronize()
+        return .result(dialog: "Skipping song in Resonance.")
+    }
+}
+
+// MARK: - Get Current State Intent (Siri)
+
+/// Siri intent to check current biometric state.
+struct GetCurrentStateIntent: AppIntent {
+    static var title: LocalizedStringResource = "Check My State"
+    static var description: IntentDescription? = IntentDescription(
+        "Check your current biometric state in Resonance.",
+        categoryName: "Health"
+    )
+
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier)
+        let stateName = defaults?.string(forKey: "widget.state.stateName") ?? "Unknown"
+        let energy = defaults?.double(forKey: "widget.state.energy") ?? 0.5
+        let heartRate = defaults?.double(forKey: "widget.state.heartRate")
+
+        var response = "Your current state is \(stateName) with \(Int(energy * 100))% energy."
+        if let hr = heartRate, hr > 0 {
+            response += " Heart rate: \(Int(hr)) BPM."
+        }
+
+        return .result(dialog: IntentDialog(stringLiteral: response))
+    }
+}
+
+// MARK: - App Shortcuts Provider
+
+/// Registers Resonance shortcuts for the Shortcuts app and Siri suggestions.
+struct ResonanceShortcuts: AppShortcutsProvider {
+    static var appShortcuts: [AppShortcut] {
+        AppShortcut(
+            intent: StartResonanceSessionIntent(),
+            phrases: [
+                "Start a \(\.$sessionType) session in \(.applicationName)",
+                "Start \(.applicationName) in \(\.$sessionType) mode",
+                "Play \(\.$sessionType) music in \(.applicationName)",
+            ],
+            shortTitle: "Start Session",
+            systemImageName: "waveform.circle.fill"
+        )
+
+        AppShortcut(
+            intent: SkipTrackIntent(),
+            phrases: [
+                "Skip song in \(.applicationName)",
+                "Next song in \(.applicationName)",
+            ],
+            shortTitle: "Skip Song",
+            systemImageName: "forward.fill"
+        )
+
+        AppShortcut(
+            intent: GetCurrentStateIntent(),
+            phrases: [
+                "What's my state in \(.applicationName)",
+                "How am I doing in \(.applicationName)",
+                "Check my \(.applicationName) state",
+            ],
+            shortTitle: "Check State",
+            systemImageName: "heart.fill"
+        )
+    }
+}

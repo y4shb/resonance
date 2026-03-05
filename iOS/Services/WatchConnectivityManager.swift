@@ -93,6 +93,12 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WatchConnectiv
         WCSession.isSupported() ? WCSession.default : nil
     }
 
+    /// Messages queued before session activation; flushed once activated.
+    private var pendingMessages: [WatchMessage] = []
+
+    /// Maximum pending messages to buffer (prevents unbounded memory growth).
+    private let maxPendingMessages = 10
+
     // MARK: - Initialization
 
     private override init() {
@@ -111,6 +117,17 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WatchConnectiv
         session.delegate = self
         session.activate()
         logInfo("WCSession activation requested", category: .watchConnectivity)
+    }
+
+    /// Flushes any messages that were queued before the session became activated.
+    private func flushPendingMessages() {
+        guard !pendingMessages.isEmpty else { return }
+        logInfo("Flushing \(pendingMessages.count) pending WCSession messages", category: .watchConnectivity)
+        let messages = pendingMessages
+        pendingMessages.removeAll()
+        for message in messages {
+            sendMessage(message)
+        }
     }
 
     // MARK: - Sending (Phone -> Watch)
@@ -233,7 +250,16 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WatchConnectiv
 
     private func sendMessage(_ watchMessage: WatchMessage) {
         guard let session = session, session.activationState == .activated else {
-            logWarning("Cannot send message: session not activated", category: .watchConnectivity)
+            // Queue message for delivery after activation
+            if pendingMessages.count < maxPendingMessages {
+                pendingMessages.append(watchMessage)
+                logDebug("Message queued (session not activated); queue size: \(pendingMessages.count)", category: .watchConnectivity)
+            } else {
+                // Drop oldest to keep only latest state
+                pendingMessages.removeFirst()
+                pendingMessages.append(watchMessage)
+                logDebug("Pending queue full; oldest message dropped", category: .watchConnectivity)
+            }
             return
         }
 
@@ -329,6 +355,13 @@ extension WatchConnectivityManager: WCSessionDelegate {
             logError("WCSession activation failed", error: error, category: .watchConnectivity)
         } else {
             logInfo("WCSession activation completed: \(activationState.rawValue)", category: .watchConnectivity)
+
+            // Flush any messages that were queued before activation
+            if activationState == .activated {
+                DispatchQueue.main.async { [weak self] in
+                    self?.flushPendingMessages()
+                }
+            }
         }
     }
 

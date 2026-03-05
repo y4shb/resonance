@@ -7,6 +7,7 @@
 
 import WidgetKit
 import SwiftUI
+import AppIntents
 
 // MARK: - Widget Bundle
 
@@ -15,6 +16,59 @@ struct ResonanceWidgetBundle: WidgetBundle {
     var body: some Widget {
         NowPlayingWidget()
         StateWidget()
+    }
+}
+
+// MARK: - Widget App Intents (Interactive Controls)
+
+/// App Intent for toggling play/pause from a widget.
+struct TogglePlayPauseIntent: AppIntent {
+    static var title: LocalizedStringResource = "Toggle Play/Pause"
+    static var description: IntentDescription? = IntentDescription("Toggle music playback")
+
+    func perform() async throws -> some IntentResult {
+        let defaults = UserDefaults(suiteName: "group.com.y4sh.resonance")
+        defaults?.set(true, forKey: "widget.togglePlayPause")
+        defaults?.synchronize()
+        return .result()
+    }
+}
+
+/// App Intent for skipping to next track from a widget.
+struct WidgetSkipIntent: AppIntent {
+    static var title: LocalizedStringResource = "Skip Song"
+    static var description: IntentDescription? = IntentDescription("Skip to the next song")
+
+    func perform() async throws -> some IntentResult {
+        let defaults = UserDefaults(suiteName: "group.com.y4sh.resonance")
+        defaults?.set(true, forKey: "widget.skipRequested")
+        defaults?.synchronize()
+        return .result()
+    }
+}
+
+/// App Intent for setting mood from a widget.
+struct WidgetSetMoodIntent: AppIntent {
+    static var title: LocalizedStringResource = "Set Mood"
+    static var description: IntentDescription? = IntentDescription("Set your current mood")
+
+    @Parameter(title: "Mood Level")
+    var moodLevel: Int
+
+    init() {
+        self.moodLevel = 3  // Neutral default
+    }
+
+    init(moodLevel: Int) {
+        self.moodLevel = moodLevel
+    }
+
+    func perform() async throws -> some IntentResult {
+        let defaults = UserDefaults(suiteName: "group.com.y4sh.resonance")
+        defaults?.set(moodLevel, forKey: "widget.moodLevel")
+        defaults?.set(Date().timeIntervalSince1970, forKey: "widget.moodTimestamp")
+        defaults?.synchronize()
+        return .result()
     }
 }
 
@@ -140,16 +194,6 @@ struct NowPlayingWidgetView: View {
                 }
 
             VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Image(systemName: entry.isPlaying ? "pause.fill" : "play.fill")
-                        .foregroundStyle(.blue)
-                    Text("Resonance")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-
-                Spacer()
-
                 Text(entry.songTitle)
                     .font(.headline)
                     .lineLimit(2)
@@ -163,11 +207,53 @@ struct NowPlayingWidgetView: View {
                     Text(explanation)
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
-                        .lineLimit(2)
+                        .lineLimit(1)
+                }
+
+                Spacer()
+
+                // Interactive transport controls (iOS 17+ App Intents)
+                HStack(spacing: 16) {
+                    Button(intent: TogglePlayPauseIntent()) {
+                        Image(systemName: entry.isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                            .font(.title2)
+                            .foregroundStyle(.blue)
+                    }
+                    .buttonStyle(.plain)
+
+                    Button(intent: WidgetSkipIntent()) {
+                        Image(systemName: "forward.fill")
+                            .font(.body)
+                            .foregroundStyle(.primary)
+                    }
+                    .buttonStyle(.plain)
+
+                    Spacer()
+
+                    // Mood quick-set buttons
+                    HStack(spacing: 8) {
+                        Button(intent: WidgetSetMoodIntent(moodLevel: 1)) {
+                            Text("\u{2B07}")  // Down arrow
+                                .font(.caption)
+                        }
+                        .buttonStyle(.plain)
+
+                        Button(intent: WidgetSetMoodIntent(moodLevel: 3)) {
+                            Text("\u{2796}")  // Neutral
+                                .font(.caption)
+                        }
+                        .buttonStyle(.plain)
+
+                        Button(intent: WidgetSetMoodIntent(moodLevel: 5)) {
+                            Text("\u{2B06}")  // Up arrow
+                                .font(.caption)
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
             }
 
-            Spacer()
+            Spacer(minLength: 0)
         }
         .padding()
     }

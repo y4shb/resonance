@@ -10,6 +10,7 @@ import Foundation
 import Combine
 import CoreData
 import MusicKit
+import Observation
 import SwiftUI
 import UIKit
 
@@ -34,33 +35,37 @@ struct SongDisplayInfo: Equatable {
 
 // MARK: - Now Playing View Model
 
+/// @Observable replaces ObservableObject for per-property tracking.
+/// Views only re-render when the specific properties they read change,
+/// eliminating cascading redraws from high-frequency updates like playback progress.
 @MainActor
-final class NowPlayingViewModel: ObservableObject {
-    // MARK: - Published Properties
+@Observable
+final class NowPlayingViewModel {
+    // MARK: - Observed Properties
 
     /// The currently playing song's display information.
-    @Published private(set) var currentSong: SongDisplayInfo = .placeholder
+    private(set) var currentSong: SongDisplayInfo = .placeholder
 
     /// Whether audio is currently playing.
-    @Published private(set) var isPlaying: Bool = false
+    private(set) var isPlaying: Bool = false
 
     /// Playback progress as a value from 0.0 to 1.0.
-    @Published var playbackProgress: Double = 0.0
+    var playbackProgress: Double = 0.0
 
     /// Current playback time in seconds.
-    @Published private(set) var currentTime: TimeInterval = 0
+    private(set) var currentTime: TimeInterval = 0
 
     /// Total duration of the current track in seconds.
-    @Published private(set) var duration: TimeInterval = 0
+    private(set) var duration: TimeInterval = 0
 
     /// The name of the currently active playlist, if any.
-    @Published var activePlaylistName: String?
+    var activePlaylistName: String?
 
     /// Error message to display in the UI.
-    @Published var errorMessage: String?
+    var errorMessage: String?
 
     /// Dominant accent color extracted from the current album artwork.
-    @Published var artworkAccentColor: Color?
+    var artworkAccentColor: Color?
 
     // MARK: - Private Properties
 
@@ -83,7 +88,7 @@ final class NowPlayingViewModel: ObservableObject {
     var stateEngine: StateEngine?
 
     /// The current AI explanation for why this song was selected (nil if manually chosen).
-    @Published var currentExplanation: String?
+    var currentExplanation: String?
 
     /// Whether the DJ should auto-select the next song when the current one ends.
     var aiAutoAdvanceEnabled: Bool = true

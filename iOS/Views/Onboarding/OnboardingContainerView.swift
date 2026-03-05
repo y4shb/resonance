@@ -117,6 +117,15 @@ struct OnboardingContainerView: View {
                     )
                     .clipShape(RoundedRectangle(cornerRadius: 14))
             }
+
+            // Skip option for permission pages (reduces friction)
+            if showSkipOption {
+                Button(action: handleSkip) {
+                    Text("I'll set this up later")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
         }
     }
 
@@ -124,6 +133,8 @@ struct OnboardingContainerView: View {
 
     private var primaryButtonTitle: String {
         switch currentPage {
+        case 2:
+            return musicKitAuthorized ? "Continue" : "Grant Music Access"
         case 3:
             return "Get Started"
         default:
@@ -131,14 +142,41 @@ struct OnboardingContainerView: View {
         }
     }
 
+    /// Whether the current page shows a "Set up later" skip option
+    private var showSkipOption: Bool {
+        currentPage == 2 || currentPage == 3
+    }
+
     // MARK: - Actions
 
     private func handlePrimaryAction() {
-        if currentPage < totalPages - 1 {
-            withAnimation(.easeInOut(duration: UIConstants.Animation.standard)) {
-                currentPage += 1
+        if currentPage == 2 && !musicKitAuthorized {
+            // Request MusicKit authorization on this page
+            Task {
+                let status = await musicService.requestAuthorization()
+                if status == .authorized {
+                    musicKitAuthorized = true
+                    advanceToNextPage()
+                }
             }
-            logInfo("Onboarding advanced to page \(currentPage)", category: .ui)
+        } else if currentPage < totalPages - 1 {
+            advanceToNextPage()
+        } else {
+            completeOnboarding()
+        }
+    }
+
+    private func advanceToNextPage() {
+        withAnimation(.easeInOut(duration: UIConstants.Animation.standard)) {
+            currentPage += 1
+        }
+        logInfo("Onboarding advanced to page \(currentPage)", category: .ui)
+    }
+
+    private func handleSkip() {
+        logInfo("User skipped onboarding page \(currentPage)", category: .ui)
+        if currentPage < totalPages - 1 {
+            advanceToNextPage()
         } else {
             completeOnboarding()
         }

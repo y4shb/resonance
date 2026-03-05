@@ -14,8 +14,8 @@ import MusicKit
 struct NowPlayingView: View {
     // MARK: - Properties
 
-    @ObservedObject var viewModel: NowPlayingViewModel
-    @ObservedObject var stateEngine: StateEngine
+    @Bindable var viewModel: NowPlayingViewModel
+    var stateEngine: StateEngine
 
     // Accessibility
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -385,6 +385,7 @@ struct NowPlayingView: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
                 .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
+                .glassEffect(.regular.interactive)
                 .padding(.horizontal, 4)
                 .padding(.bottom, 8)
             }

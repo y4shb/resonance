@@ -10,6 +10,7 @@ import Foundation
 import Combine
 import CoreData
 import MusicKit
+import Observation
 
 // MARK: - Playlist Display Info
 
@@ -31,24 +32,27 @@ struct PlaylistDisplayInfo: Identifiable, Equatable {
 
 // MARK: - Playlist View Model
 
+/// @Observable replaces ObservableObject for per-property tracking.
+/// Playlist list updates don't cascade redraws to unrelated views.
 @MainActor
-final class PlaylistViewModel: ObservableObject {
-    // MARK: - Published Properties
+@Observable
+final class PlaylistViewModel {
+    // MARK: - Observed Properties
 
     /// Array of playlists available to the user.
-    @Published private(set) var playlists: [PlaylistDisplayInfo] = []
+    private(set) var playlists: [PlaylistDisplayInfo] = []
 
     /// Whether playlists are currently being fetched.
-    @Published private(set) var isLoading: Bool = false
+    private(set) var isLoading: Bool = false
 
     /// Error message to display in the UI.
-    @Published var errorMessage: String?
+    var errorMessage: String?
 
     /// The currently selected/active playlist name.
-    @Published private(set) var activePlaylistName: String?
+    private(set) var activePlaylistName: String?
 
     /// Whether Apple Music authorization has been denied.
-    @Published private(set) var isMusicAuthDenied: Bool = false
+    private(set) var isMusicAuthDenied: Bool = false
 
     // MARK: - Private Properties
 
@@ -65,8 +69,10 @@ final class PlaylistViewModel: ObservableObject {
         // Track authorization status changes
         musicService.authorizationStatusPublisher
             .receive(on: DispatchQueue.main)
-            .map { $0 == .denied }
-            .assign(to: &$isMusicAuthDenied)
+            .sink { [weak self] status in
+                self?.isMusicAuthDenied = (status == .denied)
+            }
+            .store(in: &cancellables)
 
         logDebug("PlaylistViewModel initializing", category: .ui)
     }
