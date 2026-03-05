@@ -177,12 +177,14 @@ final class ContextCollector: ObservableObject {
 
     private func startMacOSContextPolling() {
         // Poll CloudKit every 60 seconds for macOS context updates
-        macOSPollTimer = Timer.scheduledTimer(
+        let timer = Timer.scheduledTimer(
             withTimeInterval: 60,
             repeats: true
         ) { [weak self] _ in
             self?.fetchLatestMacOSContext()
         }
+        timer.tolerance = 6.0  // 10% tolerance (6s on 60s interval) for battery optimization
+        macOSPollTimer = timer
 
         // Initial fetch
         fetchLatestMacOSContext()

@@ -17,10 +17,14 @@ struct NowPlayingView: View {
     @ObservedObject var viewModel: NowPlayingViewModel
     @ObservedObject var stateEngine: StateEngine
 
+    // Accessibility
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     // Track whether user is actively scrubbing the slider
     @State private var isScrubbing: Bool = false
     @State private var scrubProgress: Double = 0.0
     @State private var showMoodInput: Bool = false
+    @State private var isExplanationExpanded: Bool = false
 
     // MARK: - Body
 
@@ -54,11 +58,14 @@ struct NowPlayingView: View {
 
                         explanationBar
 
+                        hrvZoneBar
+
                         stateInfoBar
 
                         activePlaylistBar
                     }
                     .padding(.horizontal)
+                    .background(artworkBackgroundGradient)
                 }
             }
             .navigationTitle("Resonance")
@@ -71,6 +78,7 @@ struct NowPlayingView: View {
                         Image(systemName: "wand.and.stars")
                     }
                     .disabled(viewModel.activePlaylistName == nil)
+                    .accessibilityLabel("AI Select Next Song")
                 }
 
                 ToolbarItem(placement: .topBarTrailing) {
@@ -79,6 +87,7 @@ struct NowPlayingView: View {
                     } label: {
                         Image(systemName: "face.smiling")
                     }
+                    .accessibilityLabel("Set Mood")
                 }
             }
             .sheet(isPresented: $showMoodInput) {
@@ -129,6 +138,7 @@ struct NowPlayingView: View {
                     .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
             }
         }
+        .accessibilityLabel("Album art: \(viewModel.currentSong.title) by \(viewModel.currentSong.artistName)")
     }
 
     // MARK: - Song Info View
@@ -171,6 +181,8 @@ struct NowPlayingView: View {
                 }
             )
             .tint(.blue)
+            .accessibilityLabel("Playback progress")
+            .accessibilityValue("\(viewModel.currentTime.formattedMinutesSeconds) of \(viewModel.duration.formattedMinutesSeconds)")
 
             HStack {
                 Text((isScrubbing ? scrubProgress * viewModel.duration : viewModel.currentTime)
@@ -199,6 +211,7 @@ struct NowPlayingView: View {
                     .font(.title2)
                     .foregroundStyle(.primary)
             }
+            .accessibilityLabel("Previous track")
 
             // Play/Pause button
             Button(action: { viewModel.togglePlayPause() }) {
@@ -206,6 +219,7 @@ struct NowPlayingView: View {
                     .font(.system(size: 56))
                     .foregroundStyle(.blue)
             }
+            .accessibilityLabel(viewModel.isPlaying ? "Pause" : "Play")
 
             // Next button
             Button(action: { viewModel.skip() }) {
@@ -213,30 +227,110 @@ struct NowPlayingView: View {
                     .font(.title2)
                     .foregroundStyle(.primary)
             }
+            .accessibilityLabel("Skip to next track")
         }
     }
 
-    // MARK: - Explanation Bar
+    // MARK: - Explanation Bar (Progressive Disclosure)
 
     private var explanationBar: some View {
         Group {
             if let explanation = viewModel.currentExplanation {
-                HStack(alignment: .top, spacing: 8) {
-                    Image(systemName: "wand.and.stars")
-                        .foregroundStyle(.blue)
-                        .font(.caption)
-                        .padding(.top, 2)
+                VStack(alignment: .leading, spacing: 4) {
+                    Button(action: {
+                        withAnimation(reduceMotion ? .none : .spring(response: 0.3, dampingFraction: 0.8)) {
+                            isExplanationExpanded.toggle()
+                        }
+                    }) {
+                        HStack(alignment: .top, spacing: 8) {
+                            Image(systemName: "wand.and.stars")
+                                .foregroundStyle(.blue)
+                                .font(.caption)
+                                .padding(.top, 2)
 
-                    Text(explanation)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(3)
-                        .multilineTextAlignment(.leading)
+                            Text(explanation)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(isExplanationExpanded ? nil : 1)
+                                .multilineTextAlignment(.leading)
 
-                    Spacer()
+                            Spacer()
+
+                            Image(systemName: isExplanationExpanded ? "chevron.up" : "chevron.down")
+                                .foregroundStyle(.tertiary)
+                                .font(.caption2)
+                                .padding(.top, 2)
+                        }
+                    }
+                    .buttonStyle(.plain)
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("AI explanation: \(explanation)")
+                .accessibilityHint(isExplanationExpanded ? "Tap to collapse" : "Tap to expand")
+            }
+        }
+    }
+
+    // MARK: - HRV Zone Indicator
+
+    private var hrvZoneBar: some View {
+        HStack(spacing: 6) {
+            Circle()
+                .fill(hrvZoneColor)
+                .frame(width: 8, height: 8)
+                .shadow(color: hrvZoneColor.opacity(0.6), radius: 4)
+
+            Text(hrvZoneName)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 4)
+        .accessibilityLabel("Heart rate variability zone: \(hrvZoneName)")
+    }
+
+    /// Returns the HRV zone color based on current stress level
+    private var hrvZoneColor: Color {
+        let stress = stateEngine.currentState.stress
+        if stress < 0.35 {
+            return .green      // Recovered / relaxed
+        } else if stress < 0.65 {
+            return .yellow     // Normal / active
+        } else {
+            return .red        // Stressed / elevated
+        }
+    }
+
+    /// Returns the HRV zone name based on current stress level
+    private var hrvZoneName: String {
+        let stress = stateEngine.currentState.stress
+        if stress < 0.35 {
+            return "Recovered"
+        } else if stress < 0.65 {
+            return "Normal"
+        } else {
+            return "Stressed"
+        }
+    }
+
+    // MARK: - Album Art Background Gradient
+
+    private var artworkBackgroundGradient: some View {
+        Group {
+            if let accentColor = viewModel.artworkAccentColor {
+                LinearGradient(
+                    colors: [accentColor.opacity(0.15), .clear],
+                    startPoint: .top,
+                    endPoint: .center
+                )
+                .ignoresSafeArea()
+                .animation(reduceMotion ? .none : .easeInOut(duration: 0.6), value: viewModel.artworkAccentColor)
+            } else {
+                Color.clear
             }
         }
     }

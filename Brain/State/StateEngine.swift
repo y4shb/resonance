@@ -100,7 +100,7 @@ final class StateEngine: ObservableObject {
         }
 
         // Schedule periodic updates
-        updateTimer = Timer.scheduledTimer(
+        let timer = Timer.scheduledTimer(
             withTimeInterval: StateEngineConstants.updateIntervalSeconds,
             repeats: true
         ) { [weak self] _ in
@@ -108,6 +108,8 @@ final class StateEngine: ObservableObject {
                 await self?.updateState()
             }
         }
+        timer.tolerance = 3.0  // 10% tolerance (3s on 30s interval) for battery optimization
+        updateTimer = timer
 
         logInfo("StateEngine started (interval: \(StateEngineConstants.updateIntervalSeconds)s)", category: .stateEngine)
     }

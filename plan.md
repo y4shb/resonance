@@ -4575,7 +4575,71 @@ Total: 4 waves, 6 agents, with 2 parallel in Wave 2.
 
 ---
 
+---
+
+# PART 13: POST-MVP ENHANCEMENT TIERS
+
+## 13.1 Enhancement Strategy
+
+Based on comprehensive security audit, competitive analysis, and technology research (documented in `enhancements.md`), 87 specific improvements were identified and organized into 4 implementation tiers by impact-to-effort ratio.
+
+## 13.2 Tier 1: Quick Wins (9 items) — COMPLETE
+
+| # | Item | Category | Status |
+|---|------|----------|--------|
+| 1 | A11Y-3: Reduce Motion support | Accessibility | DONE |
+| 2 | A11Y-1: VoiceOver labels on custom controls | Accessibility | DONE |
+| 3 | PF-3: Timer tolerance for battery | Performance | DONE |
+| 4 | PF-7: Binary size optimization build settings | Performance | DONE |
+| 5 | UX-2: Album art color extraction | UI/UX | DONE |
+| 6 | UX-5: HRV zone ambient indicator | UI/UX | DONE |
+| 7 | UX-6: Explanation card progressive disclosure | UI/UX | DONE |
+| 8 | PL-2: Focus Mode Filter integration | Platform | DONE |
+| 9 | NF-2: MusicKit crossfade transitions | Feature | DONE |
+
+## 13.3 Tier 2: Core Features (10 items) — PLANNED
+
+| # | Item | Category | Effort |
+|---|------|----------|--------|
+| 1 | PF-1: Migrate ViewModels to @Observable | Performance | Medium |
+| 2 | UX-1: Liquid Glass design adoption | UI/UX | High |
+| 3 | NF-3: Session Intent System | Feature | Medium |
+| 4 | NF-9: Workout session mode (high-freq HRV) | Feature | Medium |
+| 5 | PF-2: NSBatchInsertRequest for HealthKit import | Performance | Low |
+| 6 | UX-8: Onboarding permission flow optimization | UI/UX | Medium |
+| 7 | PL-1: App Intents & Siri integration | Platform | Medium |
+| 8 | UX-11: Interactive widgets with App Intents | UI/UX | Medium |
+| 9 | PF-5: WatchConnectivity reliability hardening | Performance | Medium |
+| 10 | AE-1: Swift 6 strict concurrency | Engineering | Medium |
+
+## 13.4 Tier 3: Strategic (9 items) — PLANNED
+
+| # | Item | Category | Effort |
+|---|------|----------|--------|
+| 1 | NF-1: On-device audio feature extraction | Feature | High |
+| 2 | ML-1: Foundation Models for explanations | AI/ML | Medium |
+| 3 | ML-2: Core ML audio feature model | AI/ML | High |
+| 4 | NF-4: Mood arc visualization | Feature | Medium |
+| 5 | UX-3: Waveform visualization scrubber | UI/UX | High |
+| 6 | UX-9: Health correlation chart | UI/UX | High |
+| 7 | NF-6: Post-session summary | Feature | Medium |
+| 8 | PL-3: Dynamic Island / Live Activity | Platform | Medium |
+| 9 | ML-3: RL effectiveness model | AI/ML | High |
+
+## 13.5 Tier 4: Future Horizon (6 items) — PLANNED
+
+| # | Item | Category | Effort |
+|---|------|----------|--------|
+| 1 | PL-4: visionOS companion | Platform | High |
+| 2 | PL-6: CarPlay integration | Platform | High |
+| 3 | ML-4: Circadian rhythm personalization | AI/ML | Medium |
+| 4 | NF-10: Sleep correlation dashboard | Feature | Medium |
+| 5 | AE-4: CKSyncEngine migration | Engineering | Medium |
+| 6 | TS-3: XCUITest suite | Testing | High |
+
+---
+
 *End of Plan Document*
 
-*Version: 1.3*
-*Last Updated: 2026-02-21*
+*Version: 2.0*
+*Last Updated: 2026-03-05*

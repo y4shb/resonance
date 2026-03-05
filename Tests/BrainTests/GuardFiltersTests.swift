@@ -37,10 +37,10 @@ final class GuardFiltersTests: XCTestCase {
     private func makeSong(
         id: UUID? = UUID(),
         appleMusicId: String? = "apple_test_\(UUID().uuidString.prefix(8))",
-        title: String = "Test Song",
         artistName: String = "Test Artist",
         bpm: Double = 120,
         energyEstimate: Double = 0.5,
+        title: String = "Test Song",
         durationSeconds: Double = 240
     ) -> Song {
         let song = NSEntityDescription.insertNewObject(forEntityName: "Song", into: context) as! Song

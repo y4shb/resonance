@@ -10,6 +10,7 @@ import Foundation
 import Combine
 import CoreData
 import MusicKit
+import SwiftUI
 import UIKit
 
 // MARK: - Song Display Info
@@ -57,6 +58,9 @@ final class NowPlayingViewModel: ObservableObject {
 
     /// Error message to display in the UI.
     @Published var errorMessage: String?
+
+    /// Dominant accent color extracted from the current album artwork.
+    @Published var artworkAccentColor: Color?
 
     // MARK: - Private Properties
 
@@ -308,6 +312,15 @@ final class NowPlayingViewModel: ObservableObject {
 
         logDebug("Now playing: \(title) by \(subtitle)", category: .ui)
 
+        // Post accessibility announcement for track change
+        UIAccessibility.post(
+            notification: .announcement,
+            argument: "Now playing: \(title) by \(subtitle)"
+        )
+
+        // Extract accent color from artwork
+        extractArtworkAccentColor(artwork: artwork)
+
         // Update iOS widgets
         WidgetDataStore.updateNowPlaying(
             title: title,
@@ -347,11 +360,13 @@ final class NowPlayingViewModel: ObservableObject {
     // MARK: - Progress Timer
 
     private func startProgressTimer() {
-        progressTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
+        let timer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in
                 self?.updateProgress()
             }
         }
+        timer.tolerance = 0.05  // 10% tolerance for battery optimization
+        progressTimer = timer
     }
 
     private func updateProgress() {
@@ -508,6 +523,33 @@ final class NowPlayingViewModel: ObservableObject {
                 "AI selected: '\(result.score.songTitle)' — \(result.explanation.short)",
                 category: .decisionEngine
             )
+        }
+    }
+
+    // MARK: - Artwork Color Extraction
+
+    /// Extracts the dominant accent color from album artwork for UI tinting.
+    private func extractArtworkAccentColor(artwork: MusicKit.Artwork?) {
+        guard let artwork = artwork,
+              let url = artwork.url(width: 80, height: 80) else {
+            artworkAccentColor = nil
+            return
+        }
+
+        Task {
+            do {
+                let (data, _) = try await URLSession.shared.data(from: url)
+                guard let image = UIImage(data: data) else {
+                    artworkAccentColor = nil
+                    return
+                }
+
+                let dominant = image.dominantColor()
+                artworkAccentColor = dominant.map { Color($0) }
+            } catch {
+                logDebug("Artwork color extraction failed: \(error.localizedDescription)", category: .ui)
+                artworkAccentColor = nil
+            }
         }
     }
 

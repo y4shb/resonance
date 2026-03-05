@@ -127,7 +127,7 @@ final class SensorCoordinator: ObservableObject {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             let interval = WatchConnectivityConstants.biometricBatchIntervalSeconds
-            self.batchTimer = Timer.scheduledTimer(
+            let timer = Timer.scheduledTimer(
                 withTimeInterval: interval,
                 repeats: true
             ) { [weak self] _ in
@@ -135,6 +135,8 @@ final class SensorCoordinator: ObservableObject {
                 self.collectAndBuffer()
                 self.flushBuffer()
             }
+            timer.tolerance = 0.5  // 10% tolerance for battery optimization
+            self.batchTimer = timer
             logDebug(
                 "Batch timer started with interval \(interval)s",
                 category: .healthKit

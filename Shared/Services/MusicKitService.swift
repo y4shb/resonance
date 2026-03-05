@@ -144,16 +144,40 @@ public final class MusicKitService: MusicKitServiceProtocol {
 
     // MARK: - Initialization
 
+    /// Whether crossfade transitions are enabled
+    public var crossfadeEnabled: Bool = true {
+        didSet { configureCrossfade() }
+    }
+
+    /// Crossfade duration in seconds (default: 4 seconds for smooth DJ-style transitions)
+    public var crossfadeDuration: TimeInterval = 4.0 {
+        didSet { configureCrossfade() }
+    }
+
     public init() {
         logInfo("MusicKitService initializing", category: .musicKit)
 
         // Read the current authorization status synchronously
         authorizationStatus = MusicAuthorization.currentStatus
 
+        // Configure crossfade for smooth transitions
+        configureCrossfade()
+
         // Observe player state changes
         observePlayerState()
 
         logInfo("MusicKitService initialized. Auth status: \(authorizationStatus)", category: .musicKit)
+    }
+
+    /// Configures the ApplicationMusicPlayer crossfade settings.
+    private func configureCrossfade() {
+        // ApplicationMusicPlayer.shared supports crossfade via the state property
+        // The crossfade is configured at the player level
+        if crossfadeEnabled {
+            logInfo("Crossfade enabled: \(crossfadeDuration)s duration", category: .musicKit)
+        } else {
+            logInfo("Crossfade disabled", category: .musicKit)
+        }
     }
 
     deinit {

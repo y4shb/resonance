@@ -18,9 +18,13 @@ This file tracks the current state of the project, completed work, and remaining
 | Phase 7: Watch Experience (M6) | COMPLETE | 100% |
 | Phase 8: Learning Loop (M7) | COMPLETE | 100% |
 | Phase 9: MVP Polish (M8) | COMPLETE | 100% |
+| Enhancement Tier 1: Quick Wins | COMPLETE | 100% |
+| Enhancement Tier 2: Core Features | NOT STARTED | 0% |
+| Enhancement Tier 3: Strategic | NOT STARTED | 0% |
+| Enhancement Tier 4: Future Horizon | NOT STARTED | 0% |
 
-**Current Phase:** All phases complete — MVP implementation done
-**Last Updated:** 2026-02-27
+**Current Phase:** Enhancement Tier 1 — Quick Wins
+**Last Updated:** 2026-03-05
 
 ---
 
@@ -1400,7 +1404,26 @@ Both `LearningStore` (real-time) and `SongImpactCalculator` (batch backfill) app
 - `Song.moodLiftScore` — Double, default 0.5
 - `Playlist.avgMoodLiftEffect` — Double, default 0.5
 
-**Files modified (4):** Resonance.xcdatamodel/contents, LearningStore.swift, SongImpactCalculator.swift, SongEffectHelper.swift, PlaylistImpactCalculator.swift
+**Files modified (5):** Resonance.xcdatamodel/contents, LearningStore.swift, SongImpactCalculator.swift, SongEffectHelper.swift, PlaylistImpactCalculator.swift
+
+[2026-03-04] - Integration Tests — Data Pipeline End-to-End Coverage
+
+Added `Tests/IntegrationTests/DataPipelineIntegrationTests.swift` with 24 integration tests covering the full data pipeline:
+- ImpactScore calculation from PlaybackEvents (full listen, early skip, biometric signals)
+- SongEffect → Song aggregate flow (moodLiftScore confidence-weighted averaging)
+- SongEffectHelper.findOrCreateEffect (create new, find existing, different context types)
+- SongImpactCalculator end-to-end (event processing, SongEffect creation, EMA updates)
+- `isImpactProcessed` double-counting prevention (skip processed, mark as processed, idempotent re-runs, mixed states)
+- Session requirement enforcement (events without sessions not processed)
+- PlaylistImpactCalculator end-to-end (moodLift aggregation, empty playlist handling, context associations JSON, effect confidence scaling by coverage)
+- Full pipeline: PlaybackEvent → SongImpactCalculator → Song aggregates → PlaylistImpactCalculator → Playlist aggregates
+- EMA two-tier learning rate (cold-start alpha=0.4)
+- Familiarity score updates
+- Multi-song weighted playlist aggregation
+
+**Total test suite: 13 files, 528 test methods**
+
+**Files created (1):** Tests/IntegrationTests/DataPipelineIntegrationTests.swift
 
 <!--
 Example entry format:
@@ -1478,8 +1501,8 @@ Example decision format:
 |--------|-------|
 | Swift Files | 73 |
 | Lines of Code | ~16,300 |
-| Test Files | 5 |
-| Test Methods | 87 |
+| Test Files | 12 |
+| Test Methods | 476 |
 | CoreData Entities | 7 |
 | Brain/Historical Files | 5 |
 | Brain/State Files | 1 |
@@ -1493,7 +1516,132 @@ Example decision format:
 | Shared/Services | 4 |
 | Phases Complete | 9/9 |
 
-*Last updated: 2026-03-04*
+*Last updated: 2026-03-05*
+
+---
+
+# ENHANCEMENT TIER 1: QUICK WINS (High Impact, Low Effort)
+
+## Checklist
+
+### T1-1: Reduce Motion Support (A11Y-3) — CRITICAL [COMPLETE]
+- [x] Add `@Environment(\.accessibilityReduceMotion)` to NowPlayingView
+- [x] Conditionally disable animations when reduce motion enabled (explanation expand, color transition)
+- [x] Use `.none` animation when reduce motion is active
+
+### T1-2: VoiceOver Labels (A11Y-1) — CRITICAL [COMPLETE]
+- [x] Add `.accessibilityLabel` to album artwork in NowPlayingView
+- [x] Add `.accessibilityLabel` to transport controls (previous, play/pause, skip)
+- [x] Add `.accessibilityLabel` and `.accessibilityValue` to progress slider
+- [x] Add `.accessibilityElement(children: .combine)` to explanation card with hint
+- [x] Add `.accessibilityLabel` to AI Select and Mood buttons in toolbar
+- [x] Post `UIAccessibility.Notification.announcement` on track change
+
+### T1-3: Timer Tolerance (PF-3) — HIGH [COMPLETE]
+- [x] Add 0.05s tolerance to NowPlayingViewModel progress timer (10% of 0.5s interval)
+- [x] Add 3.0s tolerance to StateEngine update timer (10% of 30s interval)
+- [x] Add 6.0s tolerance to ContextCollector CloudKit polling timer (10% of 60s interval)
+- [x] Add 0.5s tolerance to SensorCoordinator batch flush timer
+
+### T1-4: Binary Size Optimization (PF-7) — LOW [COMPLETE]
+- [x] Add `DEAD_CODE_STRIPPING: YES` to project.yml base settings
+- [x] Add `GCC_OPTIMIZATION_LEVEL: s` for Release config
+- [x] Add `SWIFT_OPTIMIZATION_LEVEL: -Osize` for Release config
+- [x] Add `LLVM_LTO: YES` for Release config
+
+### T1-5: Album Art Color Extraction (UX-2) — HIGH [COMPLETE]
+- [x] Create `UIImage+DominantColor.swift` extension with pixel sampling analysis
+- [x] Add `artworkAccentColor` published property to NowPlayingViewModel
+- [x] Extract dominant color on each song change (80x80 thumbnail for efficiency)
+- [x] Apply extracted color as gradient background tint on Now Playing screen
+- [x] Animate color transition on track change (0.6s ease-in-out, respects reduce motion)
+- [x] Skip near-black, near-white, and desaturated pixels for meaningful color extraction
+
+### T1-6: HRV Zone Indicator (UX-5) — HIGH [COMPLETE]
+- [x] Define HRV zones based on stress value (< 0.35 recovered/green, < 0.65 normal/yellow, else stressed/red)
+- [x] Add ambient color dot indicator with glow shadow between explanation bar and state info bar
+- [x] Add `.accessibilityLabel` for VoiceOver zone announcement
+- [x] Wire to StateEngine currentState.stress value
+
+### T1-7: Explanation Progressive Disclosure (UX-6) — HIGH [COMPLETE]
+- [x] Show 1-line short explanation by default (lineLimit 1)
+- [x] Add tap gesture to expand to full explanation (lineLimit nil)
+- [x] Add chevron.up/chevron.down indicator for expand/collapse
+- [x] Animate expansion with spring animation (respects reduce motion)
+- [x] Add accessibility hint for expand/collapse state
+
+### T1-8: Focus Mode Filter Integration (PL-2) — HIGH [COMPLETE]
+- [x] Create `ResonanceFocusFilter` using `SetFocusFilterIntent` from App Intents
+- [x] Define `FocusSessionPreset` enum (Deep Work, Workout, Relaxation, Auto-Detect)
+- [x] Configure parameters: session preset, max BPM override, prefer familiar toggle
+- [x] Write filter state to App Group UserDefaults for StateEngine consumption
+- [x] Create `StartResonanceSessionIntent` for Siri/Shortcuts integration
+
+### T1-9: MusicKit Crossfade Transitions (NF-2) — LOW [COMPLETE]
+- [x] Add `crossfadeEnabled` and `crossfadeDuration` properties to MusicKitService
+- [x] Add `crossfadeEnabled` and `crossfadeDuration` fields to UserPreferences model
+- [x] Default crossfade: enabled, 4-second duration
+- [x] Configure crossfade in MusicKitService init
+
+---
+
+## Tier 1 Change Log
+
+| Date | Item | Details |
+|------|------|---------|
+| 2026-03-05 | T1-1 | Added @Environment(\.accessibilityReduceMotion) to NowPlayingView, conditional animations |
+| 2026-03-05 | T1-2 | Added accessibility labels to artwork, transport controls, slider, explanation card, toolbar buttons; announcement on track change |
+| 2026-03-05 | T1-3 | Added timer tolerance to 4 timers: NowPlayingVM (0.05s), StateEngine (3s), ContextCollector (6s), SensorCoordinator (0.5s) |
+| 2026-03-05 | T1-4 | Added DEAD_CODE_STRIPPING, LTO, -Osize, GCC_OPTIMIZATION_LEVEL s to project.yml Release settings |
+| 2026-03-05 | T1-5 | Created UIImage+DominantColor.swift extension; added artworkAccentColor to NowPlayingViewModel; gradient background in NowPlayingView |
+| 2026-03-05 | T1-6 | Added HRV zone indicator (green/yellow/red dot with label) wired to StateEngine stress; with accessibility label |
+| 2026-03-05 | T1-7 | Explanation bar now shows 1-line collapsed with tap-to-expand; chevron indicator; spring animation respecting reduce motion |
+| 2026-03-05 | T1-8 | Created FocusModeIntents.swift with ResonanceFocusFilter (SetFocusFilterIntent) and StartResonanceSessionIntent (Siri/Shortcuts) |
+| 2026-03-05 | T1-9 | Added crossfadeEnabled/crossfadeDuration to MusicKitService and UserPreferences; defaults: enabled, 4s duration |
+| 2026-03-05 | TIER 1 COMPLETE | All 9 Tier 1 enhancements implemented |
+
+---
+
+# ENHANCEMENT TIER 2: CORE FEATURES (High Impact, Moderate Effort)
+
+## Planned Items
+- [ ] PF-1: Migrate ViewModels to @Observable
+- [ ] UX-1: Liquid Glass design adoption
+- [ ] NF-3: Session Intent System
+- [ ] NF-9: Workout session mode (high-freq HRV)
+- [ ] PF-2: NSBatchInsertRequest for HealthKit import
+- [ ] UX-8: Onboarding permission flow optimization
+- [ ] PL-1: App Intents & Siri integration
+- [ ] UX-11: Interactive widgets with App Intents
+- [ ] PF-5: WatchConnectivity reliability hardening
+- [ ] AE-1: Swift 6 strict concurrency
+
+---
+
+# ENHANCEMENT TIER 3: STRATEGIC (High Impact, Higher Effort)
+
+## Planned Items
+- [ ] NF-1: On-device audio feature extraction
+- [ ] ML-1: Foundation Models for explanations
+- [ ] ML-2: Core ML audio feature model
+- [ ] NF-4: Mood arc visualization
+- [ ] UX-3: Waveform visualization scrubber
+- [ ] UX-9: Health correlation chart
+- [ ] NF-6: Post-session summary
+- [ ] PL-3: Dynamic Island / Live Activity
+- [ ] ML-3: RL effectiveness model
+
+---
+
+# ENHANCEMENT TIER 4: FUTURE HORIZON
+
+## Planned Items
+- [ ] PL-4: visionOS companion
+- [ ] PL-6: CarPlay integration
+- [ ] ML-4: Circadian rhythm personalization
+- [ ] NF-10: Sleep correlation dashboard
+- [ ] AE-4: CKSyncEngine migration
+- [ ] TS-3: XCUITest suite
 
 ---
 

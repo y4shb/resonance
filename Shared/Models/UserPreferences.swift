@@ -74,6 +74,14 @@ public struct UserPreferences: Codable, Sendable {
     /// Whether to backup data to iCloud
     public var backupToiCloud: Bool
 
+    // MARK: - Crossfade
+
+    /// Whether crossfade transitions are enabled between songs
+    public var crossfadeEnabled: Bool
+
+    /// Crossfade duration in seconds (1-10)
+    public var crossfadeDuration: Double
+
     // MARK: - Initialization
 
     public init(
@@ -94,7 +102,9 @@ public struct UserPreferences: Codable, Sendable {
         hrvResponseWeight: Double = 0.3,
         learningRate: Double = 0.2,
         shareAnalytics: Bool = false,
-        backupToiCloud: Bool = true
+        backupToiCloud: Bool = true,
+        crossfadeEnabled: Bool = true,
+        crossfadeDuration: Double = 4.0
     ) {
         self.bpmWeight = bpmWeight
         self.energyWeight = energyWeight
@@ -114,6 +124,8 @@ public struct UserPreferences: Codable, Sendable {
         self.learningRate = learningRate
         self.shareAnalytics = shareAnalytics
         self.backupToiCloud = backupToiCloud
+        self.crossfadeEnabled = crossfadeEnabled
+        self.crossfadeDuration = crossfadeDuration
     }
 
     // MARK: - Defaults

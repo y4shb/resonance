@@ -32,7 +32,7 @@ based on your biometrics, context, and what has worked for you before.
     <img src="https://img.shields.io/badge/Lines-16.3k-blue?style=flat" alt="Lines of Code">
   </a>
   <a href="#">
-    <img src="https://img.shields.io/badge/Tests-87-brightgreen?style=flat" alt="Tests">
+    <img src="https://img.shields.io/badge/Tests-476-brightgreen?style=flat" alt="Tests">
   </a>
 </p>
 
@@ -138,7 +138,7 @@ resonance/
 │   └── ContextProviders/      # FocusMode, ActiveApp, Calendar, Broadcaster
 │
 ├── Widgets/                   # iOS home screen widgets
-└── Tests/                     # Unit tests (87 test methods)
+└── Tests/                     # Unit + integration tests (476 test methods)
 ```
 
 ## Key Algorithms
@@ -293,7 +293,7 @@ xcodebuild test \
 |--------|-------|
 | Swift source files | 73 |
 | Lines of code | ~16,300 |
-| Unit test methods | 87 |
+| Test methods | 476 |
 | Core Data entities | 7 |
 | Build targets | 6 (iOS, watchOS, macOS, Widgets, Complications, Tests) |
 | Implementation phases | 9/9 complete |

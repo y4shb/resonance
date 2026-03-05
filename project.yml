@@ -17,6 +17,12 @@ settings:
     SWIFT_VERSION: "5.9"
     ENABLE_BITCODE: false
     CODE_SIGN_STYLE: Automatic
+    DEAD_CODE_STRIPPING: YES
+  configs:
+    Release:
+      GCC_OPTIMIZATION_LEVEL: s
+      SWIFT_OPTIMIZATION_LEVEL: -Osize
+      LLVM_LTO: YES
 
 # Shared file groups
 fileGroups:
