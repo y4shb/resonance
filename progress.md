@@ -23,8 +23,8 @@ This file tracks the current state of the project, completed work, and remaining
 | Enhancement Tier 3: Strategic | COMPLETE | 100% |
 | Enhancement Tier 4: Future Horizon | SHELVED | -- |
 
-**Current Phase:** Enhancement Tier 1 — Quick Wins
-**Last Updated:** 2026-03-05
+**Current Phase:** All Enhancement Tiers Complete — Bug Fix & QA Pass
+**Last Updated:** 2026-03-13
 
 ---
 
@@ -1845,6 +1845,45 @@ Example decision format:
 | 2026-03-05 | LOGIC FIX | SessionIntentPicker: renamed `description` to `sessionDescription` to avoid `CustomStringConvertible` shadow |
 | 2026-03-05 | THREAD FIX | NowPlayingViewModel: `extractArtworkAccentColor` Task marked `@MainActor` |
 | 2026-03-05 | BUG FIX PASS COMPLETE | 38 bugs found by 4 audit agents, 18 critical/high fixes applied |
+
+---
+
+# CODE AUDIT — 2026-03-13
+
+## Full Codebase Audit (4-Agent Parallel Review)
+
+All 40+ source files reviewed across Brain/, Shared/, iOS/, Watch/, macOS/, Widgets/, and Tests/.
+Tier 1, Tier 2, and Tier 3 enhancements verified against enhancement checklists.
+
+### Bugs Fixed (Session 2026-03-13)
+
+| Date | Category | Description |
+|------|----------|-------------|
+| 2026-03-13 | CRASH FIX | SongEffectHelper: replaced `fatalError` with graceful nil return + error logging |
+| 2026-03-13 | CALLER FIX | LearningStore: added guard for optional return from `findOrCreateEffect` |
+| 2026-03-13 | CALLER FIX | SongImpactCalculator: added guard for optional return from `findOrCreateEffect` |
+| 2026-03-13 | TEST FIX | DataPipelineIntegrationTests: 3 tests updated for optional `findOrCreateEffect` |
+| 2026-03-13 | THREAD FIX | NowPlayingViewModel: deinit timer invalidation dispatched to main thread |
+| 2026-03-13 | DRY FIX | Constants: centralized CloudKit container ID (`cloudKitContainerIdentifier`) |
+| 2026-03-13 | DRY FIX | ContextCollector: replaced hardcoded CloudKit ID with constant |
+| 2026-03-13 | DRY FIX | ContextBroadcaster: replaced hardcoded CloudKit ID with constant |
+| 2026-03-13 | DATA RACE FIX | WorkoutSessionManager: moved HR query anchor to class property with MainActor isolation |
+| 2026-03-13 | DRY FIX | ResonanceWidgets: replaced 3 hardcoded App Group strings with `AppConstants.appGroupIdentifier` |
+| 2026-03-13 | A11Y FIX | SessionIntentPicker: added `.accessibilityAddTraits(.isSelected)` for VoiceOver |
+| 2026-03-13 | SIGNAL FIX | AudioAnalyzer: fixed FFT data preparation — replaced incorrect `vDSP_ctoz` on real samples with correct split-complex packing for `vDSP_fft_zrip` |
+| 2026-03-13 | EQUALITY FIX | MoodArcView: added custom `==` excluding `id` field to fix broken `Equatable` synthesis from `let id = UUID()` |
+| 2026-03-13 | UI FIX | SessionSummaryView: HRV decreased text now uses `abs()` to avoid showing negative sign |
+| 2026-03-13 | CLEANUP | HealthCorrelationChart: removed unused `selectedPoint` state variable |
+
+### Known Issues (Low Priority / Design Notes)
+
+- T2-10: `SWIFT_VERSION: "5.9"` with `SWIFT_STRICT_CONCURRENCY: complete` produces warnings not errors. Bump to `"6.0"` for enforcement.
+- T2-5: `BatchInsertHelper` return value `insertedCount > 0 ? insertedCount : index` is ambiguous when batch returns empty objectIDs.
+- T2-2: `.ultraThinMaterial` + `.glassEffect` may layer redundantly on iOS 26 — test on device.
+- T3-2: Foundation Models API is intentionally stubbed pending iOS 26 SDK finalization. `import FoundationModels` needed when SDK ships.
+- T3-3: `AudioFeaturePredictor` accepts `artistName`/`albumTitle` but never uses them in prediction.
+- T3-9: `EffectivenessLearner.getEffectivenessScore` averages all dimensions regardless of requested context type — consider returning context-specific dimension.
+- T3-9: `explorationWeight` mutation in `processReward` is not actor-isolated (concurrent calls could race).
 
 ---
 

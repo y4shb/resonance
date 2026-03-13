@@ -161,5 +161,6 @@ struct SessionIntentCard: View {
         .buttonStyle(.plain)
         .accessibilityLabel("\(intent.rawValue) session mode")
         .accessibilityHint(intent.sessionDescription)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }

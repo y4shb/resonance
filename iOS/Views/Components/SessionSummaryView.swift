@@ -89,7 +89,7 @@ struct SessionSummaryView: View {
 
                 Text(summary.hrvImproved
                      ? "HRV improved during this session (+\(String(format: "%.1f", abs(summary.hrvDelta)))ms)"
-                     : "HRV decreased slightly (\(String(format: "%.1f", summary.hrvDelta))ms)")
+                     : "HRV decreased slightly (\(String(format: "%.1f", abs(summary.hrvDelta)))ms)")
                 .font(.caption)
                 .foregroundStyle(.secondary)
 

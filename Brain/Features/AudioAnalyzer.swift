@@ -156,11 +156,11 @@ final class AudioAnalyzer {
         vDSP_hann_window(&window, vDSP_Length(fftSize), Int32(vDSP_HANN_NORM))
         vDSP_vmul(windowed, 1, window, 1, &windowed, 1, vDSP_Length(fftSize))
 
-        // Perform FFT
-        windowed.withUnsafeBufferPointer { ptr in
-            ptr.baseAddress!.withMemoryRebound(to: DSPComplex.self, capacity: fftSize / 2) { complexPtr in
-                vDSP_ctoz(complexPtr, 2, &splitComplex, 1, vDSP_Length(fftSize / 2))
-            }
+        // Pack real samples into split-complex form for vDSP_fft_zrip:
+        // even-indexed samples go to realp, odd-indexed to imagp.
+        for i in 0..<(fftSize / 2) {
+            realPart[i] = windowed[2 * i]
+            imagPart[i] = windowed[2 * i + 1]
         }
         vDSP_fft_zrip(fftSetup, &splitComplex, 1, vDSP_Length(Int(log2(Double(fftSize)))), FFTDirection(FFT_FORWARD))
 

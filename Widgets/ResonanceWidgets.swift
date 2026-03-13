@@ -27,7 +27,7 @@ struct TogglePlayPauseIntent: AppIntent {
     static var description: IntentDescription? = IntentDescription("Toggle music playback")
 
     func perform() async throws -> some IntentResult {
-        let defaults = UserDefaults(suiteName: "group.com.y4sh.resonance")
+        let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier)
         defaults?.set(true, forKey: "widget.togglePlayPause")
         defaults?.synchronize()
         return .result()
@@ -40,7 +40,7 @@ struct WidgetSkipIntent: AppIntent {
     static var description: IntentDescription? = IntentDescription("Skip to the next song")
 
     func perform() async throws -> some IntentResult {
-        let defaults = UserDefaults(suiteName: "group.com.y4sh.resonance")
+        let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier)
         defaults?.set(true, forKey: "widget.skipRequested")
         defaults?.synchronize()
         return .result()
@@ -64,7 +64,7 @@ struct WidgetSetMoodIntent: AppIntent {
     }
 
     func perform() async throws -> some IntentResult {
-        let defaults = UserDefaults(suiteName: "group.com.y4sh.resonance")
+        let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier)
         defaults?.set(moodLevel, forKey: "widget.moodLevel")
         defaults?.set(Date().timeIntervalSince1970, forKey: "widget.moodTimestamp")
         defaults?.synchronize()

@@ -50,8 +50,6 @@ struct HealthCorrelationChart: View {
     let sessionDuration: TimeInterval
 
     @State private var selectedSeries: Set<CorrelationSeries> = Set(CorrelationSeries.allCases)
-    @State private var selectedPoint: CorrelationDataPoint?
-
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             // Header

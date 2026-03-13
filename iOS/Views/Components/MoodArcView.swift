@@ -18,6 +18,13 @@ struct MoodArcPoint: Identifiable, Equatable {
     let targetEnergy: Double  // 0.0 - 1.0
     let isPlaying: Bool
     let isCompleted: Bool
+
+    static func == (lhs: MoodArcPoint, rhs: MoodArcPoint) -> Bool {
+        lhs.songTitle == rhs.songTitle
+            && lhs.targetEnergy == rhs.targetEnergy
+            && lhs.isPlaying == rhs.isPlaying
+            && lhs.isCompleted == rhs.isCompleted
+    }
 }
 
 // MARK: - Mood Arc View

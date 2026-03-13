@@ -28,6 +28,7 @@ final class WorkoutSessionManager: NSObject, ObservableObject {
     private var workoutSession: HKWorkoutSession?
     private var workoutBuilder: HKLiveWorkoutBuilder?
     private var heartRateQuery: HKAnchoredObjectQuery?
+    private var heartRateAnchor: HKQueryAnchor?
 
     // MARK: - Publishers
 
@@ -106,20 +107,18 @@ final class WorkoutSessionManager: NSObject, ObservableObject {
             options: .strictStartDate
         )
 
-        var anchor: HKQueryAnchor?
-
         let query = HKAnchoredObjectQuery(
             type: heartRateType,
             predicate: predicate,
-            anchor: anchor,
+            anchor: heartRateAnchor,
             limit: HKObjectQueryNoLimit
         ) { [weak self] _, samples, _, newAnchor, _ in
-            anchor = newAnchor
+            Task { @MainActor in self?.heartRateAnchor = newAnchor }
             self?.processHeartRateSamplesFromBackground(samples)
         }
 
         query.updateHandler = { [weak self] _, samples, _, newAnchor, _ in
-            anchor = newAnchor
+            Task { @MainActor in self?.heartRateAnchor = newAnchor }
             self?.processHeartRateSamplesFromBackground(samples)
         }
 
