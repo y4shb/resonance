@@ -92,12 +92,15 @@ final class LearningStore: ObservableObject {
             let timeOfDaySlot = event.session?.timeOfDaySlot ?? "any"
 
             // 5. Find or create the SongEffect for this song + context
-            let effect = SongEffectHelper.findOrCreateEffect(
+            guard let effect = SongEffectHelper.findOrCreateEffect(
                 for: song,
                 contextType: contextType,
                 timeOfDaySlot: timeOfDaySlot,
                 in: context
-            )
+            ) else {
+                logError("Failed to find or create SongEffect, skipping learning update", category: .persistence)
+                return
+            }
 
             // 6. Apply EMA update (two-tier learning rate)
             let alpha: Double

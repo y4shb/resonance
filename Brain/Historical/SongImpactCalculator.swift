@@ -132,7 +132,10 @@ final class SongImpactCalculator {
         let timeOfDaySlot = session.timeOfDaySlot ?? "any"
 
         // Find or create the SongEffect for this (song, contextType) pair
-        let effect = SongEffectHelper.findOrCreateEffect(for: song, contextType: contextType, timeOfDaySlot: timeOfDaySlot, in: context)
+        guard let effect = SongEffectHelper.findOrCreateEffect(for: song, contextType: contextType, timeOfDaySlot: timeOfDaySlot, in: context) else {
+            logError("Failed to find or create SongEffect, skipping impact calculation", category: .persistence)
+            return
+        }
 
         // Update the effect scores using EMA
         updateEffect(effect, with: impact)

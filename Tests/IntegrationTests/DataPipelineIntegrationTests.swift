@@ -302,6 +302,8 @@ final class DataPipelineIntegrationTests: XCTestCase {
             timeOfDaySlot: "morning",
             in: context
         )
+        XCTAssertNotNil(effect, "findOrCreateEffect should return a new SongEffect")
+        guard let effect else { return }
 
         XCTAssertEqual(effect.contextType, "workout")
         XCTAssertEqual(effect.timeOfDaySlot, "morning")
@@ -330,6 +332,8 @@ final class DataPipelineIntegrationTests: XCTestCase {
             timeOfDaySlot: "afternoon",
             in: context
         )
+        XCTAssertNotNil(found, "findOrCreateEffect should find existing effect")
+        guard let found else { return }
 
         XCTAssertEqual(found.objectID, existing.objectID, "Should find existing effect")
         XCTAssertEqual(found.calmScore, 0.8, accuracy: 0.001, "Existing scores should be preserved")
@@ -348,6 +352,8 @@ final class DataPipelineIntegrationTests: XCTestCase {
             timeOfDaySlot: "morning",
             in: context
         )
+        XCTAssertNotNil(newEffect, "findOrCreateEffect should create a new effect for different context")
+        guard let newEffect else { return }
 
         // Should be a new effect since contextType differs
         let effects = song.effects?.allObjects as? [SongEffect] ?? []

@@ -191,7 +191,7 @@ final class ContextCollector: ObservableObject {
     }
 
     private func fetchLatestMacOSContext() {
-        let container = CKContainer(identifier: "iCloud.com.y4sh.resonance")
+        let container = CKContainer(identifier: AppConstants.cloudKitContainerIdentifier)
         let database = container.privateCloudDatabase
 
         let query = CKQuery(

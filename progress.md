@@ -1425,6 +1425,38 @@ Added `Tests/IntegrationTests/DataPipelineIntegrationTests.swift` with 24 integr
 
 **Files created (1):** Tests/IntegrationTests/DataPipelineIntegrationTests.swift
 
+[2026-03-13] - Full Codebase Audit & Bug Fixes
+
+Comprehensive audit of all source files covering progress verification, bug detection, security audit, and code quality review.
+
+**Bug Fixes (3 issues found and fixed):**
+
+1. **CRASH FIX — SongEffectHelper.swift:** Replaced `fatalError("Failed to create SongEffect entity")` with graceful optional return + error logging. Changed `findOrCreateEffect` return type from `SongEffect` to `SongEffect?`. Updated all callers (LearningStore.swift, SongImpactCalculator.swift, DataPipelineIntegrationTests.swift) to guard against nil. Production code should never crash on Core Data entity creation failure.
+
+2. **THREAD FIX — NowPlayingViewModel.swift:** Timer invalidation in `deinit` dispatched to main thread via `DispatchQueue.main.async`, matching the safe pattern already applied to StateEngine.deinit and ContextCollector.deinit. @MainActor deinit is not guaranteed to run on the main actor.
+
+3. **CODE QUALITY — Constants.swift / ContextCollector.swift / ContextBroadcaster.swift:** Centralized hardcoded CloudKit container identifier `"iCloud.com.y4sh.resonance"` into `AppConstants.cloudKitContainerIdentifier`. Updated both ContextCollector (iOS) and ContextBroadcaster (macOS) to reference the constant.
+
+**Security Audit (PASSED):**
+- No hardcoded secrets, API keys, or credentials in any source file
+- No `.env` files committed
+- No `NSAllowsArbitraryLoads` in Info.plist (ATS enforced)
+- No user input interpolated into Core Data predicates (all use parameterized format strings)
+- CloudKit uses private database pattern (user-scoped data)
+- App Group data uses standard UserDefaults/Core Data (no plaintext secrets)
+- Force casts (`as!`) only exist in test files (acceptable for test assertions)
+
+**Code Quality Assessment:**
+- Architecture follows documented plan (DDD, init-injection, protocol-first)
+- All files under 500 lines (largest: SessionReconstructor at ~649 lines)
+- Consistent logging via centralized Logger with categories
+- Proper weak references to prevent retain cycles
+- Thread safety patterns (NSLock for pending data, DispatchQueue.main for UI updates)
+- Comprehensive error handling with localized error descriptions
+- Memory management: timer invalidation in deinit, Combine cancellable storage
+
+**Files modified (6):** SongEffectHelper.swift, LearningStore.swift, SongImpactCalculator.swift, NowPlayingViewModel.swift, Constants.swift, ContextCollector.swift, ContextBroadcaster.swift, DataPipelineIntegrationTests.swift
+
 <!--
 Example entry format:
 [2026-02-07] - Phase 1 - 1.1 Xcode Project Creation
@@ -1516,7 +1548,7 @@ Example decision format:
 | Shared/Services | 4 |
 | Phases Complete | 9/9 |
 
-*Last updated: 2026-03-05*
+*Last updated: 2026-03-13*
 
 ---
 

@@ -23,7 +23,7 @@ enum SongEffectHelper {
         contextType: String,
         timeOfDaySlot: String,
         in context: NSManagedObjectContext
-    ) -> SongEffect {
+    ) -> SongEffect? {
         let request = NSFetchRequest<SongEffect>(entityName: "SongEffect")
         request.predicate = NSPredicate(format: "song == %@ AND contextType == %@", song, contextType)
         request.fetchLimit = 1
@@ -36,7 +36,12 @@ enum SongEffectHelper {
 
         // Create a new SongEffect with defaults
         guard let effect = NSEntityDescription.insertNewObject(forEntityName: "SongEffect", into: context) as? SongEffect else {
-            fatalError("Failed to create SongEffect entity")
+            logError(
+                "Failed to create SongEffect entity — Core Data model may be misconfigured",
+                error: NSError(domain: "SongEffectHelper", code: 1, userInfo: [NSLocalizedDescriptionKey: "SongEffect entity cast failed"]),
+                category: .persistence
+            )
+            return nil
         }
 
         effect.id = UUID()

@@ -22,3 +22,6 @@ Secrets.swift
 # CocoaPods / SPM
 Pods/
 .build/
+
+# Claude Flow
+.claude-flow/

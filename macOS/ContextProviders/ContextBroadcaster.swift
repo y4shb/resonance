@@ -35,7 +35,7 @@ final class ContextBroadcaster: ObservableObject {
     private var activeRetryTask: Task<Void, Never>?
 
     // CloudKit
-    private lazy var container = CKContainer(identifier: "iCloud.com.y4sh.resonance")
+    private lazy var container = CKContainer(identifier: AppConstants.cloudKitContainerIdentifier)
     private let recordType = "MacOSContext"
 
     // MARK: - Initialization

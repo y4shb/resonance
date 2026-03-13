@@ -27,6 +27,9 @@ public enum AppConstants {
 
     /// Keychain access group
     public static let keychainAccessGroup = "com.y4sh.resonance.keychain"
+
+    /// CloudKit container identifier
+    public static let cloudKitContainerIdentifier = "iCloud.com.y4sh.resonance"
 }
 
 // MARK: - State Engine Constants

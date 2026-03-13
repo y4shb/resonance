@@ -253,7 +253,10 @@ final class NowPlayingViewModel {
     }
 
     deinit {
-        progressTimer?.invalidate()
+        let timer = progressTimer
+        DispatchQueue.main.async {
+            timer?.invalidate()
+        }
     }
 
     // MARK: - Bindings
