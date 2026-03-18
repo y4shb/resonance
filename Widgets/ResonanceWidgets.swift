@@ -123,7 +123,8 @@ struct NowPlayingProvider: TimelineProvider {
             explanation: snapshot.explanation
         )
 
-        let timeline = Timeline(entries: [entry], policy: .never)
+        let refreshDate = Calendar.current.date(byAdding: .minute, value: 5, to: Date())!
+        let timeline = Timeline(entries: [entry], policy: .after(refreshDate))
         completion(timeline)
     }
 }
@@ -318,7 +319,8 @@ struct StateProvider: TimelineProvider {
             energy: snapshot.energy,
             heartRate: snapshot.heartRate
         )
-        let timeline = Timeline(entries: [entry], policy: .never)
+        let refreshDate = Calendar.current.date(byAdding: .minute, value: 5, to: Date())!
+        let timeline = Timeline(entries: [entry], policy: .after(refreshDate))
         completion(timeline)
     }
 }

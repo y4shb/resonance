@@ -23,6 +23,8 @@ public enum LogCategory: String, CaseIterable, Sendable {
     case ui = "UI"
     case background = "Background"
     case network = "Network"
+    case macOSContext = "macOSContext"
+    case sessionPlanner = "SessionPlanner"
 
     /// Returns the subsystem identifier for os_log
     var subsystem: String {

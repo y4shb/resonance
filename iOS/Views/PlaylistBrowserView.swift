@@ -14,10 +14,13 @@ import MusicKit
 struct PlaylistBrowserView: View {
     // MARK: - Properties
 
-    @ObservedObject var viewModel: PlaylistViewModel
+    @Bindable var viewModel: PlaylistViewModel
 
     /// Callback invoked when a playlist is selected (used by parent to switch tabs).
     var onPlaylistSelected: ((PlaylistDisplayInfo) -> Void)?
+
+    // Haptic feedback trigger for playlist selection
+    @State private var selectionTrigger: Int = 0
 
     // MARK: - Body
 
@@ -108,9 +111,11 @@ struct PlaylistBrowserView: View {
                     )
                     .contentShape(Rectangle())
                     .onTapGesture {
+                        selectionTrigger += 1
                         viewModel.selectPlaylist(playlistInfo)
                         onPlaylistSelected?(playlistInfo)
                     }
+                    .sensoryFeedback(.selection, trigger: selectionTrigger)
                 }
             } header: {
                 if viewModel.isLoading {

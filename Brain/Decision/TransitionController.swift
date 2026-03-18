@@ -10,7 +10,6 @@
 #if os(iOS)
 
 import Foundation
-import CoreData
 
 // MARK: - Transition Score
 
@@ -39,17 +38,25 @@ final class TransitionController {
     // MARK: - Main Entry Point (plan.md §5.2.3)
 
     /// Selects the best song considering transition smoothness.
+    /// Accepts already-fetched candidate Song objects to avoid redundant Core Data lookups.
     /// If this is the first song of a session or transitions are disabled,
     /// simply returns the highest-scored candidate.
+    ///
+    /// - Parameters:
+    ///   - candidates: Scored candidates sorted by finalScore descending.
+    ///   - candidateSongs: Already-fetched Song objects corresponding to candidates.
+    ///     Keyed by song UUID for O(1) lookup.
+    ///   - lastPlayedSong: The previously played song (nil for session start).
+    ///   - enableSmoothTransitions: Whether transition scoring is enabled.
     func selectWithTransition(
         candidates: [SongScore],
+        candidateSongs: [UUID: Song],
         lastPlayedSong: Song?,
-        enableSmoothTransitions: Bool,
-        context: NSManagedObjectContext
+        enableSmoothTransitions: Bool
     ) -> SongScore? {
         guard !candidates.isEmpty else { return nil }
 
-        // First song of session or transitions disabled — pick highest score
+        // First song of session or transitions disabled -- pick highest score
         guard let lastSong = lastPlayedSong, enableSmoothTransitions else {
             return candidates.first // Already sorted by finalScore descending
         }
@@ -60,13 +67,9 @@ final class TransitionController {
             return categorize(genres: genres)
         }()
 
-        // Batch-fetch all candidate songs in a single Core Data query
-        let candidateIds = candidates.map { $0.songId }
-        let songLookup = fetchSongs(songIds: candidateIds, in: context)
-
-        // Adjust scores with transition bonus
+        // Adjust scores with transition bonus using already-fetched songs
         let adjustedCandidates = candidates.map { candidate -> (score: SongScore, adjustedScore: Double) in
-            let song = songLookup[candidate.songId]
+            let song = candidateSongs[candidate.songId]
 
             let adjustedScore: Double
             if song != nil {
@@ -78,7 +81,7 @@ final class TransitionController {
                 // Blend: 70% base score + 30% transition quality
                 adjustedScore = candidate.finalScore * (0.7 + transitionScore.combined * 0.3)
             } else {
-                // Cannot resolve song — use base score without transition bonus
+                // Cannot resolve song -- use base score without transition bonus
                 adjustedScore = candidate.finalScore * 0.7
             }
 
@@ -175,28 +178,6 @@ final class TransitionController {
         return categories
     }
 
-    // MARK: - Helpers
-
-    /// Fetches multiple Songs by their UUIDs in a single Core Data query.
-    /// Returns a dictionary keyed by song ID for O(1) lookup.
-    private func fetchSongs(songIds: [UUID], in context: NSManagedObjectContext) -> [UUID: Song] {
-        guard !songIds.isEmpty else { return [:] }
-        let request = NSFetchRequest<Song>(entityName: "Song")
-        request.predicate = NSPredicate(format: "id IN %@", songIds)
-        guard let results = try? context.fetch(request) else { return [:] }
-        return Dictionary(results.compactMap { song -> (UUID, Song)? in
-            guard let id = song.id else { return nil }
-            return (id, song)
-        }, uniquingKeysWith: { first, _ in first })
-    }
-
-    /// Fetches a Song by its UUID.
-    private func fetchSong(songId: UUID, in context: NSManagedObjectContext) -> Song? {
-        let request = NSFetchRequest<Song>(entityName: "Song")
-        request.predicate = NSPredicate(format: "id == %@", songId as CVarArg)
-        request.fetchLimit = 1
-        return try? context.fetch(request).first
-    }
 }
 
 #endif

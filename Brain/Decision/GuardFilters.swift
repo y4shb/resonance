@@ -22,6 +22,8 @@ enum FilterReason: String {
     case bpmTooHighForState = "BPM too high for current biometric state"
     case energyMismatch = "Energy level mismatched for guard adjustment"
     case noValidId = "Song has no valid identifier"
+    case vocalsInFocusMode = "Vocal track filtered in focus mode"
+    case unsafeForDriving = "Song too intense or distracting for driving"
 }
 
 /// Result of applying guard filters to a candidate list.
@@ -54,10 +56,12 @@ final class GuardFilters {
     ///   - candidates: All songs in the playlist.
     ///   - context: The current decision context.
     ///   - recentArtists: Trailing list of artist names from the current session (most recent last).
+    ///   - isDriving: Whether the user is currently driving (Workstream 3.5).
     func apply(
         candidates: [Song],
         context: DecisionContext,
-        recentArtists: [String] = []
+        recentArtists: [String] = [],
+        isDriving: Bool = false
     ) -> FilterResult {
         var accepted: [Song] = []
         var rejected: [(song: Song, reason: FilterReason)] = []
@@ -89,6 +93,18 @@ final class GuardFilters {
             // Filter 4: Time-of-day BPM cap (hard cap, not just a penalty)
             if shouldFilterByTimeBPM(song: song, context: context) {
                 rejected.append((song, .bpmTooHighForTime))
+                continue
+            }
+
+            // Filter 5: Vocal tracks in focus mode
+            if shouldFilterVocalsForFocus(song: song, context: context) {
+                rejected.append((song, .vocalsInFocusMode))
+                continue
+            }
+
+            // Filter 6: Driving safety filter (Workstream 3.5)
+            if isDriving && shouldFilterForDriving(song: song) {
+                rejected.append((song, .unsafeForDriving))
                 continue
             }
 
@@ -170,6 +186,40 @@ final class GuardFilters {
         let sameArtistCount = trailing.filter { $0.lowercased() == lowercasedArtist }.count
 
         return sameArtistCount >= maxInRow
+    }
+
+    // MARK: - Focus-Mode Vocal Filter
+
+    /// Filters vocal tracks during focus contexts (deepWork, work).
+    /// Only applies as a hard filter for deepWork; work mode uses soft scoring
+    /// penalty instead (handled by SongScorer).
+    private func shouldFilterVocalsForFocus(song: Song, context: DecisionContext) -> Bool {
+        // Only hard-filter in deep work context
+        guard context.stateVector.context == .deepWork else { return false }
+
+        // Only filter if hasVocals is confirmed
+        return song.hasVocals
+    }
+
+    // MARK: - Driving Safety Filter (Workstream 3.5)
+
+    /// Filters songs that are too intense for safe driving.
+    /// Removes tracks with very high BPM or very high energy that could
+    /// be overly distracting or induce aggressive driving behavior.
+    private func shouldFilterForDriving(song: Song) -> Bool {
+        let songBPM = song.bpm
+
+        // Hard-filter extremely fast tracks while driving
+        if songBPM > 0 && songBPM > 160 {
+            return true
+        }
+
+        // Filter very high energy + high BPM combinations
+        if songBPM > 140 && song.energy > 0.85 {
+            return true
+        }
+
+        return false
     }
 
     // MARK: - Time-of-Day BPM Filter

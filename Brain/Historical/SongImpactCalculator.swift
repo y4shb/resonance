@@ -154,33 +154,17 @@ final class SongImpactCalculator {
     // MARK: - Update Effect with EMA
 
     /// Updates the SongEffect's scores using exponential moving average.
-    /// Uses a two-tier learning rate: higher alpha during cold start (first N plays),
-    /// then steady-state alpha for subsequent updates.
+    /// Delegates to the shared LearningFormulaHelper for consistent two-tier
+    /// learning rate, EMA calculation, and confidence computation.
     private func updateEffect(_ effect: SongEffect, with impact: ImpactScore) {
-        // Two-tier learning rate
-        let alpha: Double
-        if effect.sampleCount < Int64(BackfillConstants.coldStartThreshold) {
-            alpha = BackfillConstants.coldStartLearningRate  // 0.4
-        } else {
-            alpha = LearningConstants.defaultLearningRate    // 0.2
-        }
-
-        // EMA update for each score dimension
-        effect.calmScore = (1.0 - alpha) * effect.calmScore + alpha * impact.calm
-        effect.energyScore = (1.0 - alpha) * effect.energyScore + alpha * impact.energy
-        effect.focusScore = (1.0 - alpha) * effect.focusScore + alpha * impact.focus
-        effect.moodLiftScore = (1.0 - alpha) * effect.moodLiftScore + alpha * impact.moodLift
-
-        // Increment sample count
-        effect.sampleCount += 1
-
-        // Update confidence level
-        let maxConfidence = impact.hasBiometricData ? 1.0 : BackfillConstants.behaviorOnlyMaxConfidence  // 0.7
-        let fullConfidenceSamples = DecisionEngineConstants.fullConfidenceSampleCount  // 20
-        effect.confidenceLevel = min(maxConfidence, Double(effect.sampleCount) / Double(fullConfidenceSamples))
-
-        // Update timestamp
-        effect.lastUpdatedAt = Date()
+        LearningFormulaHelper.updateEffect(
+            effect,
+            calm: impact.calm,
+            energy: impact.energy,
+            focus: impact.focus,
+            moodLift: impact.moodLift,
+            hasBiometricData: impact.hasBiometricData
+        )
     }
 
     // MARK: - Helpers

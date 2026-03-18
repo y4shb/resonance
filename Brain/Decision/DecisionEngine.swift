@@ -3,8 +3,8 @@
 //  Resonance
 //
 //  The DJ Brain orchestrator. Combines guard filters, song scoring,
-//  transition control, and explanation generation into a single pipeline
-//  that selects the next song to play.
+//  transition control, explanation generation, and session arc planning
+//  (WS-4) into a single pipeline that selects the next song to play.
 //
 
 #if os(iOS)
@@ -54,6 +54,8 @@ final class DecisionEngine: ObservableObject {
     private let guardFilters: GuardFilters
     private let transitionController: TransitionController
     private let explanationGenerator: ExplanationGenerator
+    private let effectivenessLearner: EffectivenessLearner
+    private let sessionPlanner: SessionPlanner
 
     /// Real-time guard adjuster for biometric-aware filtering
     var guardAdjuster: RealTimeGuardAdjuster?
@@ -72,6 +74,14 @@ final class DecisionEngine: ObservableObject {
     /// The last played song's UUID (for transition logic).
     private var lastPlayedSongId: UUID?
 
+    // MARK: - Session Arc State (WS-4)
+
+    /// The currently active session arc, if any.
+    private(set) var currentArc: SessionArc?
+
+    /// Number of songs played in the current arc.
+    private(set) var arcSongsPlayed: Int = 0
+
     // MARK: - Initialization
 
     init(persistence: PersistenceController = .shared) {
@@ -80,6 +90,8 @@ final class DecisionEngine: ObservableObject {
         self.guardFilters = GuardFilters()
         self.transitionController = TransitionController()
         self.explanationGenerator = ExplanationGenerator()
+        self.effectivenessLearner = EffectivenessLearner(persistence: persistence)
+        self.sessionPlanner = SessionPlanner()
 
         logInfo("DecisionEngine initialized", category: .decisionEngine)
     }
@@ -87,14 +99,6 @@ final class DecisionEngine: ObservableObject {
     // MARK: - Main Decision Pipeline
 
     /// Selects the next song to play from the active playlist.
-    ///
-    /// Pipeline:
-    /// 1. Fetch candidate songs from the playlist
-    /// 2. Apply guard filters (recency, artist limits, time-of-day)
-    /// 3. Score all remaining candidates
-    /// 4. Apply transition logic
-    /// 5. Generate explanation
-    /// 6. Return the selected song
     func selectNextSong(
         playlistId: UUID,
         playlistName: String,
@@ -175,11 +179,17 @@ final class DecisionEngine: ObservableObject {
             )
         }
 
-        // 3. Score all remaining candidates
+        // Initialize session arc on first song or context change (WS-4)
+        if currentArc == nil || decisionContext.isSessionStart {
+            currentArc = sessionPlanner.planSession(
+                currentState: stateVector, targetContext: stateVector.context, estimatedDuration: 30)
+            arcSongsPlayed = 0
+        }
+        let currentArcPhase = currentArc.map { sessionPlanner.currentPhase(for: $0, songsPlayed: arcSongsPlayed) }
+
+        // 3. Score all remaining candidates (with arc phase overlay)
         var scores = songScorer.scoreAllCandidates(
-            filterResult.accepted,
-            context: decisionContext
-        )
+            filterResult.accepted, context: decisionContext, arcPhase: currentArcPhase)
 
         // Apply familiarity boost from guard adjuster (if active)
         if let adjuster = guardAdjuster, adjuster.hasActiveAdjustments {
@@ -208,6 +218,55 @@ final class DecisionEngine: ObservableObject {
             }
         }
 
+        // 3b. Pass top candidates through EffectivenessLearner for exploration/exploitation
+        if !scores.isEmpty {
+            let topCount = min(scores.count, 20)
+            let topCandidates = scores.prefix(topCount).map { score in
+                (songId: score.songId, baseScore: score.finalScore)
+            }
+            let contextType = stateVector.context.rawValue
+            let rlRanked = effectivenessLearner.scoreWithExploration(
+                candidates: topCandidates,
+                contextType: contextType
+            )
+
+            // Rebuild scores array with RL-adjusted ordering
+            var scoresBySongId: [UUID: SongScore] = [:]
+            for score in scores {
+                scoresBySongId[score.songId] = score
+            }
+
+            var reorderedScores: [SongScore] = []
+            for rlResult in rlRanked {
+                if let original = scoresBySongId[rlResult.songId] {
+                    // Create updated SongScore with RL-adjusted finalScore
+                    let adjusted = SongScore(
+                        songId: original.songId,
+                        songTitle: original.songTitle,
+                        artistName: original.artistName,
+                        albumName: original.albumName,
+                        bpm: original.bpm,
+                        bpmMatchScore: original.bpmMatchScore,
+                        energyMatchScore: original.energyMatchScore,
+                        familiarityScore: original.familiarityScore,
+                        historicalEffectScore: original.historicalEffectScore,
+                        contextAlignmentScore: original.contextAlignmentScore,
+                        recencyPenalty: original.recencyPenalty,
+                        timeOfDayScore: original.timeOfDayScore,
+                        finalScore: rlResult.adjustedScore,
+                        confidence: original.confidence,
+                        explanationComponents: original.explanationComponents
+                    )
+                    reorderedScores.append(adjusted)
+                    scoresBySongId.removeValue(forKey: rlResult.songId)
+                }
+            }
+            // Append remaining scores that were not in the top-N
+            let remaining = scoresBySongId.values.sorted { $0.finalScore > $1.finalScore }
+            reorderedScores.append(contentsOf: remaining)
+            scores = reorderedScores
+        }
+
         let lastPlayedSong = fetchLastPlayedSong(in: context)
 
         guard !scores.isEmpty else {
@@ -216,12 +275,24 @@ final class DecisionEngine: ObservableObject {
         }
 
         // 4. Apply transition logic
+        // Build a lookup from the already-fetched candidate songs to avoid
+        // a redundant Core Data fetch inside TransitionController.
+        let candidateSongLookup: [UUID: Song] = {
+            var lookup = [UUID: Song]()
+            for song in candidates {
+                if let id = song.id {
+                    lookup[id] = song
+                }
+            }
+            return lookup
+        }()
+
         let selectedScore: SongScore
         if let transitioned = transitionController.selectWithTransition(
             candidates: scores,
+            candidateSongs: candidateSongLookup,
             lastPlayedSong: lastPlayedSong,
-            enableSmoothTransitions: preferences.enableSmoothTransitions,
-            context: context
+            enableSmoothTransitions: preferences.enableSmoothTransitions
         ) {
             selectedScore = transitioned
         } else {
@@ -259,6 +330,42 @@ final class DecisionEngine: ObservableObject {
         return result
     }
 
+    // MARK: - Feedback / Reward
+
+    /// Processes feedback for a completed or skipped song, updating the
+    /// EffectivenessLearner's reward model.
+    ///
+    /// - Parameters:
+    ///   - songId: The UUID of the song that was played.
+    ///   - reward: The playback reward signal (biometric + behavioral).
+    ///   - musicNeed: The MusicNeed that was active when the song was selected.
+    ///   - contextType: The activity context when the song was played (e.g. "workout").
+    func processSongFeedback(
+        songId: UUID,
+        reward: PlaybackReward,
+        musicNeed: MusicNeed,
+        contextType: String = "any"
+    ) {
+        Task {
+            await effectivenessLearner.processReward(
+                songId: songId,
+                contextType: contextType,
+                reward: reward,
+                musicNeed: musicNeed
+            )
+            logDebug(
+                "DecisionEngine: forwarded reward to EffectivenessLearner for song \(songId)",
+                category: .decisionEngine
+            )
+        }
+    }
+
+    /// Saves exploration parameters to UserDefaults for persistence across
+    /// app lifecycle events.
+    func persistLearnerState() {
+        effectivenessLearner.saveExplorationState()
+    }
+
     // MARK: - Session Management
 
     /// Resets the session tracking (e.g., when a new playlist is selected).
@@ -268,7 +375,22 @@ final class DecisionEngine: ObservableObject {
         recentlyPlayed.removeAll()
         lastPlayedSongId = nil
         lastDecision = nil
+        currentArc = nil
+        arcSongsPlayed = 0
         logInfo("DecisionEngine: session reset", category: .decisionEngine)
+    }
+
+    // MARK: - Session Arc Accessors (WS-4)
+
+    /// Returns the current DJ energy level (1-10) based on arc progress.
+    var currentDJEnergyLevel: Int {
+        guard let arc = currentArc else { return 5 }
+        return arc.djEnergyLevel(at: arcSongsPlayed)
+    }
+
+    /// Returns the planned energy trajectory for visualization.
+    var arcEnergyTrajectory: [(songIndex: Int, energy: Double)] {
+        currentArc?.energyTrajectory ?? []
     }
 
     // MARK: - Private Helpers
@@ -303,6 +425,7 @@ final class DecisionEngine: ObservableObject {
         sessionSongIds.append(songId)
         recentlyPlayed[songId] = Date()
         sessionArtists.append(artistName)
+        arcSongsPlayed += 1
         trimSessionData()
     }
 

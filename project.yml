@@ -17,7 +17,6 @@ settings:
     SWIFT_VERSION: "5.9"
     ENABLE_BITCODE: false
     CODE_SIGN_STYLE: Automatic
-    DEAD_CODE_STRIPPING: YES
     # Swift 6 concurrency: enable strict checking to surface data race warnings
     SWIFT_STRICT_CONCURRENCY: complete
   configs:
@@ -25,6 +24,7 @@ settings:
       GCC_OPTIMIZATION_LEVEL: s
       SWIFT_OPTIMIZATION_LEVEL: -Osize
       LLVM_LTO: YES
+      DEAD_CODE_STRIPPING: YES
 
 # Shared file groups
 fileGroups:

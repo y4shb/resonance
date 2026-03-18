@@ -387,31 +387,39 @@ extension WatchConnectivityManager: WCSessionDelegate {
     // MARK: - Receiving Messages
 
     func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
-        handleReceivedMessage(message)
+        DispatchQueue.main.async { [weak self] in
+            self?.handleReceivedMessage(message)
+        }
     }
 
     func session(_ session: WCSession, didReceiveMessage message: [String: Any], replyHandler: @escaping ([String: Any]) -> Void) {
-        handleReceivedMessage(message)
+        DispatchQueue.main.async { [weak self] in
+            self?.handleReceivedMessage(message)
+        }
         replyHandler(["status": "received"])
     }
 
     func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
         logDebug("Received application context update", category: .watchConnectivity)
-        // Application context may contain multiple message-type keys.
-        // Try the multi-key approach first, fall back to single-key.
-        let messages = WatchMessage.allFromContextDictionary(applicationContext)
-        if !messages.isEmpty {
-            for message in messages {
-                handleDecodedMessage(message)
+        DispatchQueue.main.async { [weak self] in
+            // Application context may contain multiple message-type keys.
+            // Try the multi-key approach first, fall back to single-key.
+            let messages = WatchMessage.allFromContextDictionary(applicationContext)
+            if !messages.isEmpty {
+                for message in messages {
+                    self?.handleDecodedMessage(message)
+                }
+            } else {
+                self?.handleReceivedMessage(applicationContext)
             }
-        } else {
-            handleReceivedMessage(applicationContext)
         }
     }
 
     func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any] = [:]) {
         logDebug("Received user info transfer", category: .watchConnectivity)
-        handleReceivedMessage(userInfo)
+        DispatchQueue.main.async { [weak self] in
+            self?.handleReceivedMessage(userInfo)
+        }
     }
 
     func session(_ session: WCSession, didFinish userInfoTransfer: WCSessionUserInfoTransfer, error: Error?) {

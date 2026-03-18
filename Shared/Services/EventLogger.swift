@@ -58,6 +58,7 @@ final class EventLogger: ObservableObject {
         currentHRV: Double?
     ) {
         // Find the Song entity on the main context via the repository.
+        // (SongRepository.findByAppleMusicId already wraps in performAndWait.)
         guard let song = songRepository.findByAppleMusicId(songAppleMusicId) else {
             logWarning(
                 "EventLogger: no Song found for appleMusicId '\(songAppleMusicId)' — skipping event creation",
@@ -68,12 +69,12 @@ final class EventLogger: ObservableObject {
 
         let songObjectID = song.objectID
 
-        let context = persistence.viewContext
-
-        context.perform {
+        // BUG-03 fix: use a background context for write operations instead of viewContext,
+        // which avoids accessing the main-queue context from arbitrary threads.
+        persistence.performBackgroundTask { [weak self] context in
             guard let songInContext = try? context.existingObject(with: songObjectID) as? Song else {
                 logWarning(
-                    "EventLogger: song not found in view context for objectID \(songObjectID)",
+                    "EventLogger: song not found in background context for objectID \(songObjectID)",
                     category: .persistence
                 )
                 return
@@ -102,10 +103,12 @@ final class EventLogger: ObservableObject {
 
             do {
                 try context.save()
+                let eventObjectID = event.objectID
+                let songTitle = songInContext.title
                 DispatchQueue.main.async { [weak self] in
-                    self?.activeEventObjectID = event.objectID
+                    self?.activeEventObjectID = eventObjectID
                     logInfo(
-                        "EventLogger: playback started for '\(songInContext.title ?? "unknown")' — objectID: \(event.objectID)",
+                        "EventLogger: playback started for '\(songTitle ?? "unknown")' — objectID: \(eventObjectID)",
                         category: .persistence
                     )
                 }
@@ -270,15 +273,18 @@ final class EventLogger: ObservableObject {
         request.predicate = NSPredicate(format: "startedAt >= %@", since as NSDate)
         request.sortDescriptors = [NSSortDescriptor(key: "startedAt", ascending: false)]
 
-        do {
-            return try persistence.viewContext.fetch(request)
-        } catch {
-            logError(
-                "EventLogger: failed to fetch recent events since \(since)",
-                error: error,
-                category: .persistence
-            )
-            return []
+        // BUG-06 fix: wrap viewContext reads in performAndWait for thread safety.
+        return persistence.viewContext.performAndWait {
+            do {
+                return try persistence.viewContext.fetch(request)
+            } catch {
+                logError(
+                    "EventLogger: failed to fetch recent events since \(since)",
+                    error: error,
+                    category: .persistence
+                )
+                return []
+            }
         }
     }
 
@@ -298,11 +304,14 @@ final class EventLogger: ObservableObject {
 
         request.sortDescriptors = [NSSortDescriptor(key: "startedAt", ascending: true)]
 
-        do {
-            return try context.fetch(request)
-        } catch {
-            logError("EventLogger: failed to fetch events without session", error: error, category: .persistence)
-            return []
+        // BUG-06 fix: wrap viewContext reads in performAndWait for thread safety.
+        return context.performAndWait {
+            do {
+                return try context.fetch(request)
+            } catch {
+                logError("EventLogger: failed to fetch events without session", error: error, category: .persistence)
+                return []
+            }
         }
     }
 
@@ -311,15 +320,18 @@ final class EventLogger: ObservableObject {
         request.predicate = NSPredicate(format: "song.appleMusicId == %@", appleMusicId)
         request.sortDescriptors = [NSSortDescriptor(key: "startedAt", ascending: false)]
 
-        do {
-            return try persistence.viewContext.fetch(request)
-        } catch {
-            logError(
-                "EventLogger: failed to fetch events for song '\(appleMusicId)'",
-                error: error,
-                category: .persistence
-            )
-            return []
+        // BUG-06 fix: wrap viewContext reads in performAndWait for thread safety.
+        return persistence.viewContext.performAndWait {
+            do {
+                return try persistence.viewContext.fetch(request)
+            } catch {
+                logError(
+                    "EventLogger: failed to fetch events for song '\(appleMusicId)'",
+                    error: error,
+                    category: .persistence
+                )
+                return []
+            }
         }
     }
 }

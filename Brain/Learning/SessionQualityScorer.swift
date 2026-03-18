@@ -15,20 +15,23 @@ import CoreData
 /// Scores listening session quality using a weighted formula.
 /// Can score both Core Data `HistoricalSession` entities and raw metric inputs.
 ///
-/// Formula (from plan.md §5.3.3):
-///   qualityScore = (skipScore * 0.25) + (hrvScore * 0.30) + (engagementScore * 0.25) + (sleepScore * 0.20)
+/// Formula (updated for Workstream 2.5 arc adherence):
+///   qualityScore = (skipScore * 0.20) + (hrvScore * 0.25) + (engagementScore * 0.20)
+///                + (sleepScore * 0.15) + (arcAdherence * 0.20)
 struct SessionQualityScorer {
 
     // MARK: - Score Weights
 
     /// Weight for skip rate component
-    static let skipWeight: Double = 0.25
+    static let skipWeight: Double = 0.20
     /// Weight for HRV response component
-    static let hrvWeight: Double = 0.30
+    static let hrvWeight: Double = 0.25
     /// Weight for engagement (listen percentage) component
-    static let engagementWeight: Double = 0.25
+    static let engagementWeight: Double = 0.20
     /// Weight for sleep correlation component
-    static let sleepWeight: Double = 0.20
+    static let sleepWeight: Double = 0.15
+    /// Weight for arc adherence component (Workstream 2.5)
+    static let arcWeight: Double = 0.20
 
     // MARK: - Result
 
@@ -41,6 +44,8 @@ struct SessionQualityScorer {
         let hrvScore: Double
         let engagementScore: Double
         let sleepScore: Double
+        /// Arc adherence score (0.0 - 1.0). Workstream 2.5.
+        let arcAdherenceScore: Double
         /// Number of songs in the session
         let songCount: Int
         /// Whether sleep data was available
@@ -56,13 +61,15 @@ struct SessionQualityScorer {
     ///   - avgListenPercentage: Average listen percentage across songs (0.0 - 1.0)
     ///   - sleepScore: Next-night sleep quality score (nil if unavailable, 0.0 - 1.0)
     ///   - songCount: Number of songs in the session
+    ///   - arcAdherence: How well songs adhered to the planned energy arc (0.0 - 1.0). Defaults to 0.5 (neutral).
     /// - Returns: ScoreBreakdown with detailed scoring
     static func score(
         skipRate: Double,
         deltaHRV: Double,
         avgListenPercentage: Double,
         sleepScore: Double? = nil,
-        songCount: Int = 0
+        songCount: Int = 0,
+        arcAdherence: Double = 0.5
     ) -> ScoreBreakdown {
         // 1. Skip score: lower skip rate = better
         let skipComponent = clamp(1.0 - skipRate, 0.0, 1.0)
@@ -78,11 +85,15 @@ struct SessionQualityScorer {
         let hasSleepData = sleepScore != nil
         let sleepComponent = sleepScore ?? 0.5
 
+        // 5. Arc adherence (Workstream 2.5)
+        let arcComponent = clamp(arcAdherence, 0.0, 1.0)
+
         // Weighted sum
         let overall = (skipComponent * skipWeight) +
                        (hrvComponent * hrvWeight) +
                        (engagementComponent * engagementWeight) +
-                       (sleepComponent * sleepWeight)
+                       (sleepComponent * sleepWeight) +
+                       (arcComponent * arcWeight)
 
         return ScoreBreakdown(
             overallScore: clamp(overall, 0.0, 1.0),
@@ -90,6 +101,7 @@ struct SessionQualityScorer {
             hrvScore: hrvComponent,
             engagementScore: engagementComponent,
             sleepScore: sleepComponent,
+            arcAdherenceScore: arcComponent,
             songCount: songCount,
             hasSleepData: hasSleepData
         )
@@ -128,6 +140,15 @@ struct SessionQualityScorer {
         private(set) var latestHRV: Double?
         private(set) var startTime: Date = Date()
 
+        // MARK: - Arc Tracking (Workstream 2.5)
+
+        /// Planned energy arc for the session (per-song target energy levels).
+        /// Set by the session intent system or auto-generated from music need.
+        private(set) var plannedArc: [Double] = []
+
+        /// Actual energy levels observed for each song played.
+        private(set) var actualEnergies: [Double] = []
+
         var skipRate: Double {
             guard totalSongs > 0 else { return 0.0 }
             return Double(totalSkips) / Double(totalSongs)
@@ -143,6 +164,28 @@ struct SessionQualityScorer {
             return latest - start
         }
 
+        /// Computes the arc adherence score (0.0 - 1.0).
+        /// Compares actual per-song energy levels against the planned arc.
+        /// Songs that stay on-curve are rewarded; deviations are penalized.
+        var arcAdherence: Double {
+            guard !plannedArc.isEmpty, !actualEnergies.isEmpty else { return 0.5 }
+
+            let compareCount = min(plannedArc.count, actualEnergies.count)
+            guard compareCount > 0 else { return 0.5 }
+
+            var totalDeviation = 0.0
+            for i in 0..<compareCount {
+                let deviation = abs(actualEnergies[i] - plannedArc[i])
+                totalDeviation += deviation
+            }
+
+            let avgDeviation = totalDeviation / Double(compareCount)
+            // Map average deviation to a score:
+            // 0.0 deviation = 1.0 score (perfect adherence)
+            // 0.5 deviation = 0.0 score (completely off-arc)
+            return clamp(1.0 - avgDeviation * 2.0, 0.0, 1.0)
+        }
+
         /// Record a completed song in this session.
         func recordSong(wasSkipped: Bool, listenPercentage: Double, currentHRV: Double?) {
             totalSongs += 1
@@ -155,13 +198,65 @@ struct SessionQualityScorer {
             }
         }
 
+        /// Records the actual energy level of a song that was just played.
+        /// Used by arc adherence scoring (Workstream 2.5).
+        func recordSongEnergy(_ energy: Double) {
+            actualEnergies.append(clamp(energy, 0.0, 1.0))
+        }
+
+        /// Sets the planned energy arc for this session.
+        /// Called when a session intent is set or when the DecisionEngine
+        /// pre-computes the next N songs.
+        func setPlannedArc(_ arc: [Double]) {
+            plannedArc = arc.map { clamp($0, 0.0, 1.0) }
+        }
+
+        /// Sets the planned arc from a SessionArc (WS-4).
+        /// Extracts the energy trajectory and sets it as the planned arc.
+        func setSessionArc(_ sessionArc: SessionArc) {
+            plannedArc = sessionArc.energyTrajectory.map { $0.energy }
+        }
+
+        /// Evaluates arc adherence using the SessionCritic (WS-4).
+        /// Returns a detailed ArcAdherenceResult instead of a simple score.
+        /// The `overallScore` of the result is used as R_session.
+        func evaluateArcAdherence(sessionArc: SessionArc) -> ArcAdherenceResult {
+            let critic = SessionCritic()
+            let observations = actualEnergies.enumerated().map { index, energy in
+                SongObservation(
+                    songIndex: index,
+                    actualBPM: 0, // BPM not tracked in RunningSession
+                    actualEnergy: energy,
+                    wasSkipped: false,
+                    listenPercentage: totalSongs > 0
+                        ? totalListenPercentage / Double(totalSongs)
+                        : 1.0
+                )
+            }
+            return critic.evaluate(arc: sessionArc, observations: observations)
+        }
+
+        /// Computes the arc adherence for a single song at a given position.
+        /// Returns how well the song's energy matches the planned arc target.
+        /// - Parameters:
+        ///   - songEnergy: The song's energy level (0.0 - 1.0).
+        ///   - position: The song's index in the session (0-based).
+        /// - Returns: Adherence score (0.0 - 1.0) for this song.
+        func songArcAdherence(songEnergy: Double, position: Int) -> Double {
+            guard position < plannedArc.count else { return 0.5 }
+            let target = plannedArc[position]
+            let deviation = abs(songEnergy - target)
+            return clamp(1.0 - deviation * 2.0, 0.0, 1.0)
+        }
+
         /// Get the current quality score for this running session.
         var currentScore: ScoreBreakdown {
             SessionQualityScorer.score(
                 skipRate: skipRate,
                 deltaHRV: deltaHRV,
                 avgListenPercentage: avgListenPercentage,
-                songCount: totalSongs
+                songCount: totalSongs,
+                arcAdherence: arcAdherence
             )
         }
 
@@ -173,12 +268,14 @@ struct SessionQualityScorer {
             startingHRV = nil
             latestHRV = nil
             startTime = Date()
+            plannedArc = []
+            actualEnergies = []
         }
     }
 
     // MARK: - Helpers
 
-    private static func clamp(_ value: Double, _ low: Double, _ high: Double) -> Double {
+    static func clamp(_ value: Double, _ low: Double, _ high: Double) -> Double {
         min(max(value, low), high)
     }
 }

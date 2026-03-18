@@ -100,7 +100,7 @@ public struct SongScore: Identifiable, Comparable, Sendable {
     }
 
     public static func == (lhs: SongScore, rhs: SongScore) -> Bool {
-        lhs.finalScore == rhs.finalScore
+        lhs.id == rhs.id && abs(lhs.finalScore - rhs.finalScore) < 1e-10
     }
 }
 

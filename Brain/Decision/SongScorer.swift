@@ -21,18 +21,31 @@ final class SongScorer {
     // MARK: - Score Calculation (plan.md §5.2.1)
 
     /// Scores a single candidate song against the current decision context.
+    ///
+    /// - Parameter arcPhase: Optional arc phase from SessionPlanner (WS-4).
+    ///   When present, overrides target BPM and energy with the phase targets,
+    ///   and applies an instrumental preference bonus.
     func scoreSong(
         _ song: Song,
-        context: DecisionContext
+        context: DecisionContext,
+        arcPhase: ArcPhase? = nil
     ) -> SongScore? {
         guard let songId = song.id else { return nil }
 
         let weights = context.preferences
         let state = context.stateVector
 
-        // Compute target values
-        let targetBPM = calculateTargetBPM(state: state, context: context)
-        let targetEnergy = calculateTargetEnergy(state: state)
+        // Compute target values.
+        // Arc phase (WS-4) overrides target BPM/energy when present.
+        let targetBPM: Double
+        let targetEnergy: Double
+        if let phase = arcPhase {
+            targetBPM = phase.targetBPM
+            targetEnergy = phase.targetEnergy
+        } else {
+            targetBPM = calculateTargetBPM(state: state, context: context)
+            targetEnergy = calculateTargetEnergy(state: state)
+        }
 
         let songBPM = song.bpm
         let songEnergy = song.energyEstimate
@@ -74,6 +87,16 @@ final class SongScorer {
             context: context
         )
 
+        // Arc phase instrumental bonus (WS-4)
+        var arcPhaseBonus = 0.0
+        if let phase = arcPhase {
+            if phase.preferInstrumental && song.instrumentalness >= 0.5 {
+                arcPhaseBonus = 0.05
+            } else if phase.preferInstrumental && song.instrumentalness < 0.5 {
+                arcPhaseBonus = -0.05
+            }
+        }
+
         // Final weighted score (plan.md §5.2.1)
         var finalScore =
             (bpmMatchScore * weights.bpmWeight) +
@@ -81,7 +104,8 @@ final class SongScorer {
             (familiarityScore * weights.familiarityWeight) +
             (historicalEffectScore * weights.historicalWeight) +
             (contextAlignmentScore * weights.contextWeight) -
-            (recencyPenalty * 0.5)
+            (recencyPenalty * 0.5) +
+            arcPhaseBonus
 
         // Time of day as multiplier
         finalScore = finalScore * (0.5 + timeOfDayScore * 0.5)
@@ -93,7 +117,7 @@ final class SongScorer {
         let confidence = calculateConfidence(song: song, state: state)
 
         // Build explanation components
-        let explanationComponents = buildExplanationComponents(
+        var explanationComponents = buildExplanationComponents(
             bpmMatchScore: bpmMatchScore,
             energyMatchScore: energyMatchScore,
             familiarityScore: familiarityScore,
@@ -103,6 +127,14 @@ final class SongScorer {
             songBPM: songBPM,
             targetBPM: targetBPM
         )
+        // Arc phase explanation (WS-4)
+        if let phase = arcPhase {
+            explanationComponents.append(ExplanationComponent(
+                factor: "Session Arc",
+                contribution: arcPhaseBonus,
+                description: "Phase: \(phase.phase.rawValue) (\(Int(phase.targetBPM)) BPM target)"
+            ))
+        }
 
         return SongScore(
             songId: songId,
@@ -124,12 +156,15 @@ final class SongScorer {
     }
 
     /// Scores all candidate songs and returns them sorted by finalScore descending.
+    ///
+    /// - Parameter arcPhase: Optional arc phase from SessionPlanner (WS-4).
     func scoreAllCandidates(
         _ songs: [Song],
-        context: DecisionContext
+        context: DecisionContext,
+        arcPhase: ArcPhase? = nil
     ) -> [SongScore] {
         let scores = songs.compactMap { song in
-            scoreSong(song, context: context)
+            scoreSong(song, context: context, arcPhase: arcPhase)
         }
         return scores.sorted { $0.finalScore > $1.finalScore }
     }
@@ -352,11 +387,15 @@ final class SongScorer {
         }
     }
 
-    /// Recency penalty: penalizes songs played recently within avoidRecentMinutes.
+    /// Recency penalty: returns 0.0 for songs that passed the guard filter
+    /// (not played recently) to avoid double-penalizing with GuardFilters.
+    /// Only applies a mild penalty for songs in the twilight zone between
+    /// having been played and fully re-entering rotation, which can occur
+    /// in fallback mode when guard filters are bypassed.
     private func calculateRecencyPenalty(songId: UUID?, context: DecisionContext) -> Double {
         guard let songId = songId,
               let minutesSince = context.minutesSinceLastPlayed(songId) else {
-            return 0.0
+            return 0.0  // Never played recently -- no penalty
         }
 
         let avoidMinutes = Double(context.preferences.avoidRecentMinutes)
@@ -364,7 +403,12 @@ final class SongScorer {
             return 0.0
         }
 
-        return 1.0 - (minutesSince / avoidMinutes)
+        // In normal operation, GuardFilters already removes songs within
+        // avoidRecentMinutes. This penalty only activates in fallback mode
+        // (when all candidates were filtered). Apply a reduced penalty
+        // (halved) to let songs re-enter rotation sooner.
+        let rawPenalty = 1.0 - (minutesSince / avoidMinutes)
+        return rawPenalty * 0.5
     }
 
     /// Time of day score: penalizes songs whose BPM exceeds the time slot's suggested max.
@@ -384,90 +428,51 @@ final class SongScorer {
 
     // MARK: - Confidence Calculation
 
-    /// Confidence in the score based on data availability.
     private func calculateConfidence(song: Song, state: StateVector) -> Double {
-        var confidence: Double = 0.0
-
-        // BPM known
-        if song.bpm > 0 {
-            confidence += 0.2
-        }
-
-        // Has effect data
-        if let effects = song.effects, effects.count > 0 {
-            confidence += 0.3 * song.confidenceLevel
-        }
-
-        // State confidence
+        var confidence = 0.0
+        if song.bpm > 0 { confidence += 0.2 }
+        if let effects = song.effects, effects.count > 0 { confidence += 0.3 * song.confidenceLevel }
         confidence += 0.3 * state.confidence
-
-        // Has play history
         if song.totalPlayCount > 0 {
-            let historyConfidence = min(1.0, Double(song.totalPlayCount) / 10.0)
-            confidence += 0.2 * historyConfidence
+            confidence += 0.2 * min(1.0, Double(song.totalPlayCount) / 10.0)
         }
-
         return confidence
     }
 
     // MARK: - Explanation Component Building
 
-    /// Builds ExplanationComponent array for the SongScore.
     private func buildExplanationComponents(
-        bpmMatchScore: Double,
-        energyMatchScore: Double,
-        familiarityScore: Double,
-        historicalEffectScore: Double,
-        contextAlignmentScore: Double,
-        state: StateVector,
-        songBPM: Double,
-        targetBPM: Double
+        bpmMatchScore: Double, energyMatchScore: Double, familiarityScore: Double,
+        historicalEffectScore: Double, contextAlignmentScore: Double,
+        state: StateVector, songBPM: Double, targetBPM: Double
     ) -> [ExplanationComponent] {
-        var components: [ExplanationComponent] = []
-
+        var c: [ExplanationComponent] = []
         if songBPM > 0 {
-            let bpmDelta = abs(songBPM - targetBPM)
-            let desc = bpmDelta < 10
+            let delta = abs(songBPM - targetBPM)
+            let desc = delta < 10
                 ? "Tempo closely matches target (\(Int(targetBPM)) BPM)"
                 : "Tempo is \(Int(songBPM)) BPM (target: \(Int(targetBPM)))"
-            components.append(ExplanationComponent(
-                factor: "Tempo",
-                contribution: bpmMatchScore,
-                description: desc
-            ))
+            c.append(ExplanationComponent(factor: "Tempo", contribution: bpmMatchScore, description: desc))
         }
-
-        components.append(ExplanationComponent(
-            factor: "Energy",
-            contribution: energyMatchScore,
-            description: energyMatchScore > 0.7 ? "Energy level is a great fit" : "Energy level matches well"
-        ))
-
+        c.append(ExplanationComponent(
+            factor: "Energy", contribution: energyMatchScore,
+            description: energyMatchScore > 0.7 ? "Energy level is a great fit" : "Energy level matches well"))
         if historicalEffectScore != 0.5 {
-            components.append(ExplanationComponent(
-                factor: "History",
-                contribution: historicalEffectScore,
+            c.append(ExplanationComponent(
+                factor: "History", contribution: historicalEffectScore,
                 description: historicalEffectScore > 0.6
                     ? "Proven effective for \(state.inferredNeed.displayName.lowercased())"
-                    : "Has historical playback data"
-            ))
+                    : "Has historical playback data"))
         }
-
-        components.append(ExplanationComponent(
-            factor: "Context",
-            contribution: contextAlignmentScore,
-            description: "Fits \(state.context.displayName.lowercased()) context"
-        ))
-
+        c.append(ExplanationComponent(
+            factor: "Context", contribution: contextAlignmentScore,
+            description: "Fits \(state.context.displayName.lowercased()) context"))
         if familiarityScore > 0.3 {
-            components.append(ExplanationComponent(
-                factor: "Familiarity",
-                contribution: familiarityScore,
-                description: state.stress > 0.6 ? "Familiar track (comforting)" : "Known track in your library"
-            ))
+            c.append(ExplanationComponent(
+                factor: "Familiarity", contribution: familiarityScore,
+                description: state.stress > 0.6 ? "Familiar track (comforting)" : "Known track in your library"))
         }
-
-        return components.sorted { $0.contribution > $1.contribution }
+        return c.sorted { $0.contribution > $1.contribution }
     }
 
     // MARK: - Helpers

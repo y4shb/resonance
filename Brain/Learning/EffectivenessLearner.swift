@@ -71,62 +71,96 @@ struct PlaybackReward {
     /// Explicit user feedback (nil if not provided)
     let explicitFeedback: Double?  // 0.0 - 1.0
 
-    /// Computes the composite reward signal (0.0 - 1.0).
+    /// Motion intensity during playback (0.0 = stationary, 1.0 = vigorous).
+    /// Workstream 2.2: Used for motion-aware reward gating.
+    let motionIntensity: Double
+
+    /// HRV sensor quality (0.0 - 1.0). Workstream 2.4.
+    let hrvQuality: Double
+
+    /// Session quality score (0.0 - 1.0). Workstream 2.5.
+    let sessionScore: Double
+
+    /// Arc adherence score (0.0 - 1.0). Workstream 2.5.
+    let arcAdherence: Double
+
+    /// User's total interaction count (for weight selection). Workstream 2.1.
+    let interactionCount: Int
+
+    /// Personal HRV baseline for normalization. Workstream 2.3.
+    let personalHRVBaseline: Double?
+
+    init(
+        hrvDelta: Double? = nil,
+        hrDelta: Double? = nil,
+        listenPercentage: Double = 0.0,
+        wasSkipped: Bool = false,
+        explicitFeedback: Double? = nil,
+        motionIntensity: Double = 0.0,
+        hrvQuality: Double = 1.0,
+        sessionScore: Double = 0.5,
+        arcAdherence: Double = 0.5,
+        interactionCount: Int = 0,
+        personalHRVBaseline: Double? = nil
+    ) {
+        self.hrvDelta = hrvDelta
+        self.hrDelta = hrDelta
+        self.listenPercentage = listenPercentage
+        self.wasSkipped = wasSkipped
+        self.explicitFeedback = explicitFeedback
+        self.motionIntensity = motionIntensity
+        self.hrvQuality = hrvQuality
+        self.sessionScore = sessionScore
+        self.arcAdherence = arcAdherence
+        self.interactionCount = interactionCount
+        self.personalHRVBaseline = personalHRVBaseline
+    }
+
+    /// Computes the composite reward signal (0.0 - 1.0) using the
+    /// multi-component reward function (Workstream 2.1).
+    ///
+    /// Integrates:
+    /// - Moving-window normalization (2.3)
+    /// - Motion-aware reward gating (2.2)
+    /// - Sensor confidence scoring (2.4)
+    /// - Session arc reward (2.5)
     func computeReward(forNeed need: MusicNeed) -> Double {
-        var reward = 0.5  // Neutral starting point
+        // Compute HRV reward component with personal baseline normalization (2.3)
+        let hrvComponent = MultiComponentRewardCalculator.computeHRVReward(
+            hrvDelta: hrvDelta,
+            personalBaseline: personalHRVBaseline ?? PersonalBaseline.populationDefault,
+            musicNeed: need
+        )
 
-        // Skip penalty (most reliable signal)
-        if wasSkipped {
-            if listenPercentage < 0.15 {
-                reward -= 0.30  // Early skip = strong negative signal
-            } else if listenPercentage < 0.30 {
-                reward -= 0.15  // Late skip = moderate negative signal
-            } else {
-                reward -= 0.075
-            }
-        } else {
-            // Completion bonus
-            if listenPercentage > 0.90 {
-                reward += 0.10
-            }
-        }
+        // Compute HR reward component
+        let hrComponent = MultiComponentRewardCalculator.computeHRReward(
+            hrDelta: hrDelta,
+            musicNeed: need
+        )
 
-        // Biometric signal (context-dependent)
-        if let hrvDelta = hrvDelta {
-            let normalizedHRV = hrvDelta / LearningConstants.hrvNormalizationFactor
+        // Compute behavioral reward component
+        let behavioralComponent = MultiComponentRewardCalculator.computeBehavioralReward(
+            wasSkipped: wasSkipped,
+            listenPercentage: listenPercentage,
+            explicitFeedback: explicitFeedback
+        )
 
-            switch need {
-            case .calm, .focus:
-                // For calm/focus: positive HRV delta = good (relaxation)
-                reward += normalizedHRV * 0.20
-            case .energize:
-                // For energize: negative HRV delta is expected (activation)
-                reward -= normalizedHRV * 0.10
-            case .maintain, .transition:
-                // For maintain: minimal change is ideal
-                reward -= abs(normalizedHRV) * 0.05
-            }
-        }
+        // Compute session arc reward component (2.5)
+        let sessionComponent = MultiComponentRewardCalculator.computeSessionReward(
+            sessionScore: sessionScore,
+            arcAdherence: arcAdherence
+        )
 
-        if let hrDelta = hrDelta {
-            let normalizedHR = hrDelta / LearningConstants.hrNormalizationFactor
-
-            switch need {
-            case .energize:
-                reward += normalizedHR * 0.10  // Rising HR during energize = good
-            case .calm:
-                reward -= normalizedHR * 0.10  // Rising HR during calm = bad
-            default:
-                break
-            }
-        }
-
-        // Explicit feedback override (strongest signal when available)
-        if let feedback = explicitFeedback {
-            reward = reward * 0.4 + feedback * 0.6
-        }
-
-        return min(1.0, max(0.0, reward))
+        // Compute composite reward with motion gating (2.2) and HRV quality (2.4)
+        return MultiComponentRewardCalculator.computeCompositeReward(
+            hrvComponent: hrvComponent,
+            hrComponent: hrComponent,
+            behavioralComponent: behavioralComponent,
+            sessionComponent: sessionComponent,
+            interactionCount: interactionCount,
+            motionIntensity: motionIntensity,
+            hrvQuality: hrvQuality
+        )
     }
 }
 
@@ -138,8 +172,19 @@ final class EffectivenessLearner {
 
     private let persistence: PersistenceController
 
+    // MARK: - Exploration State Persistence Keys
+
+    private enum Keys {
+        static let explorationWeight = "com.y4sh.resonance.effectivenessLearner.explorationWeight"
+        static let totalEventsProcessed = "com.y4sh.resonance.effectivenessLearner.totalEventsProcessed"
+    }
+
+    /// Lock protecting mutable exploration state accessed from multiple threads.
+    private let lock = NSLock()
+
     /// Controls exploration vs exploitation (decays over time)
-    private var explorationWeight: Double = 1.5
+    /// - Note: Access must be protected by `lock`.
+    private var _explorationWeight: Double
 
     /// Minimum exploration weight (never stop exploring completely)
     private let minExplorationWeight: Double = 0.3
@@ -147,8 +192,61 @@ final class EffectivenessLearner {
     /// Exploration decay rate per processed event
     private let explorationDecayRate: Double = 0.995
 
-    init(persistence: PersistenceController = .shared) {
+    /// Total events processed (persisted for continuity)
+    /// - Note: Access must be protected by `lock`.
+    private var _totalEventsProcessed: Int
+
+    private let defaults: UserDefaults
+
+    init(
+        persistence: PersistenceController = .shared,
+        defaults: UserDefaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier) ?? .standard
+    ) {
         self.persistence = persistence
+        self.defaults = defaults
+
+        // Restore persisted exploration state
+        let storedWeight = defaults.double(forKey: Keys.explorationWeight)
+        self._explorationWeight = storedWeight > 0 ? storedWeight : 1.5
+        self._totalEventsProcessed = defaults.integer(forKey: Keys.totalEventsProcessed)
+
+        logDebug(
+            "EffectivenessLearner restored: explorationWeight=\(String(format: "%.3f", _explorationWeight)), "
+            + "events=\(_totalEventsProcessed)",
+            category: .learning
+        )
+    }
+
+    // MARK: - State Persistence
+
+    /// Saves exploration parameters to UserDefaults.
+    /// Call on app backgrounding or termination.
+    func saveExplorationState() {
+        lock.lock()
+        let weight = _explorationWeight
+        let events = _totalEventsProcessed
+        lock.unlock()
+
+        defaults.set(weight, forKey: Keys.explorationWeight)
+        defaults.set(events, forKey: Keys.totalEventsProcessed)
+        logDebug(
+            "EffectivenessLearner state saved: explorationWeight=\(String(format: "%.3f", weight))",
+            category: .learning
+        )
+    }
+
+    /// Restores exploration parameters from UserDefaults.
+    /// Called automatically during init; can also be called on app foregrounding.
+    func restoreExplorationState() {
+        let storedWeight = defaults.double(forKey: Keys.explorationWeight)
+        let storedEvents = defaults.integer(forKey: Keys.totalEventsProcessed)
+
+        lock.lock()
+        if storedWeight > 0 {
+            _explorationWeight = storedWeight
+        }
+        _totalEventsProcessed = storedEvents
+        lock.unlock()
     }
 
     // MARK: - Score Retrieval
@@ -212,7 +310,10 @@ final class EffectivenessLearner {
             if useThompsonSampling {
                 rlBonus = effectiveness.thompsonSample()
             } else {
-                rlBonus = effectiveness.ucbScore(explorationWeight: explorationWeight)
+                lock.lock()
+                let weight = _explorationWeight
+                lock.unlock()
+                rlBonus = effectiveness.ucbScore(explorationWeight: weight)
             }
 
             // Blend base score with RL score (30% RL influence)
@@ -299,8 +400,17 @@ final class EffectivenessLearner {
             )
         }
 
-        // Decay exploration weight
-        explorationWeight = max(minExplorationWeight, explorationWeight * explorationDecayRate)
+        // Decay exploration weight (thread-safe)
+        lock.lock()
+        _explorationWeight = max(minExplorationWeight, _explorationWeight * explorationDecayRate)
+        _totalEventsProcessed += 1
+        let shouldPersist = _totalEventsProcessed % 10 == 0
+        lock.unlock()
+
+        // Persist every 10 events to avoid excessive writes
+        if shouldPersist {
+            saveExplorationState()
+        }
     }
 }
 

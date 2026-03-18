@@ -261,6 +261,23 @@ public struct BiometricSignal: Codable, Sendable {
     /// Source device identifier
     public var sourceDevice: String
 
+    /// Accelerometer magnitude (0.0 = stationary, 1.0+ = vigorous motion).
+    /// Used by motion-aware reward gating (Workstream 2.2).
+    public var accelerometerMagnitude: Double
+
+    /// HRV measurement quality score (0.0 - 1.0).
+    /// Derived from motion context and R-R interval consistency (Workstream 2.4).
+    /// 1.0 = high quality stationary reading, < 0.8 = degraded by motion or noise.
+    public var hrvQuality: Double
+
+    /// Overnight respiratory rate in breaths/min (Workstream 3.3).
+    /// Nil if not available or not yet fetched today.
+    public var respiratoryRate: Double?
+
+    /// Whether an irregular heart rhythm notification has been detected recently
+    /// (Workstream 3.8). When true, biometric reliability should be reduced.
+    public var hasRecentIrregularRhythm: Bool
+
     public init(
         id: UUID = UUID(),
         timestamp: Date = Date(),
@@ -271,7 +288,11 @@ public struct BiometricSignal: Codable, Sendable {
         workoutType: String? = nil,
         stepCount: Int? = nil,
         sampleQuality: Double = 1.0,
-        sourceDevice: String = "watch"
+        sourceDevice: String = "watch",
+        accelerometerMagnitude: Double = 0.0,
+        hrvQuality: Double = 1.0,
+        respiratoryRate: Double? = nil,
+        hasRecentIrregularRhythm: Bool = false
     ) {
         self.id = id
         self.timestamp = timestamp
@@ -283,6 +304,10 @@ public struct BiometricSignal: Codable, Sendable {
         self.stepCount = stepCount
         self.sampleQuality = sampleQuality
         self.sourceDevice = sourceDevice
+        self.accelerometerMagnitude = accelerometerMagnitude
+        self.hrvQuality = hrvQuality
+        self.respiratoryRate = respiratoryRate
+        self.hasRecentIrregularRhythm = hasRecentIrregularRhythm
     }
 }
 
@@ -307,19 +332,127 @@ public struct AggregatedContext: Sendable {
     /// Whether it's a weekend
     public var isWeekend: Bool
 
+    /// Whether the user appears to be driving (Workstream 3.5).
+    /// True when audio route is carAudio or CarPlay is active.
+    public var isDriving: Bool
+
+    /// Current audio output route (Workstream 3.4).
+    public var audioRoute: AudioRoute
+
+    /// Whether an iOS Focus mode is currently active (Workstream 3.6).
+    public var isFocusModeActive: Bool
+
+    /// Sleep baseline for morning energy adjustment (Workstream 3.2).
+    public var sleepBaseline: SleepBaseline?
+
     public init(
         timestamp: Date = Date(),
         biometric: BiometricSignal? = nil,
-        macOS: MacOSContextSignal? = nil
+        macOS: MacOSContextSignal? = nil,
+        isDriving: Bool = false,
+        audioRoute: AudioRoute = .unknown,
+        isFocusModeActive: Bool = false,
+        sleepBaseline: SleepBaseline? = nil
     ) {
         self.timestamp = timestamp
         self.biometric = biometric
         self.macOS = macOS
+        self.isDriving = isDriving
+        self.audioRoute = audioRoute
+        self.isFocusModeActive = isFocusModeActive
+        self.sleepBaseline = sleepBaseline
 
         let calendar = Calendar.current
         let hour = calendar.component(.hour, from: timestamp)
         self.dayOfWeek = calendar.component(.weekday, from: timestamp)
         self.isWeekend = dayOfWeek == 1 || dayOfWeek == 7
         self.timeSlot = TimeSlot(hour: hour)
+    }
+}
+
+// MARK: - Audio Route (Workstream 3.4)
+
+/// Detected audio output route for contextual awareness.
+public enum AudioRoute: String, Codable, Sendable {
+    case builtInSpeaker = "built_in_speaker"
+    case headphones = "headphones"
+    case bluetoothA2DP = "bluetooth_a2dp"
+    case carAudio = "car_audio"
+    case airPlay = "airplay"
+    case unknown = "unknown"
+
+    public var displayName: String {
+        switch self {
+        case .builtInSpeaker: return "Speaker"
+        case .headphones: return "Headphones"
+        case .bluetoothA2DP: return "Bluetooth"
+        case .carAudio: return "Car Audio"
+        case .airPlay: return "AirPlay"
+        case .unknown: return "Unknown"
+        }
+    }
+
+    /// Whether this route suggests private listening (headphones/earbuds).
+    public var isPrivateListening: Bool {
+        switch self {
+        case .headphones, .bluetoothA2DP: return true
+        default: return false
+        }
+    }
+}
+
+// MARK: - Sleep Baseline (Workstream 3.2)
+
+/// Sleep baseline derived from last night's sleep analysis.
+/// Used to adjust morning energy estimates in the StateEngine.
+public struct SleepBaseline: Codable, Sendable {
+    /// Total hours of sleep last night.
+    public let totalSleepHours: Double
+
+    /// Percentage of sleep that was deep sleep (0.0 - 1.0).
+    public let deepSleepPercentage: Double
+
+    /// Percentage of sleep that was REM sleep (0.0 - 1.0).
+    public let remSleepPercentage: Double
+
+    /// When this baseline was computed.
+    public let computedAt: Date
+
+    /// Energy modifier for the morning state (-0.3 to +0.2).
+    /// Negative values indicate poor sleep; positive values indicate restorative sleep.
+    public var morningEnergyModifier: Double {
+        var modifier: Double = 0.0
+
+        // Sleep duration factor: 7-9 hours is ideal
+        if totalSleepHours < 5.0 {
+            modifier -= 0.3
+        } else if totalSleepHours < 6.0 {
+            modifier -= 0.2
+        } else if totalSleepHours < 7.0 {
+            modifier -= 0.1
+        } else if totalSleepHours >= 7.5 && totalSleepHours <= 9.0 {
+            modifier += 0.1
+        }
+
+        // Deep sleep factor: 15-25% is ideal
+        if deepSleepPercentage >= 0.20 {
+            modifier += 0.1
+        } else if deepSleepPercentage < 0.10 {
+            modifier -= 0.1
+        }
+
+        return max(-0.3, min(0.2, modifier))
+    }
+
+    public init(
+        totalSleepHours: Double,
+        deepSleepPercentage: Double,
+        remSleepPercentage: Double,
+        computedAt: Date = Date()
+    ) {
+        self.totalSleepHours = totalSleepHours
+        self.deepSleepPercentage = deepSleepPercentage
+        self.remSleepPercentage = remSleepPercentage
+        self.computedAt = computedAt
     }
 }

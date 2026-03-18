@@ -1874,6 +1874,9 @@ Tier 1, Tier 2, and Tier 3 enhancements verified against enhancement checklists.
 | 2026-03-13 | EQUALITY FIX | MoodArcView: added custom `==` excluding `id` field to fix broken `Equatable` synthesis from `let id = UUID()` |
 | 2026-03-13 | UI FIX | SessionSummaryView: HRV decreased text now uses `abs()` to avoid showing negative sign |
 | 2026-03-13 | CLEANUP | HealthCorrelationChart: removed unused `selectedPoint` state variable |
+| 2026-03-13 | A11Y FIX | NowPlayingView: added `.accessibilityElement(children: .combine)` to `hrvZoneBar` so VoiceOver combines dot and label |
+| 2026-03-13 | CONFIG FIX | project.yml: moved `DEAD_CODE_STRIPPING: YES` from `settings.base` to `settings.configs.Release` |
+| 2026-03-13 | MAINT FIX | SensorCoordinator: timer tolerance changed from hardcoded `0.5` to `interval * 0.1` for proportional scaling |
 
 ### Known Issues (Low Priority / Design Notes)
 

@@ -83,7 +83,7 @@ public enum DecisionEngineConstants {
     public enum BPMRange {
         public static let energize = (min: 120.0, max: 160.0)
         public static let calm = (min: 60.0, max: 90.0)
-        public static let focus = (min: 80.0, max: 110.0)
+        public static let focus = (min: 70.0, max: 110.0)
         public static let maintain = (min: 90.0, max: 130.0)
         public static let transition = (min: 100.0, max: 120.0)
     }

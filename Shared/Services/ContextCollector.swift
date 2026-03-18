@@ -23,6 +23,8 @@ final class ContextCollector: ObservableObject {
 
     private let persistence: PersistenceController
     private let watchManager: WatchConnectivityManager
+    private let audioRouteService: AudioRouteService
+    private let focusModeService: FocusModeService
 
     // MARK: - Combine
 
@@ -42,23 +44,33 @@ final class ContextCollector: ObservableObject {
     /// Guards against duplicate subscriptions if startCollecting() is called multiple times.
     private var isCollecting = false
 
+    /// Structured concurrency task for macOS context polling, cancelled automatically on deinit.
+    private var macOSPollTask: Task<Void, Never>?
+
+    /// Cached sleep baseline for the current day (Workstream 3.2).
+    private(set) var todaySleepBaseline: SleepBaseline?
+
+    /// Date when the sleep baseline was last computed.
+    private var sleepBaselineDate: Date?
+
     // MARK: - Initialization
 
     init(
         persistence: PersistenceController = .shared,
-        watchManager: WatchConnectivityManager = .shared
+        watchManager: WatchConnectivityManager = .shared,
+        audioRouteService: AudioRouteService = AudioRouteService(),
+        focusModeService: FocusModeService = FocusModeService()
     ) {
         self.persistence = persistence
         self.watchManager = watchManager
+        self.audioRouteService = audioRouteService
+        self.focusModeService = focusModeService
         self.aggregatedContext = AggregatedContext()
         logInfo("ContextCollector initialized", category: .general)
     }
 
     deinit {
-        let timer = macOSPollTimer
-        DispatchQueue.main.async {
-            timer?.invalidate()
-        }
+        macOSPollTask?.cancel()
     }
 
     /// Starts listening for biometric updates from the Watch.
@@ -84,6 +96,22 @@ final class ContextCollector: ObservableObject {
         // Start polling for macOS context via CloudKit
         startMacOSContextPolling()
 
+        // Subscribe to audio route changes (Workstream 3.4)
+        audioRouteService.$currentRoute
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.rebuildAggregatedContext()
+            }
+            .store(in: &cancellables)
+
+        // Subscribe to focus mode changes (Workstream 3.6)
+        focusModeService.$isFocused
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.rebuildAggregatedContext()
+            }
+            .store(in: &cancellables)
+
         logInfo("ContextCollector started collecting biometric updates", category: .general)
     }
 
@@ -101,6 +129,15 @@ final class ContextCollector: ObservableObject {
 
     private func handleBiometricUpdate(_ packet: BiometricPacket) {
         // 1. Convert BiometricPacket → BiometricSignal
+        // Workstream 2.2: Pass accelerometer magnitude for motion-aware gating
+        // Workstream 2.4: Compute HRV quality from motion context
+        let accelMagnitude = packet.accelerometerMagnitude ?? 0.0
+        let hrvQuality = SensorConfidenceScorer.computeHRVQuality(
+            isStationary: packet.isStationary,
+            isInWorkout: packet.isInWorkout,
+            accelerometerMagnitude: accelMagnitude
+        )
+
         let signal = BiometricSignal(
             heartRate: packet.heartRate,
             hrv: packet.hrv,
@@ -108,7 +145,9 @@ final class ContextCollector: ObservableObject {
             isInWorkout: packet.isInWorkout,
             workoutType: packet.workoutType,
             sampleQuality: 1.0,
-            sourceDevice: "watch"
+            sourceDevice: "watch",
+            accelerometerMagnitude: accelMagnitude,
+            hrvQuality: hrvQuality
         )
 
         // 2. Update in-memory cache
@@ -173,21 +212,28 @@ final class ContextCollector: ObservableObject {
 
     // MARK: - macOS Context via CloudKit
 
-    private var macOSPollTimer: Timer?
-
     private func startMacOSContextPolling() {
-        // Poll CloudKit every 60 seconds for macOS context updates
-        let timer = Timer.scheduledTimer(
-            withTimeInterval: 60,
-            repeats: true
-        ) { [weak self] _ in
-            self?.fetchLatestMacOSContext()
-        }
-        timer.tolerance = 6.0  // 10% tolerance (6s on 60s interval) for battery optimization
-        macOSPollTimer = timer
+        // Cancel any existing polling task before starting a new one
+        macOSPollTask?.cancel()
 
         // Initial fetch
         fetchLatestMacOSContext()
+
+        // Poll CloudKit every 60 seconds for macOS context updates using structured concurrency.
+        // This avoids the Timer deinit race condition: Task.cancel() is synchronous and safe
+        // to call from any thread, including deinit.
+        macOSPollTask = Task { [weak self] in
+            while !Task.isCancelled {
+                do {
+                    try await Task.sleep(nanoseconds: 60_000_000_000) // 60 seconds
+                } catch {
+                    break // Task was cancelled
+                }
+                await MainActor.run {
+                    self?.fetchLatestMacOSContext()
+                }
+            }
+        }
     }
 
     private func fetchLatestMacOSContext() {
@@ -246,10 +292,88 @@ final class ContextCollector: ObservableObject {
     // MARK: - Context Rebuild
 
     private func rebuildAggregatedContext() {
+        let route = audioRouteService.currentRoute
+        let isDriving = audioRouteService.isCarAudioActive
+        let isFocused = focusModeService.isFocused
+
         aggregatedContext = AggregatedContext(
             biometric: latestBiometric,
-            macOS: latestMacOSContext
+            macOS: latestMacOSContext,
+            isDriving: isDriving,
+            audioRoute: route,
+            isFocusModeActive: isFocused,
+            sleepBaseline: todaySleepBaseline
         )
+    }
+
+    // MARK: - Sleep Baseline (Workstream 3.2)
+
+    /// Computes today's sleep baseline from HealthKit sleep data.
+    /// Should be called once on first app launch each day.
+    func computeSleepBaselineIfNeeded(
+        using healthKitService: HealthKitServiceProtocol
+    ) {
+        // Only compute once per day
+        let today = Calendar.current.startOfDay(for: Date())
+        if let baselineDate = sleepBaselineDate,
+           Calendar.current.isDate(baselineDate, inSameDayAs: today) {
+            return
+        }
+
+        Task {
+            do {
+                // Fetch last night's sleep (8 PM yesterday to 12 PM today)
+                let yesterday8PM = Calendar.current.date(
+                    byAdding: .hour, value: -16, to: today.addingTimeInterval(43200)
+                ) ?? today.addingTimeInterval(-57600)
+                let todayNoon = today.addingTimeInterval(43200)
+
+                let sessions = try await healthKitService.fetchSleepAnalysis(
+                    from: yesterday8PM,
+                    to: todayNoon
+                )
+
+                guard !sessions.isEmpty else {
+                    logDebug("No sleep data for baseline computation", category: .general)
+                    return
+                }
+
+                let totalHours = sessions.reduce(0.0) { $0 + $1.durationHours }
+                let deepHours = sessions.filter { $0.isDeepSleep }
+                    .reduce(0.0) { $0 + $1.durationHours }
+                let remHours = sessions.filter { $0.isREMSleep }
+                    .reduce(0.0) { $0 + $1.durationHours }
+
+                let deepPct = totalHours > 0 ? deepHours / totalHours : 0.0
+                let remPct = totalHours > 0 ? remHours / totalHours : 0.0
+
+                let baseline = SleepBaseline(
+                    totalSleepHours: totalHours,
+                    deepSleepPercentage: deepPct,
+                    remSleepPercentage: remPct
+                )
+
+                await MainActor.run {
+                    self.todaySleepBaseline = baseline
+                    self.sleepBaselineDate = today
+                    self.rebuildAggregatedContext()
+                }
+
+                logInfo(
+                    "Sleep baseline computed: \(String(format: "%.1f", totalHours))h total, "
+                    + "\(String(format: "%.0f", deepPct * 100))% deep, "
+                    + "modifier=\(String(format: "%.2f", baseline.morningEnergyModifier))",
+                    category: .general
+                )
+            } catch {
+                logError("Failed to compute sleep baseline", error: error, category: .general)
+            }
+        }
+    }
+
+    /// Exposes the audio route for external access.
+    var audioRoute: AudioRoute {
+        audioRouteService.currentRoute
     }
 }
 

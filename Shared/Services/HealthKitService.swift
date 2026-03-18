@@ -2,134 +2,19 @@
 //  HealthKitService.swift
 //  Resonance
 //
-//  HealthKit service protocol and implementation for reading biometric data.
+//  HealthKit service implementation for reading biometric data.
 //  Provides heart rate and HRV access, background delivery, and streaming.
+//
+//  Related files:
+//  - HealthKitTypes.swift: Protocol, error types, and data models
+//  - HealthKitQueryBuilder.swift: Generic query helpers and tracking
+//  - HealthKitService+NewSignals.swift: VO2 Max, respiratory rate, workout observation
 //
 
 #if os(iOS)
 
 import Foundation
 import HealthKit
-
-// MARK: - HealthKit Service Protocol
-
-/// Protocol defining the interface for HealthKit biometric data access.
-public protocol HealthKitServiceProtocol {
-    /// Requests HealthKit read authorization from the user.
-    func requestAuthorization() async throws
-
-    /// Whether the user has granted the necessary HealthKit permissions.
-    var isAuthorized: Bool { get }
-
-    /// Returns the most recent heart rate sample in BPM, or nil if unavailable.
-    func fetchLatestHeartRate() async throws -> Double?
-
-    /// Returns the most recent HRV sample in milliseconds, or nil if unavailable.
-    func fetchLatestHRV() async throws -> Double?
-
-    /// Returns heart rate samples recorded within the last `minutes` minutes.
-    func fetchRecentHeartRates(minutes: Int) async throws -> [(value: Double, date: Date)]
-
-    /// Returns HRV samples recorded within the last `minutes` minutes.
-    func fetchRecentHRV(minutes: Int) async throws -> [(value: Double, date: Date)]
-
-    /// Returns heart rate samples in the given date range.
-    func fetchHeartRateHistory(from: Date, to: Date) async throws -> [(value: Double, date: Date)]
-
-    /// Returns HRV samples in the given date range.
-    func fetchHRVHistory(from: Date, to: Date) async throws -> [(value: Double, date: Date)]
-
-    /// Enables HealthKit background delivery for heart rate updates.
-    func enableBackgroundDelivery() async throws
-
-    /// An AsyncStream that emits new heart rate values as they arrive.
-    var heartRateStream: AsyncStream<Double> { get }
-
-    /// Returns the most recent resting heart rate in BPM, or nil if unavailable.
-    func fetchRestingHeartRate() async throws -> Double?
-
-    /// Returns sleep analysis sessions in the given date range, filtered for actual sleep stages.
-    func fetchSleepAnalysis(from: Date, to: Date) async throws -> [SleepSession]
-
-    /// Returns workout sessions in the given date range.
-    func fetchWorkouts(from: Date, to: Date) async throws -> [WorkoutSession]
-}
-
-// MARK: - HealthKit Service Errors
-
-/// Errors specific to the HealthKitService.
-public enum HealthKitServiceError: LocalizedError {
-    case healthDataUnavailable
-    case notAuthorized
-    case queryFailed(underlying: Error)
-    case backgroundDeliveryFailed(underlying: Error)
-
-    public var errorDescription: String? {
-        switch self {
-        case .healthDataUnavailable:
-            return "HealthKit is not available on this device."
-        case .notAuthorized:
-            return "HealthKit authorization has not been granted. Please allow access in Settings."
-        case .queryFailed(let error):
-            return "HealthKit query failed: \(error.localizedDescription)"
-        case .backgroundDeliveryFailed(let error):
-            return "Failed to enable HealthKit background delivery: \(error.localizedDescription)"
-        }
-    }
-}
-
-// MARK: - Sleep & Workout Types
-
-/// Represents a sleep analysis session from HealthKit.
-public struct SleepSession {
-    let startDate: Date
-    let endDate: Date
-    let value: HKCategoryValueSleepAnalysis
-
-    /// Duration in hours.
-    var durationHours: Double {
-        endDate.timeIntervalSince(startDate) / 3600.0
-    }
-
-    /// Whether this sample represents deep sleep.
-    var isDeepSleep: Bool {
-        value == .asleepDeep
-    }
-
-    /// Whether this sample represents REM sleep.
-    var isREMSleep: Bool {
-        value == .asleepREM
-    }
-}
-
-/// Represents a workout session from HealthKit.
-public struct WorkoutSession {
-    let activityType: HKWorkoutActivityType
-    let startDate: Date
-    let endDate: Date
-    let totalEnergyBurned: Double  // kcal
-    let durationMinutes: Double
-
-    /// Human-readable activity name.
-    var activityName: String {
-        switch activityType {
-        case .running: return "Running"
-        case .walking: return "Walking"
-        case .cycling: return "Cycling"
-        case .swimming: return "Swimming"
-        case .yoga: return "Yoga"
-        case .functionalStrengthTraining, .traditionalStrengthTraining: return "Strength Training"
-        case .highIntensityIntervalTraining: return "HIIT"
-        case .dance: return "Dance"
-        case .cooldown: return "Cooldown"
-        case .coreTraining: return "Core Training"
-        case .elliptical: return "Elliptical"
-        case .rowing: return "Rowing"
-        case .stairClimbing: return "Stair Climbing"
-        default: return "Workout"
-        }
-    }
-}
 
 // MARK: - HealthKit Service Implementation
 
@@ -142,13 +27,13 @@ public final class HealthKitService: HealthKitServiceProtocol, ObservableObject 
 
     // MARK: - Private Properties
 
-    private let healthStore = HKHealthStore()
+    let healthStore = HKHealthStore()
 
     /// Tracks all running HKQueries so they can be stopped on deinit.
-    private var runningQueries: [HKQuery] = []
+    var runningQueries: [HKQuery] = []
 
     /// Lock to protect access to runningQueries and heartRateStream initialization.
-    private let lock = NSLock()
+    let lock = NSLock()
 
     /// The set of HKSampleType values this service requests read access to.
     private let readTypes: Set<HKObjectType> = {
@@ -159,6 +44,8 @@ public final class HealthKitService: HealthKitServiceProtocol, ObservableObject 
             .stepCount,
             .activeEnergyBurned,
             .restingHeartRate,
+            .vo2Max,
+            .respiratoryRate,
         ]
         for id in identifiers {
             if let type = HKQuantityType.quantityType(forIdentifier: id) {
@@ -168,31 +55,47 @@ public final class HealthKitService: HealthKitServiceProtocol, ObservableObject 
         if let sleepType = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) {
             types.insert(sleepType)
         }
+        if let irregularRhythmType = HKObjectType.categoryType(
+            forIdentifier: .irregularHeartRhythmEvent
+        ) {
+            types.insert(irregularRhythmType)
+        }
         types.insert(HKObjectType.workoutType())
         return types
     }()
 
     // MARK: - Convenience Type Accessors
 
-    private var heartRateType: HKQuantityType {
+    var heartRateType: HKQuantityType {
         HKQuantityType.quantityType(forIdentifier: .heartRate)!
     }
 
-    private var hrvType: HKQuantityType {
+    var hrvType: HKQuantityType {
         HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!
     }
 
-    private var restingHeartRateType: HKQuantityType {
+    var restingHeartRateType: HKQuantityType {
         HKQuantityType.quantityType(forIdentifier: .restingHeartRate)!
     }
+
+    var vo2MaxType: HKQuantityType {
+        HKQuantityType.quantityType(forIdentifier: .vo2Max)!
+    }
+
+    var respiratoryRateType: HKQuantityType {
+        HKQuantityType.quantityType(forIdentifier: .respiratoryRate)!
+    }
+
+    /// Active workout observer query, if running.
+    var workoutObserverQuery: HKObserverQuery?
 
     // MARK: - Units
 
     /// BPM unit: count/minute
-    private let heartRateUnit = HKUnit.count().unitDivided(by: .minute())
+    let heartRateUnit = HKUnit.count().unitDivided(by: .minute())
 
     /// HRV unit: milliseconds
-    private let hrvUnit = HKUnit.secondUnit(with: .milli)
+    let hrvUnit = HKUnit.secondUnit(with: .milli)
 
     // MARK: - Heart Rate Stream (thread-safe lazy initialization)
 
@@ -273,20 +176,6 @@ public final class HealthKitService: HealthKitServiceProtocol, ObservableObject 
             healthStore.stop(query)
         }
         logInfo("HealthKitService deallocated — stopped \(queries.count) running queries", category: .healthKit)
-    }
-
-    // MARK: - Query Tracking
-
-    private func trackQuery(_ query: HKQuery) {
-        lock.lock()
-        defer { lock.unlock() }
-        runningQueries.append(query)
-    }
-
-    private func untrackQuery(_ query: HKQuery) {
-        lock.lock()
-        defer { lock.unlock() }
-        runningQueries.removeAll { $0 === query }
     }
 
     // MARK: - Authorization
@@ -558,76 +447,6 @@ public final class HealthKitService: HealthKitServiceProtocol, ObservableObject 
 
         logDebug("Fetched \(sessions.count) workout sessions", category: .healthKit)
         return sessions
-    }
-
-    // MARK: - Private Helpers
-
-    /// Fetches category samples for a given type within the date range.
-    private func fetchCategorySamples(
-        type: HKCategoryType,
-        from: Date,
-        to: Date,
-        limit: Int = HKObjectQueryNoLimit,
-        ascending: Bool = true
-    ) async throws -> [HKCategorySample] {
-        return try await withCheckedThrowingContinuation { continuation in
-            let predicate = HKQuery.predicateForSamples(withStart: from, end: to, options: .strictStartDate)
-            let sortDescriptor = NSSortDescriptor(
-                key: HKSampleSortIdentifierStartDate,
-                ascending: ascending
-            )
-            let query = HKSampleQuery(
-                sampleType: type,
-                predicate: predicate,
-                limit: limit,
-                sortDescriptors: [sortDescriptor]
-            ) { _, samples, error in
-                if let error = error {
-                    continuation.resume(throwing: HealthKitServiceError.queryFailed(underlying: error))
-                    return
-                }
-                let categorySamples = (samples as? [HKCategorySample]) ?? []
-                continuation.resume(returning: categorySamples)
-            }
-            self.healthStore.execute(query)
-        }
-    }
-
-    /// Fetches `HKQuantitySample` results for the given type, predicate, and limit.
-    /// Sorts by `startDate` in the requested direction.
-    private func fetchSamples(
-        type: HKQuantityType,
-        predicate: NSPredicate?,
-        limit: Int,
-        ascending: Bool
-    ) async throws -> [HKQuantitySample] {
-        return try await withCheckedThrowingContinuation { continuation in
-            let sortDescriptor = NSSortDescriptor(
-                key: HKSampleSortIdentifierStartDate,
-                ascending: ascending
-            )
-            let query = HKSampleQuery(
-                sampleType: type,
-                predicate: predicate,
-                limit: limit,
-                sortDescriptors: [sortDescriptor]
-            ) { _, samples, error in
-                if let error = error {
-                    continuation.resume(throwing: HealthKitServiceError.queryFailed(underlying: error))
-                    return
-                }
-                let quantitySamples = (samples as? [HKQuantitySample]) ?? []
-                continuation.resume(returning: quantitySamples)
-            }
-            healthStore.execute(query)
-        }
-    }
-
-    /// Builds a predicate for samples recorded in the last `minutes` minutes.
-    private func recentPredicate(minutes: Int) -> NSPredicate {
-        let now = Date()
-        let start = now.addingTimeInterval(-Double(minutes) * 60)
-        return HKQuery.predicateForSamples(withStart: start, end: now, options: .strictStartDate)
     }
 }
 

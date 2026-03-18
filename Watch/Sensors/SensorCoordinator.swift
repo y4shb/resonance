@@ -135,7 +135,7 @@ final class SensorCoordinator: ObservableObject {
                 self.collectAndBuffer()
                 self.flushBuffer()
             }
-            timer.tolerance = 0.5  // 10% tolerance for battery optimization
+            timer.tolerance = interval * 0.1  // 10% tolerance for battery optimization
             self.batchTimer = timer
             logDebug(
                 "Batch timer started with interval \(interval)s",

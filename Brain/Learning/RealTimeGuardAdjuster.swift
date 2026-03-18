@@ -44,6 +44,7 @@ final class RealTimeGuardAdjuster: ObservableObject {
         case increaseFamiliarity // Prefer more familiar songs
         case reduceEnergy       // Lower energy target
         case increaseCalm       // Prefer calmer songs
+        case discountBiometrics // Reduce biometric signal weight due to motion
     }
 
     // MARK: - Tracking State
@@ -134,6 +135,43 @@ final class RealTimeGuardAdjuster: ObservableObject {
         }
     }
 
+    // MARK: - Motion-Aware Reward Gating (Workstream 2.2)
+
+    /// Current motion intensity level (0.0 = stationary, 1.0 = vigorous).
+    /// Updated from accelerometer data via BiometricSignal.accelerometerMagnitude.
+    private(set) var motionIntensity: Double = 0.0
+
+    /// Records the current motion intensity from accelerometer data.
+    /// When motionIntensity > 0.5, biometric credit weights (HRV/HR) should be
+    /// reduced by a factor of (1.0 - motionIntensity) to avoid noise from physical
+    /// movement contaminating the reward signal.
+    ///
+    /// - Parameter intensity: Accelerometer magnitude normalized to 0.0 - 1.0.
+    func recordMotionIntensity(_ intensity: Double) {
+        let clamped = min(1.0, max(0.0, intensity))
+
+        // EMA smoothing (alpha = 0.3 for responsive but stable tracking)
+        motionIntensity = motionIntensity * 0.7 + clamped * 0.3
+
+        if motionIntensity > 0.5 {
+            addAdjustment(
+                type: .discountBiometrics,
+                reason: "High motion (\(String(format: "%.0f%%", motionIntensity * 100))) — reducing biometric weight",
+                magnitude: motionIntensity
+            )
+            logInfo(
+                "Guard: motion-aware gating active (intensity=\(String(format: "%.2f", motionIntensity)))",
+                category: .decisionEngine
+            )
+        }
+    }
+
+    /// Returns the biometric discount factor based on current motion intensity.
+    /// When motion > 0.5, returns (1.0 - motionIntensity); otherwise returns 1.0 (no discount).
+    var biometricDiscountFactor: Double {
+        motionIntensity > 0.5 ? (1.0 - motionIntensity) : 1.0
+    }
+
     /// Record a non-skip (full listen) to decay skip tracking.
     func recordFullListen() {
         // Prune expired entries first
@@ -177,6 +215,7 @@ final class RealTimeGuardAdjuster: ObservableObject {
         lastHeartRate = nil
         heartRateBaseline = nil
         heartRateTrend.removeAll()
+        motionIntensity = 0.0
     }
 
     // MARK: - Private

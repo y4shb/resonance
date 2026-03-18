@@ -45,10 +45,12 @@ final class LearningStore: ObservableObject {
     /// Called by NowPlayingViewModel when a song finishes or is skipped.
     /// - Parameter eventObjectID: The NSManagedObjectID of the completed PlaybackEvent
     func processPlaybackEvent(eventObjectID: NSManagedObjectID) {
-        persistence.container.performBackgroundTask { [weak self] context in
-            context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        // Capture persistence reference on MainActor before entering background context.
+        // This avoids accessing @MainActor-isolated `self` from the background thread.
+        let persistence = self.persistence
 
-            guard let self = self else { return }
+        persistence.container.performBackgroundTask { context in
+            context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
 
             guard let event = try? context.existingObject(with: eventObjectID) as? PlaybackEvent else {
                 logWarning("LearningStore: could not find PlaybackEvent for objectID \(eventObjectID)", category: .learning)
@@ -102,28 +104,22 @@ final class LearningStore: ObservableObject {
                 return
             }
 
-            // 6. Apply EMA update (two-tier learning rate)
-            let alpha: Double
-            if effect.sampleCount < Int64(BackfillConstants.coldStartThreshold) {
-                alpha = BackfillConstants.coldStartLearningRate  // 0.4 for first 5 plays
-            } else {
-                alpha = preferences.learningRate  // User-configurable, default 0.2
-            }
+            // 6. Apply EMA update via shared helper (two-tier learning rate)
+            LearningFormulaHelper.updateEffect(
+                effect,
+                calm: calmImpact,
+                energy: energyImpact,
+                focus: focusImpact,
+                moodLift: moodLiftImpact,
+                hasBiometricData: responseResult.hasBiometricData,
+                userLearningRate: preferences.learningRate
+            )
 
-            effect.calmScore = (1.0 - alpha) * effect.calmScore + alpha * calmImpact
-            effect.energyScore = (1.0 - alpha) * effect.energyScore + alpha * energyImpact
-            effect.focusScore = (1.0 - alpha) * effect.focusScore + alpha * focusImpact
-            effect.moodLiftScore = (1.0 - alpha) * effect.moodLiftScore + alpha * moodLiftImpact
-
-            // Increment sample count
-            effect.sampleCount += 1
-
-            // Confidence: full at 20 samples, capped at 0.7 without biometrics
-            let maxConfidence = responseResult.hasBiometricData ? 1.0 : BackfillConstants.behaviorOnlyMaxConfidence
-            let fullConfidenceSamples = Double(DecisionEngineConstants.fullConfidenceSampleCount)
-            let confidence = min(maxConfidence, Double(effect.sampleCount) / fullConfidenceSamples)
-            effect.confidenceLevel = confidence
-            effect.lastUpdatedAt = Date()
+            let confidence = effect.confidenceLevel
+            let alpha = LearningFormulaHelper.learningRate(
+                sampleCount: effect.sampleCount - 1,
+                userLearningRate: preferences.learningRate
+            )
 
             // 7. Update Song aggregate scores (confidence-weighted average across all effects)
             SongEffectHelper.updateSongAggregates(song, in: context)

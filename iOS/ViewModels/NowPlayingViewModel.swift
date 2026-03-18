@@ -347,6 +347,16 @@ final class NowPlayingViewModel {
         let wasPlaying = isPlaying
         isPlaying = (status == .playing)
 
+        // Start/stop progress timer based on playback state to avoid unnecessary CPU usage
+        if isPlaying {
+            if progressTimer == nil {
+                startProgressTimer()
+            }
+        } else {
+            progressTimer?.invalidate()
+            progressTimer = nil
+        }
+
         if wasPlaying != isPlaying {
             logDebug("Playback state changed: \(isPlaying ? "playing" : "paused/stopped")", category: .ui)
 

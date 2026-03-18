@@ -98,23 +98,28 @@ final class FeatureExtractor {
         let valence = estimateValence(genreCategory: genreCategory)
         let instrumentalness = estimateInstrumentalness(genreCategory: genreCategory)
         let acousticDensity = estimateAcousticDensity(genreCategory: genreCategory, energy: energy)
+        let hasVocals = estimateHasVocals(instrumentalness: instrumentalness)
 
         song.bpm = bpm
         song.energyEstimate = energy
         song.valence = valence
         song.instrumentalness = instrumentalness
         song.acousticDensity = acousticDensity
+        song.hasVocals = hasVocals
         song.confidenceLevel = 0.4 // genre-based confidence
 
-        // Derived scores
+        // Derived scores -- vocal tracks penalized for focus
         let bpmNormalized = min(max((bpm - 60.0) / 120.0, 0.0), 1.0)
         song.calmScore = (1.0 - energy) * 0.5 + (1.0 - bpmNormalized) * 0.3 + instrumentalness * 0.2
-        song.focusScore = instrumentalness * 0.4 + (1.0 - energy) * 0.3 + (1.0 - acousticDensity) * 0.3
+        let vocalPenalty = hasVocals ? 0.15 : 0.0
+        song.focusScore = max(0.0,
+            instrumentalness * 0.4 + (1.0 - energy) * 0.3 + (1.0 - acousticDensity) * 0.3 - vocalPenalty
+        )
         song.activationScore = energy * 0.5 + bpmNormalized * 0.3 + valence * 0.2
 
         logDebug(
             "Extracted features for '\(song.title ?? "unknown")' — genre: \(genreCategory ?? "unknown"), " +
-            "bpm: \(bpm), energy: \(energy), valence: \(valence), confidence: 0.4",
+            "bpm: \(bpm), energy: \(energy), valence: \(valence), hasVocals: \(hasVocals), confidence: 0.4",
             category: .background
         )
     }
@@ -188,5 +193,11 @@ final class FeatureExtractor {
         // Acoustic density correlates positively with energy for most genres.
         // We clamp the result to [0, 1].
         return min(max(energy * 0.8 + 0.1, 0.0), 1.0)
+    }
+
+    /// Estimates whether a track has vocals based on instrumentalness.
+    /// Tracks with instrumentalness < 0.5 are assumed to have vocals.
+    private func estimateHasVocals(instrumentalness: Double) -> Bool {
+        return instrumentalness < 0.5
     }
 }

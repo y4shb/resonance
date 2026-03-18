@@ -39,6 +39,44 @@ struct BiometricPacket: Codable {
     let isInWorkout: Bool
     let workoutType: String?
     let timestamp: Date
+    /// Accelerometer magnitude (0.0 = stationary, 1.0+ = vigorous motion).
+    /// Workstream 2.2: Used for motion-aware reward gating.
+    let accelerometerMagnitude: Double?
+
+    // Backward-compatible decoding: accelerometerMagnitude may be absent in older packets.
+    private enum CodingKeys: String, CodingKey {
+        case heartRate, hrv, isStationary, isInWorkout, workoutType, timestamp
+        case accelerometerMagnitude
+    }
+
+    init(
+        heartRate: Double? = nil,
+        hrv: Double? = nil,
+        isStationary: Bool = true,
+        isInWorkout: Bool = false,
+        workoutType: String? = nil,
+        timestamp: Date = Date(),
+        accelerometerMagnitude: Double? = nil
+    ) {
+        self.heartRate = heartRate
+        self.hrv = hrv
+        self.isStationary = isStationary
+        self.isInWorkout = isInWorkout
+        self.workoutType = workoutType
+        self.timestamp = timestamp
+        self.accelerometerMagnitude = accelerometerMagnitude
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        heartRate = try c.decodeIfPresent(Double.self, forKey: .heartRate)
+        hrv = try c.decodeIfPresent(Double.self, forKey: .hrv)
+        isStationary = try c.decodeIfPresent(Bool.self, forKey: .isStationary) ?? true
+        isInWorkout = try c.decodeIfPresent(Bool.self, forKey: .isInWorkout) ?? false
+        workoutType = try c.decodeIfPresent(String.self, forKey: .workoutType)
+        timestamp = try c.decode(Date.self, forKey: .timestamp)
+        accelerometerMagnitude = try c.decodeIfPresent(Double.self, forKey: .accelerometerMagnitude)
+    }
 }
 
 struct MoodPacket: Codable {

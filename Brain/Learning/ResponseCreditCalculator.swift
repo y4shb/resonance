@@ -45,6 +45,14 @@ struct ResponseCreditCalculator {
     ///   - listenPercentage: How much of the song was listened to (0.0 - 1.0)
     ///   - wasSkipped: Whether the song was skipped
     ///   - preferences: User preferences for response weight
+    ///   - personalHRVBaseline: Personal HRV baseline for normalization (Workstream 2.3).
+    ///     When nil, falls back to fixed normalization factor.
+    ///   - restingHR: Personal resting HR baseline for normalization (Workstream 2.3).
+    ///     When nil, falls back to fixed normalization factor.
+    ///   - hrvQuality: HRV sensor quality (0.0 - 1.0). Workstream 2.4.
+    ///     When < 0.8, HRV credit is discounted by the quality factor.
+    ///   - motionIntensity: Motion intensity (0.0 - 1.0). Workstream 2.2.
+    ///     When > 0.5, biometric credit weights are reduced.
     /// - Returns: ResponseResult with calculated credits
     static func calculate(
         hrvDelta: Double,
@@ -53,7 +61,11 @@ struct ResponseCreditCalculator {
         hrvAtStart: Double = 0,
         listenPercentage: Double,
         wasSkipped: Bool,
-        preferences: UserPreferences = .load()
+        preferences: UserPreferences = .load(),
+        personalHRVBaseline: Double? = nil,
+        restingHR: Double? = nil,
+        hrvQuality: Double = 1.0,
+        motionIntensity: Double = 0.0
     ) -> ResponseResult {
         // Determine biometric availability from start values, not deltas.
         // A delta of 0.0 is valid data meaning "no change", not "no data".
@@ -61,9 +73,18 @@ struct ResponseCreditCalculator {
         let hasHR = hrAtStart > 0.0
         let hasBiometricData = hasHRV || hasHR
 
-        // Normalize biometric deltas using constants from plan.md
-        let normalizedHRV = hrvDelta / LearningConstants.hrvNormalizationFactor  // 10ms = significant
-        let normalizedHR = hrDelta / LearningConstants.hrNormalizationFactor     // 10bpm = significant
+        // Workstream 2.3: Use moving-window normalization with personal baselines
+        let normalizedHRV = MovingWindowNormalizer.normalizeHRVWithFallback(
+            delta: hrvDelta,
+            personalBaseline: personalHRVBaseline
+        )
+        let normalizedHR = MovingWindowNormalizer.normalizeHRWithFallback(
+            delta: hrDelta,
+            restingHR: restingHR
+        )
+
+        // Workstream 2.2: Motion-aware discount factor for biometric signals
+        let motionDiscount = motionIntensity > 0.5 ? (1.0 - motionIntensity) : 1.0
 
         // Completion bonus: songs listened past 50% get a bonus, under 50% get a penalty
         let completionBonus = (listenPercentage - LearningConstants.completionBonusThreshold) * 0.2
@@ -74,30 +95,39 @@ struct ResponseCreditCalculator {
 
         // Calculate credits based on available biometric signals
         // Mirrors the four-mode pattern from ImpactScore.swift
-        let calmCredit: Double
-        let energyCredit: Double
+        // Workstream 2.2: Apply motion discount to biometric components
+        // Workstream 2.4: Apply HRV quality discount
+        var calmCredit: Double
+        var energyCredit: Double
 
         switch (hasHR, hasHRV) {
         case (true, true):
-            // Full biometric data — use both signals
-            calmCredit = (normalizedHRV * 0.5) + (-normalizedHR * 0.3) + completionBonus + skipSignal
-            energyCredit = (normalizedHR * 0.3) + completionBonus + skipSignal
+            // Full biometric data — use both signals, apply motion discount
+            calmCredit = (normalizedHRV * 0.5 * motionDiscount) + (-normalizedHR * 0.3 * motionDiscount) + completionBonus + skipSignal
+            energyCredit = (normalizedHR * 0.3 * motionDiscount) + completionBonus + skipSignal
 
         case (true, false):
             // HR only — redistribute HRV weight to completion
-            calmCredit = (-normalizedHR * 0.4) + completionBonus * 1.5 + skipSignal
-            energyCredit = (normalizedHR * 0.4) + completionBonus + skipSignal
+            calmCredit = (-normalizedHR * 0.4 * motionDiscount) + completionBonus * 1.5 + skipSignal
+            energyCredit = (normalizedHR * 0.4 * motionDiscount) + completionBonus + skipSignal
 
         case (false, true):
             // HRV only — redistribute HR weight to HRV
-            calmCredit = (normalizedHRV * 0.7) + completionBonus + skipSignal
+            calmCredit = (normalizedHRV * 0.7 * motionDiscount) + completionBonus + skipSignal
             energyCredit = completionBonus + skipSignal
 
         case (false, false):
-            // No biometric data — behavior only
+            // No biometric data — behavior only (no motion discount needed)
             calmCredit = completionBonus * 2.0 + skipSignal
             energyCredit = completionBonus * 2.0 + skipSignal
         }
+
+        // Workstream 2.4: Apply HRV quality discount to calm credit
+        // (calm is the dimension most dependent on HRV accuracy)
+        calmCredit = SensorConfidenceScorer.applyQualityDiscount(
+            credit: calmCredit,
+            hrvQuality: hrvQuality
+        )
 
         // Focus credit is primarily behavior-driven
         let focusCredit = completionBonus + skipSignal

@@ -15,7 +15,7 @@ struct NowPlayingView: View {
     // MARK: - Properties
 
     @Bindable var viewModel: NowPlayingViewModel
-    var stateEngine: StateEngine
+    @ObservedObject var stateEngine: StateEngine
 
     // Accessibility
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -25,6 +25,10 @@ struct NowPlayingView: View {
     @State private var scrubProgress: Double = 0.0
     @State private var showMoodInput: Bool = false
     @State private var isExplanationExpanded: Bool = false
+
+    // Haptic feedback triggers for transport controls
+    @State private var skipTrigger: Int = 0
+    @State private var previousTrigger: Int = 0
 
     // MARK: - Body
 
@@ -116,26 +120,46 @@ struct NowPlayingView: View {
 
     // MARK: - Artwork View
 
+    /// Approximate heart rate derived from arousal (maps 0-1 to 50-130 BPM range)
+    private var approximateHeartRate: Double {
+        stateEngine.currentState.arousal * 80 + 50
+    }
+
     private var artworkView: some View {
-        Group {
-            if let artwork = viewModel.currentSong.artwork {
-                ArtworkImage(artwork, width: UIConstants.ArtworkSize.large)
-                    .cornerRadius(12)
-                    .shadow(color: .black.opacity(0.3), radius: 12, x: 0, y: 6)
-            } else {
-                // Placeholder artwork
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(.ultraThinMaterial)
-                    .frame(
-                        width: UIConstants.ArtworkSize.large,
-                        height: UIConstants.ArtworkSize.large
-                    )
-                    .overlay(
-                        Image(systemName: "music.note")
-                            .font(.system(size: 60))
-                            .foregroundStyle(.white.opacity(0.7))
-                    )
-                    .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
+        ZStack {
+            // Heart pulse ring behind artwork
+            HeartPulseRing(
+                heartRate: approximateHeartRate,
+                musicBPM: 0, // No direct BPM access from current song
+                accentColor: viewModel.artworkAccentColor ?? .blue,
+                reduceMotion: reduceMotion
+            )
+            .frame(
+                width: UIConstants.ArtworkSize.large + 24,
+                height: UIConstants.ArtworkSize.large + 24
+            )
+
+            // Artwork
+            Group {
+                if let artwork = viewModel.currentSong.artwork {
+                    ArtworkImage(artwork, width: UIConstants.ArtworkSize.large)
+                        .cornerRadius(12)
+                        .shadow(color: .black.opacity(0.3), radius: 12, x: 0, y: 6)
+                } else {
+                    // Placeholder artwork
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(.ultraThinMaterial)
+                        .frame(
+                            width: UIConstants.ArtworkSize.large,
+                            height: UIConstants.ArtworkSize.large
+                        )
+                        .overlay(
+                            Image(systemName: "music.note")
+                                .font(.system(size: 60))
+                                .foregroundStyle(.white.opacity(0.7))
+                        )
+                        .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
+                }
             }
         }
         .accessibilityLabel("Album art: \(viewModel.currentSong.title) by \(viewModel.currentSong.artistName)")
@@ -205,30 +229,41 @@ struct NowPlayingView: View {
     // MARK: - Transport Controls
 
     private var transportControls: some View {
-        HStack(spacing: 40) {
-            // Previous button
-            Button(action: { viewModel.previous() }) {
-                Image(systemName: "backward.fill")
-                    .font(.title2)
-                    .foregroundStyle(.primary)
-            }
-            .accessibilityLabel("Previous track")
+        GlassEffectContainer {
+            HStack(spacing: 40) {
+                Button(action: {
+                    previousTrigger += 1
+                    viewModel.previous()
+                }) {
+                    Image(systemName: "backward.fill")
+                        .font(.title2)
+                        .foregroundStyle(.primary)
+                }
+                .glassEffect(.regular.interactive())
+                .accessibilityLabel("Previous track")
+                .sensoryFeedback(.impact(.light), trigger: previousTrigger)
 
-            // Play/Pause button
-            Button(action: { viewModel.togglePlayPause() }) {
-                Image(systemName: viewModel.isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                    .font(.system(size: 56))
-                    .foregroundStyle(.blue)
-            }
-            .accessibilityLabel(viewModel.isPlaying ? "Pause" : "Play")
+                Button(action: { viewModel.togglePlayPause() }) {
+                    Image(systemName: viewModel.isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                        .font(.system(size: 56))
+                        .foregroundStyle(.blue)
+                }
+                .glassEffect(.regular.interactive())
+                .accessibilityLabel(viewModel.isPlaying ? "Pause" : "Play")
+                .sensoryFeedback(.impact(.medium), trigger: viewModel.isPlaying)
 
-            // Next button
-            Button(action: { viewModel.skip() }) {
-                Image(systemName: "forward.fill")
-                    .font(.title2)
-                    .foregroundStyle(.primary)
+                Button(action: {
+                    skipTrigger += 1
+                    viewModel.skip()
+                }) {
+                    Image(systemName: "forward.fill")
+                        .font(.title2)
+                        .foregroundStyle(.primary)
+                }
+                .glassEffect(.regular.interactive())
+                .accessibilityLabel("Skip to next track")
+                .sensoryFeedback(.impact(.light), trigger: skipTrigger)
             }
-            .accessibilityLabel("Skip to next track")
         }
     }
 
@@ -291,6 +326,7 @@ struct NowPlayingView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
         .accessibilityLabel("Heart rate variability zone: \(hrvZoneName)")
     }
 
@@ -385,7 +421,6 @@ struct NowPlayingView: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
                 .glassEffect(.regular.interactive())
                 .padding(.horizontal, 4)
                 .padding(.bottom, 8)

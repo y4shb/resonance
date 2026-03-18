@@ -267,7 +267,7 @@ struct ResonanceApp: App {
                 task.setTaskCompleted(success: false)
                 return
             }
-            self.handlePlaylistSync(task: refreshTask)
+            Self.handlePlaylistSync(task: refreshTask)
         }
 
         BGTaskScheduler.shared.register(
@@ -278,7 +278,7 @@ struct ResonanceApp: App {
                 task.setTaskCompleted(success: false)
                 return
             }
-            self.handleFeatureUpdate(task: processingTask)
+            Self.handleFeatureUpdate(task: processingTask)
         }
 
         BGTaskScheduler.shared.register(
@@ -289,17 +289,17 @@ struct ResonanceApp: App {
                 task.setTaskCompleted(success: false)
                 return
             }
-            self.handleHistoricalAnalysis(task: processingTask)
+            Self.handleHistoricalAnalysis(task: processingTask)
         }
 
-        schedulePlaylistSync()
-        scheduleFeatureUpdate()
-        scheduleHistoricalAnalysis()
+        Self.schedulePlaylistSync()
+        Self.scheduleFeatureUpdate()
+        Self.scheduleHistoricalAnalysis()
 
         logInfo("Background tasks registered", category: .background)
     }
 
-    private func handlePlaylistSync(task: BGAppRefreshTask) {
+    private static func handlePlaylistSync(task: BGAppRefreshTask) {
         let syncTask = Task {
             let musicService = MusicKitService()
             let playlists = try await musicService.fetchUserPlaylists()
@@ -319,7 +319,7 @@ struct ResonanceApp: App {
         }
     }
 
-    private func handleFeatureUpdate(task: BGProcessingTask) {
+    private static func handleFeatureUpdate(task: BGProcessingTask) {
         let featureTask = Task {
             let extractor = FeatureExtractor()
             await extractor.extractFeaturesForPendingSongs(limit: 100)
@@ -332,7 +332,7 @@ struct ResonanceApp: App {
         }
     }
 
-    private func schedulePlaylistSync() {
+    private static func schedulePlaylistSync() {
         let request = BGAppRefreshTaskRequest(
             identifier: BackgroundTaskConstants.TaskIdentifier.playlistSync
         )
@@ -347,7 +347,7 @@ struct ResonanceApp: App {
         }
     }
 
-    private func scheduleFeatureUpdate() {
+    private static func scheduleFeatureUpdate() {
         let request = BGProcessingTaskRequest(
             identifier: BackgroundTaskConstants.TaskIdentifier.featureUpdate
         )
@@ -366,9 +366,10 @@ struct ResonanceApp: App {
 
     // MARK: - Historical Analysis Background Task
 
-    private func handleHistoricalAnalysis(task: BGProcessingTask) {
+    private static func handleHistoricalAnalysis(task: BGProcessingTask) {
         let analysisTask = Task {
-            await historicalEngine.runIncrementalBackfill()
+            let engine = HistoricalEngine(healthKitService: HealthKitService())
+            await engine.runIncrementalBackfill()
         }
         task.expirationHandler = {
             // Cancelling the task triggers CancellationError in SessionReconstructor
@@ -382,7 +383,7 @@ struct ResonanceApp: App {
         }
     }
 
-    private func scheduleHistoricalAnalysis() {
+    private static func scheduleHistoricalAnalysis() {
         let request = BGProcessingTaskRequest(
             identifier: BackgroundTaskConstants.TaskIdentifier.historicalAnalysis
         )
