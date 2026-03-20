@@ -26,7 +26,7 @@ final class AudioRouteService: ObservableObject {
     @Published private(set) var currentRoute: AudioRoute = .unknown
 
     /// Whether car audio is detected, indicating the user may be driving.
-    @Published private(set) var isCarAudioActive: Bool = false
+    @Published private(set) var isCarAudioActive = false
 
     // MARK: - Private Properties
 

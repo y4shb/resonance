@@ -15,7 +15,7 @@ import Observation
 // MARK: - Playlist Display Info
 
 /// Lightweight struct representing playlist metadata for the UI layer.
-struct PlaylistDisplayInfo: Identifiable, Equatable {
+struct PlaylistDisplayInfo: Identifiable, Equatable, Hashable {
     let id: MusicItemID
     let name: String
     let description: String?
@@ -27,6 +27,10 @@ struct PlaylistDisplayInfo: Identifiable, Equatable {
 
     static func == (lhs: PlaylistDisplayInfo, rhs: PlaylistDisplayInfo) -> Bool {
         lhs.id == rhs.id && lhs.name == rhs.name && lhs.songCount == rhs.songCount
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
     }
 }
 
@@ -43,7 +47,7 @@ final class PlaylistViewModel {
     private(set) var playlists: [PlaylistDisplayInfo] = []
 
     /// Whether playlists are currently being fetched.
-    private(set) var isLoading: Bool = false
+    private(set) var isLoading = false
 
     /// Error message to display in the UI.
     var errorMessage: String?
@@ -52,13 +56,17 @@ final class PlaylistViewModel {
     private(set) var activePlaylistName: String?
 
     /// Whether Apple Music authorization has been denied.
-    private(set) var isMusicAuthDenied: Bool = false
+    private(set) var isMusicAuthDenied = false
 
     // MARK: - Private Properties
 
-    private let musicService: MusicKitService
+    let musicService: MusicKitService
     private weak var nowPlayingViewModel: NowPlayingViewModel?
     private var cancellables = Set<AnyCancellable>()
+
+    /// Tracks the current in-flight fetch or select operation.
+    /// Cancelled before starting a new operation to prevent interleaving.
+    private var currentTask: Task<Void, Never>?
 
     // MARK: - Initialization
 
@@ -95,20 +103,21 @@ final class PlaylistViewModel {
     }
 
     /// Fetches all playlists from the user's Apple Music library.
+    /// Cancels any in-flight fetch or select operation before starting.
     func fetchPlaylists() {
-        guard !isLoading else {
-            logDebug("Playlist fetch already in progress, skipping", category: .musicKit)
-            return
-        }
+        // Cancel any in-flight operation to prevent interleaving
+        currentTask?.cancel()
 
         isLoading = true
         errorMessage = nil
 
         logInfo("Fetching user playlists", category: .musicKit)
 
-        Task {
+        currentTask = Task {
             do {
                 let musicPlaylists = try await musicService.fetchUserPlaylists()
+
+                guard !Task.isCancelled else { return }
 
                 // Show playlists immediately without song counts
                 let displayPlaylists: [PlaylistDisplayInfo] = musicPlaylists.map { playlist in
@@ -147,6 +156,7 @@ final class PlaylistViewModel {
                     }
 
                     for await (playlistId, songCount) in group {
+                        guard !Task.isCancelled else { return }
                         if let index = self.playlists.firstIndex(where: { $0.id == playlistId }) {
                             let existing = self.playlists[index]
                             self.playlists[index] = PlaylistDisplayInfo(
@@ -162,12 +172,15 @@ final class PlaylistViewModel {
                 }
 
                 logDebug("All playlist song counts loaded", category: .ui)
+            } catch is CancellationError {
+                logDebug("Playlist fetch cancelled", category: .musicKit)
             } catch is MusicKitServiceError where musicService.authorizationStatus == .denied {
                 self.isLoading = false
                 self.isMusicAuthDenied = true
                 self.errorMessage = "Apple Music access is required. Please grant access in Settings."
                 logError("Failed to fetch playlists: authorization denied", category: .musicKit)
             } catch {
+                guard !Task.isCancelled else { return }
                 self.isLoading = false
                 self.errorMessage = error.localizedDescription
                 logError("Failed to fetch playlists", error: error, category: .musicKit)
@@ -175,8 +188,21 @@ final class PlaylistViewModel {
         }
     }
 
+    /// Async version of `fetchPlaylists()` for use with SwiftUI `.refreshable`.
+    /// Awaits the completion of the fetch task so the refresh spinner dismisses naturally.
+    func refreshPlaylists() async {
+        fetchPlaylists()
+        // Await the tracked task so .refreshable knows when loading finishes
+        await currentTask?.value
+    }
+
     /// Selects a playlist, sets it as the playback queue, and begins playing.
+    /// Cancels any in-flight fetch or select operation before starting.
     func selectPlaylist(_ playlistInfo: PlaylistDisplayInfo) {
+        // Cancel any in-flight operation to prevent interleaving with fetchPlaylists
+        currentTask?.cancel()
+        isLoading = false
+
         logInfo("User selected playlist: \(playlistInfo.name)", category: .ui)
 
         activePlaylistName = playlistInfo.name
@@ -185,11 +211,15 @@ final class PlaylistViewModel {
         // Reset the decision engine session for the new playlist
         nowPlayingViewModel?.decisionEngine?.resetSession()
 
-        Task {
+        currentTask = Task {
             do {
                 try await musicService.setQueue(playlist: playlistInfo.playlist)
+                guard !Task.isCancelled else { return }
                 logInfo("Queue set from playlist '\(playlistInfo.name)'", category: .musicKit)
+            } catch is CancellationError {
+                logDebug("Playlist select cancelled", category: .musicKit)
             } catch {
+                guard !Task.isCancelled else { return }
                 // Queue load failed — clear the optimistically-set playlist name
                 activePlaylistName = nil
                 nowPlayingViewModel?.activePlaylistName = nil
@@ -241,6 +271,91 @@ final class PlaylistViewModel {
                     let songRepo = SongRepository()
                     try? await songRepo.syncSongs(songCollection, for: bgPlaylist)
                 }
+            }
+        }
+    }
+
+    /// Plays a single song from within a playlist context.
+    /// Sets the queue to the song and begins playback without disturbing
+    /// the active playlist state.
+    func playSong(_ song: MusicKit.Song, fromPlaylist playlistInfo: PlaylistDisplayInfo) {
+        logInfo("Playing song '\(song.title)' from playlist '\(playlistInfo.name)'", category: .ui)
+
+        activePlaylistName = playlistInfo.name
+        nowPlayingViewModel?.activePlaylistName = playlistInfo.name
+
+        // Look up the Core Data UUID for this playlist so AI auto-advance works
+        let playlistRepo = PlaylistRepository()
+        if let cdPlaylist = playlistRepo.findByAppleMusicId(playlistInfo.id.rawValue),
+           let playlistUUID = cdPlaylist.id {
+            nowPlayingViewModel?.activePlaylistId = playlistUUID
+        }
+
+        currentTask?.cancel()
+
+        currentTask = Task {
+            do {
+                try await musicService.play(song: song)
+                guard !Task.isCancelled else { return }
+                logInfo("Now playing '\(song.title)' from '\(playlistInfo.name)'", category: .musicKit)
+            } catch is CancellationError {
+                logDebug("Song play cancelled", category: .musicKit)
+            } catch {
+                guard !Task.isCancelled else { return }
+                errorMessage = error.localizedDescription
+                logError("Failed to play song '\(song.title)'", error: error, category: .musicKit)
+            }
+        }
+    }
+
+    /// Plays all songs from a playlist, optionally shuffled.
+    /// Sets the queue to the full song list and begins playback.
+    func playAllSongs(
+        _ songs: [MusicKit.Song],
+        fromPlaylist playlistInfo: PlaylistDisplayInfo,
+        shuffle: Bool
+    ) {
+        guard !songs.isEmpty else {
+            errorMessage = "No songs to play."
+            return
+        }
+
+        logInfo(
+            "Playing all \(songs.count) songs from '\(playlistInfo.name)'"
+            + (shuffle ? " (shuffled)" : ""),
+            category: .ui
+        )
+
+        activePlaylistName = playlistInfo.name
+        nowPlayingViewModel?.activePlaylistName = playlistInfo.name
+        nowPlayingViewModel?.decisionEngine?.resetSession()
+
+        // Look up the Core Data UUID for this playlist so AI auto-advance works
+        let playlistRepo = PlaylistRepository()
+        if let cdPlaylist = playlistRepo.findByAppleMusicId(playlistInfo.id.rawValue),
+           let playlistUUID = cdPlaylist.id {
+            nowPlayingViewModel?.activePlaylistId = playlistUUID
+        }
+
+        // Set shuffle mode before queuing
+        musicService.shuffleMode = shuffle ? .songs : .off
+
+        currentTask?.cancel()
+
+        currentTask = Task {
+            do {
+                try await musicService.setQueue(songs: songs)
+                guard !Task.isCancelled else { return }
+                logInfo("Queue set with \(songs.count) songs from '\(playlistInfo.name)'", category: .musicKit)
+            } catch is CancellationError {
+                logDebug("Play-all cancelled", category: .musicKit)
+            } catch {
+                guard !Task.isCancelled else { return }
+                activePlaylistName = nil
+                nowPlayingViewModel?.activePlaylistName = nil
+                nowPlayingViewModel?.activePlaylistId = nil
+                errorMessage = error.localizedDescription
+                logError("Failed to play all songs from '\(playlistInfo.name)'", error: error, category: .musicKit)
             }
         }
     }

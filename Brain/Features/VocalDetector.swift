@@ -54,13 +54,13 @@ final class VocalDetector {
     private let vocalBandHighHz: Float = 3400.0
 
     /// Threshold for vocal energy ratio above which vocals are considered present
-    private let vocalThreshold: Double = 0.3
+    private let vocalThreshold = 0.3
 
     /// FFT size for spectral analysis
-    private let fftSize: Int = 2048
+    private let fftSize = 2048
 
     /// Number of FFT windows to average for stability
-    private let windowsToAverage: Int = 8
+    private let windowsToAverage = 8
 
     /// Chunk size for file-based analysis (10 seconds at 44.1kHz)
     private let analysisChunkSize: AVAudioFrameCount = 44100 * 10

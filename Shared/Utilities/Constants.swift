@@ -159,6 +159,7 @@ public enum BackgroundTaskConstants {
         public static let playlistSync = "com.y4sh.resonance.playlistSync"
         public static let historicalAnalysis = "com.y4sh.resonance.historicalAnalysis"
         public static let featureUpdate = "com.y4sh.resonance.featureUpdate"
+        public static let libraryAnalysis = "com.y4sh.resonance.libraryAnalysis"
     }
 
     /// Playlist sync interval (hours)
@@ -211,6 +212,22 @@ public enum HealthKitConstants {
 
     /// Batch size for processing large datasets
     public static let processingBatchSize: Int = 500
+
+    /// Maximum days of historical data for circadian analysis
+    public static let circadianAnalysisMaxDays: Int = 21
+}
+
+// MARK: - Circadian Rhythm Constants
+// Note: Core CircadianConstants are defined in CircadianProfileTypes.swift.
+// Additional integration constants are defined here for cross-module access.
+
+public enum CircadianIntegrationConstants {
+    /// Refresh interval for circadian profile during state engine updates (seconds).
+    /// Checked every update cycle but only rebuilds if stale (> 24h).
+    public static let refreshCheckIntervalSeconds: TimeInterval = 3600
+
+    /// Minimum profile confidence to include circadianProfile in dataSources.
+    public static let minimumConfidenceForDataSource: Double = 0.1
 }
 
 // MARK: - Backfill Constants
@@ -271,6 +288,138 @@ public enum MusicKitConstants {
 
     /// Artwork thumbnail compression quality
     public static let artworkCompressionQuality: Double = 0.7
+}
+
+// MARK: - Biometric Crossfade Constants
+
+public enum BiometricCrossfadeConstants {
+    /// Normalized HR thresholds for zone classification (Karvonen reserve ratio).
+    public enum Thresholds {
+        /// HR reserve ratio ceiling for resting zone.
+        public static let restingCeiling: Double = 0.20
+        /// HR reserve ratio ceiling for low-normal zone.
+        public static let lowNormalCeiling: Double = 0.40
+        /// HR reserve ratio ceiling for normal zone.
+        public static let normalCeiling: Double = 0.60
+        /// HR reserve ratio ceiling for elevated zone.
+        public static let elevatedCeiling: Double = 0.75
+        /// HRV-to-baseline ratio below which stress is detected.
+        public static let stressHRVRatio: Double = 0.65
+        /// HRV-to-baseline ratio for deep stress detection.
+        public static let deepStressHRVRatio: Double = 0.50
+        /// Minimum HRV quality score to trust stress detection.
+        public static let hrvQualityMinimum: Double = 0.7
+        /// Minimum sample quality for full biometric-driven crossfade.
+        public static let minimumSampleQuality: Double = 0.5
+        /// Minimum confidence for applying biometric crossfade in playback.
+        public static let minimumConfidence: Double = 0.3
+    }
+
+    /// Crossfade durations (seconds) per zone.
+    public enum Durations {
+        /// Resting HR zone: meditative blend.
+        public static let resting: TimeInterval = 7.0
+        /// Low-normal HR zone: extended blend.
+        public static let lowNormal: TimeInterval = 6.0
+        /// Normal HR zone: standard crossfade.
+        public static let normal: TimeInterval = 4.5
+        /// Elevated HR zone: quick transition.
+        public static let elevated: TimeInterval = 2.5
+        /// High HR zone: punchy cut.
+        public static let high: TimeInterval = 1.5
+        /// Stress-detected sonic bridge.
+        public static let stressBridge: TimeInterval = 3.0
+        /// Deep stress sonic bridge.
+        public static let deepStressBridge: TimeInterval = 3.5
+        /// Absolute minimum crossfade duration.
+        public static let minimum: TimeInterval = 1.0
+        /// Absolute maximum crossfade duration.
+        public static let maximum: TimeInterval = 8.0
+    }
+}
+
+// MARK: - Bookmark Constants
+
+public enum BookmarkConstants {
+    /// Minimum interval between bookmarks (seconds)
+    public static let debounceInterval: TimeInterval = 2.0
+
+    /// Maximum bookmarks allowed per session
+    public static let maxPerSession: Int = 50
+}
+
+// MARK: - Emotion Detection Constants
+
+public enum EmotionDetectionConstants {
+    /// Window duration for motion feature extraction (seconds).
+    public static let motionWindowSeconds: TimeInterval = 5.0
+
+    /// Sliding window size for HR/HRV rate-of-change (number of samples).
+    public static let rateOfChangeWindowSize: Int = 6
+
+    /// Hysteresis hold time before emotion state can change (seconds).
+    public static let emotionHoldSeconds: TimeInterval = 60.0
+
+    /// Number of consecutive classifications required before switching state.
+    public static let emotionDebounceCount: Int = 3
+
+    /// Minimum confidence threshold for emotion classification.
+    public static let minimumEmotionConfidence: Double = 0.3
+
+    /// Peak detection threshold for gesture frequency (g).
+    public static let gesturePeakThreshold: Double = 0.3
+
+    /// Temperature deviation threshold for notable change (Celsius).
+    public static let temperatureDeviationThreshold: Double = 0.3
+
+    /// Temperature deviation threshold for significant change (Celsius).
+    public static let temperatureSignificantDeviation: Double = 0.5
+
+    /// Number of nights for temperature baseline computation.
+    public static let temperatureBaselineNights: Int = 7
+
+    /// Duration for temperature prior decay (seconds, 12 hours).
+    public static let temperaturePriorDecaySeconds: TimeInterval = 43200
+}
+
+// MARK: - R5: Biometric Signal Confidence Hierarchy
+// Research-backed signal reliability weights for multi-signal state estimation.
+// Used to weight biometric inputs when computing stress, valence, and arousal.
+// Reference: Castaldo et al., Front. Physiol. 2019; Hernando et al., Sensors 2018
+
+public enum BiometricSignalWeights {
+    /// HRV (RMSSD/SDNN): Gold standard for stress detection (MAPE 1.15%)
+    /// Highest reliability for autonomic nervous system state inference.
+    /// Reference: Castaldo et al., Front. Physiol. 2019
+    public static let hrv: Double = 0.35
+
+    /// Heart rate: Strong indicator of physiological arousal.
+    /// Less specific than HRV but more robust to noise.
+    /// Reference: Kreibig, Cognition & Emotion 2010
+    public static let heartRate: Double = 0.25
+
+    /// Motion/accelerometry: Good for activity context detection.
+    /// Disambiguates exercise-induced HR elevation from stress.
+    /// Reference: Gjoreski et al., Sensors 2017
+    public static let motion: Double = 0.15
+
+    /// Circadian phase: Corrects diurnal variation in biometric baselines.
+    /// Reference: Boudreau et al., PMC 2022
+    public static let circadian: Double = 0.10
+
+    /// Sleep quality: Predicts next-day mood and stress susceptibility.
+    /// Reference: de Zambotti et al., MDPI Sensors 2023
+    public static let sleep: Double = 0.10
+
+    /// Respiratory rate: Most useful during sleep analysis.
+    /// Limited value during waking hours on wrist-worn devices.
+    /// Reference: Natarajan et al., npj Digital Medicine 2021
+    public static let respiratory: Double = 0.03
+
+    /// Skin temperature: Available on Apple Watch Series 8+.
+    /// Marginal contribution to acute state estimation.
+    /// Reference: Smarr et al., Temperature 2020
+    public static let temperature: Double = 0.02
 }
 
 // MARK: - Crown Control Constants

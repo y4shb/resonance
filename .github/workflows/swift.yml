@@ -34,7 +34,7 @@ jobs:
         run: |
           xcodebuild build-for-testing \
             -scheme Resonance \
-            -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+            -destination 'generic/platform=iOS Simulator' \
             -skipPackagePluginValidation \
             -quiet
 
@@ -42,7 +42,7 @@ jobs:
         run: |
           xcodebuild test \
             -scheme Resonance \
-            -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+            -destination 'generic/platform=iOS Simulator' \
             -skipPackagePluginValidation \
             -resultBundlePath TestResults.xcresult \
             -quiet

@@ -83,6 +83,8 @@ final class FeatureExtractor {
     // MARK: - Single Song Extraction
 
     /// Extracts features for a single song in the given context.
+    /// Uses a tiered approach: genre heuristics as baseline, then attempts
+    /// ML prediction via AudioFeaturePredictor for higher confidence.
     func extractFeatures(for song: Song, in context: NSManagedObjectContext) {
         let genres: [String]
         if let raw = song.genreNames {
@@ -93,10 +95,28 @@ final class FeatureExtractor {
 
         let genreCategory = matchGenreCategory(genres: genres)
 
-        let bpm = estimateBPM(genreCategory: genreCategory)
-        let energy = estimateEnergy(genreCategory: genreCategory, bpm: bpm)
-        let valence = estimateValence(genreCategory: genreCategory)
-        let instrumentalness = estimateInstrumentalness(genreCategory: genreCategory)
+        // Step 1: Genre-based estimates (baseline, confidence 0.4)
+        let genreBpm = estimateBPM(genreCategory: genreCategory)
+        let genreEnergy = estimateEnergy(genreCategory: genreCategory, bpm: genreBpm)
+        let genreValence = estimateValence(genreCategory: genreCategory)
+        let genreInstrumentalness = estimateInstrumentalness(genreCategory: genreCategory)
+
+        // Step 2: Attempt ML / enhanced heuristic prediction
+        let blended = blendPredictions(
+            song: song,
+            genres: genres,
+            genreBpm: genreBpm,
+            genreEnergy: genreEnergy,
+            genreValence: genreValence,
+            genreInstrumentalness: genreInstrumentalness
+        )
+
+        let bpm = blended.bpm
+        let energy = blended.energy
+        let valence = blended.valence
+        let instrumentalness = blended.instrumentalness
+        let confidence = blended.confidence
+
         let acousticDensity = estimateAcousticDensity(genreCategory: genreCategory, energy: energy)
         let hasVocals = estimateHasVocals(instrumentalness: instrumentalness)
 
@@ -105,8 +125,7 @@ final class FeatureExtractor {
         song.valence = valence
         song.instrumentalness = instrumentalness
         song.acousticDensity = acousticDensity
-        song.hasVocals = hasVocals
-        song.confidenceLevel = 0.4 // genre-based confidence
+        song.confidenceLevel = confidence
 
         // Derived scores -- vocal tracks penalized for focus
         let bpmNormalized = min(max((bpm - 60.0) / 120.0, 0.0), 1.0)
@@ -119,8 +138,99 @@ final class FeatureExtractor {
 
         logDebug(
             "Extracted features for '\(song.title ?? "unknown")' — genre: \(genreCategory ?? "unknown"), " +
-            "bpm: \(bpm), energy: \(energy), valence: \(valence), hasVocals: \(hasVocals), confidence: 0.4",
+            "bpm: \(bpm), energy: \(energy), valence: \(valence), hasVocals: \(hasVocals), " +
+            "confidence: \(confidence)",
             category: .background
+        )
+    }
+
+    // MARK: - ML Prediction Blending
+
+    /// Blends genre-based estimates with ML or enhanced heuristic predictions.
+    ///
+    /// Confidence tiers:
+    /// - 0.65: ML model available and prediction succeeded (blend: 35% genre + 65% ML)
+    /// - 0.45: Enhanced heuristics only (blend: 55% genre + 45% heuristic)
+    /// - 0.40: Genre-only fallback (no blending)
+    private func blendPredictions(
+        song: Song,
+        genres: [String],
+        genreBpm: Double,
+        genreEnergy: Double,
+        genreValence: Double,
+        genreInstrumentalness: Double
+    ) -> (bpm: Double, energy: Double, valence: Double, instrumentalness: Double, confidence: Double) {
+        #if os(iOS)
+        let primaryGenre = genres.first ?? "unknown"
+
+        // Extract release year from song's releaseDate
+        let releaseYear: Int?
+        if let releaseDate = song.releaseDate {
+            releaseYear = Calendar.current.component(.year, from: releaseDate)
+        } else {
+            releaseYear = nil
+        }
+
+        // Build prediction input from song metadata.
+        // trackNumber and contentRating may not be in the Core Data schema,
+        // so we check the entity description before accessing via KVC.
+        let entityAttributes = song.entity.attributesByName
+        let trackNumber: Int
+        if entityAttributes["trackNumber"] != nil,
+           let value = song.value(forKey: "trackNumber") as? Int {
+            trackNumber = value
+        } else {
+            trackNumber = 1
+        }
+        let isExplicit: Bool
+        if entityAttributes["contentRating"] != nil,
+           let rating = song.value(forKey: "contentRating") as? String {
+            isExplicit = rating == "explicit"
+        } else {
+            isExplicit = false
+        }
+
+        let input = AudioFeaturePredictionInput(
+            genre: primaryGenre,
+            durationSeconds: song.durationSeconds,
+            releaseYear: releaseYear,
+            artistName: song.artistName ?? "",
+            albumTitle: song.albumName ?? "",
+            genreCount: genres.count,
+            trackNumber: trackNumber,
+            isExplicit: isExplicit
+        )
+
+        let prediction = AudioFeaturePredictor.shared.predict(input: input)
+
+        if prediction.confidence >= 0.65 {
+            // ML model prediction: blend 35% genre + 65% ML
+            return (
+                bpm: genreBpm * 0.35 + prediction.bpm * 0.65,
+                energy: genreEnergy * 0.35 + prediction.energy * 0.65,
+                valence: genreValence * 0.35 + prediction.valence * 0.65,
+                instrumentalness: genreInstrumentalness * 0.35 + prediction.instrumentalness * 0.65,
+                confidence: 0.65
+            )
+        } else if prediction.confidence >= 0.45 {
+            // Enhanced heuristics: blend 55% genre + 45% heuristic
+            return (
+                bpm: genreBpm * 0.55 + prediction.bpm * 0.45,
+                energy: genreEnergy * 0.55 + prediction.energy * 0.45,
+                valence: genreValence * 0.55 + prediction.valence * 0.45,
+                instrumentalness: genreInstrumentalness * 0.55 + prediction.instrumentalness * 0.45,
+                confidence: 0.45
+            )
+        }
+        #endif
+
+        // Genre-only fallback
+        return (
+            bpm: genreBpm,
+            energy: genreEnergy,
+            valence: genreValence,
+            instrumentalness: genreInstrumentalness,
+            confidence: 0.4
         )
     }
 

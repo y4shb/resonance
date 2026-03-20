@@ -38,6 +38,9 @@ final class ActiveAppProvider: ObservableObject {
 
     /// Starts observing frontmost application changes.
     func startMonitoring() {
+        // Remove any existing observer to prevent duplicates
+        stopMonitoring()
+
         // Get initial state
         updateActiveApp()
 

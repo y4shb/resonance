@@ -26,17 +26,17 @@ final class PersonalBaseline {
     }
 
     /// Population-level fallback when no personal data exists.
-    static let populationDefault: Double = 50.0
+    static let populationDefault = 50.0
 
     /// EMA smoothing factor. Lower values give more weight to history,
     /// producing a stable 7-day-like rolling average.
     /// With ~10 samples/day over 7 days (~70 samples), alpha = 0.02
     /// gives an effective window of ~50 samples.
-    private let alpha: Double = 0.02
+    private let alpha = 0.02
 
     /// Minimum number of samples before we trust the personal baseline
     /// over the population default.
-    private let minimumSamples: Int = 10
+    private let minimumSamples = 10
 
     /// Maximum age (in seconds) before the baseline is considered stale
     /// and begins blending back toward the population default.

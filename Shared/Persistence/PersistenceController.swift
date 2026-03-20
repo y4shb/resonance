@@ -74,10 +74,19 @@ public final class PersistenceController: @unchecked Sendable {
                 let description = NSPersistentStoreDescription(url: storeURL)
                 description.shouldMigrateStoreAutomatically = true
                 description.shouldInferMappingModelAutomatically = true
+                description.setOption(
+                    FileProtectionType.complete as NSObject,
+                    forKey: NSPersistentStoreFileProtectionKey
+                )
                 container.persistentStoreDescriptions = [description]
 
                 logInfo("Using App Group store at: \(storeURL.path)", category: .persistence)
             } else {
+                // App Group unavailable -- still configure migration on the default store
+                if let description = container.persistentStoreDescriptions.first {
+                    description.shouldMigrateStoreAutomatically = true
+                    description.shouldInferMappingModelAutomatically = true
+                }
                 logWarning("App Group not available, using default store location", category: .persistence)
             }
         }

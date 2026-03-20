@@ -30,20 +30,20 @@ final class RealtimeBPMVerifier {
     private let dutyCycleInterval: TimeInterval = 10.0
 
     /// Duration of each analysis window (seconds)
-    private let analysisWindowSeconds: Double = 1.0
+    private let analysisWindowSeconds = 1.0
 
     /// BPM difference threshold before triggering an update
-    private let bpmDeltaThreshold: Double = 5.0
+    private let bpmDeltaThreshold = 5.0
 
     /// FFT size for spectral flux computation
-    private let fftSize: Int = 2048
+    private let fftSize = 2048
 
     /// Hop size between FFT frames
-    private let hopSize: Int = 512
+    private let hopSize = 512
 
     /// Valid BPM range
-    private let minBPM: Double = 40
-    private let maxBPM: Double = 220
+    private let minBPM = 40.0
+    private let maxBPM = 220.0
 
     // MARK: - State
 
@@ -54,25 +54,25 @@ final class RealtimeBPMVerifier {
     private var dutyCycleTimer: Timer?
 
     /// Whether verification is currently active
-    private(set) var isActive: Bool = false
+    private(set) var isActive = false
 
     /// The song currently being verified
     private var currentSongObjectID: NSManagedObjectID?
 
     /// Stored BPM to compare against
-    private var storedBPM: Double = 0
+    private var storedBPM = 0.0
 
     /// Recent verified BPM measurements for averaging
     private var recentMeasurements: [Double] = []
 
     /// Maximum number of measurements to keep for averaging
-    private let maxMeasurements: Int = 5
+    private let maxMeasurements = 5
 
     /// Audio tap node for capturing playback audio
     private weak var audioEngine: AVAudioEngine?
 
     /// Whether an audio tap is currently installed
-    private var hasTapInstalled: Bool = false
+    private var hasTapInstalled = false
 
     /// Persistence controller for updating Song entities
     private let persistence: PersistenceController

@@ -5,6 +5,13 @@
 //  MusicKit service protocol and implementation for Apple Music playback and library access.
 //  Provides authorization, library fetching, and playback control via ApplicationMusicPlayer.
 //
+//  Platform note: ApplicationMusicPlayer is available on iOS 15+ / macOS 14+ / tvOS 15+
+//  but unavailable on watchOS. MusicPlayer.Queue.Entry and MusicPlayer.PlaybackStatus are
+//  similarly unavailable on watchOS. The entire file is guarded with #if os(iOS) to prevent
+//  compilation errors if accidentally included in a watchOS target.
+//
+
+#if os(iOS)
 
 import Foundation
 import Combine
@@ -142,10 +149,16 @@ public final class MusicKitService: MusicKitServiceProtocol {
         player.playbackTime
     }
 
+    /// Provides read/write access to the player's shuffle mode.
+    public var shuffleMode: MusicPlayer.ShuffleMode {
+        get { player.state.shuffleMode }
+        set { player.state.shuffleMode = newValue }
+    }
+
     // MARK: - Initialization
 
     /// Whether crossfade transitions are enabled
-    public var crossfadeEnabled: Bool = true {
+    public var crossfadeEnabled = true {
         didSet { configureCrossfade() }
     }
 
@@ -171,12 +184,20 @@ public final class MusicKitService: MusicKitServiceProtocol {
 
     /// Configures the ApplicationMusicPlayer crossfade settings.
     private func configureCrossfade() {
-        // ApplicationMusicPlayer.shared supports crossfade via the state property
-        // The crossfade is configured at the player level
-        if crossfadeEnabled {
-            logInfo("Crossfade enabled: \(crossfadeDuration)s duration", category: .musicKit)
+        if #available(iOS 18.0, *) {
+            if crossfadeEnabled {
+                player.transition = .crossfade(duration: crossfadeDuration)
+                logInfo("Crossfade enabled: \(crossfadeDuration)s duration", category: .musicKit)
+            } else {
+                player.transition = .none
+                logInfo("Crossfade disabled", category: .musicKit)
+            }
         } else {
-            logInfo("Crossfade disabled", category: .musicKit)
+            if crossfadeEnabled {
+                logInfo("Crossfade enabled: \(crossfadeDuration)s duration (pre-iOS 18, no native API)", category: .musicKit)
+            } else {
+                logInfo("Crossfade disabled", category: .musicKit)
+            }
         }
     }
 
@@ -293,6 +314,37 @@ public final class MusicKitService: MusicKitServiceProtocol {
             return response.items
         } catch {
             logError("Failed to fetch recently played", error: error, category: .musicKit)
+            throw MusicKitServiceError.songsFetchFailed(underlying: error)
+        }
+    }
+
+    /// Searches the user's local library for songs matching the given term.
+    /// - Parameters:
+    ///   - term: The search string to match against song titles, artists, and albums.
+    ///   - limit: Maximum number of results to return (default: 25).
+    /// - Returns: A collection of matching songs from the user's library.
+    public func searchLibrarySongs(term: String, limit: Int = 25) async throws -> MusicItemCollection<MusicKit.Song> {
+        guard authorizationStatus == .authorized else {
+            logError("Cannot search library songs: not authorized", category: .musicKit)
+            throw MusicKitServiceError.notAuthorized
+        }
+
+        guard !term.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return MusicItemCollection([])
+        }
+
+        logDebug("Searching library songs for term: '\(term)' (limit: \(limit))", category: .musicKit)
+
+        do {
+            var request = MusicLibrarySearchRequest(term: term, types: [MusicKit.Song.self])
+            request.limit = limit
+            let response = try await request.response()
+            let songs = response.songs
+
+            logInfo("Found \(songs.count) songs matching '\(term)'", category: .musicKit)
+            return songs
+        } catch {
+            logError("Failed to search library songs for '\(term)'", error: error, category: .musicKit)
             throw MusicKitServiceError.songsFetchFailed(underlying: error)
         }
     }
@@ -467,3 +519,5 @@ public final class MusicKitService: MusicKitServiceProtocol {
         }
     }
 }
+
+#endif

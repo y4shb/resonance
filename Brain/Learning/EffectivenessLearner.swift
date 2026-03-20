@@ -187,10 +187,10 @@ final class EffectivenessLearner {
     private var _explorationWeight: Double
 
     /// Minimum exploration weight (never stop exploring completely)
-    private let minExplorationWeight: Double = 0.3
+    private let minExplorationWeight = 0.3
 
     /// Exploration decay rate per processed event
-    private let explorationDecayRate: Double = 0.995
+    private let explorationDecayRate = 0.995
 
     /// Total events processed (persisted for continuity)
     /// - Note: Access must be protected by `lock`.

@@ -23,7 +23,7 @@ public final class HealthKitService: HealthKitServiceProtocol, ObservableObject 
 
     // MARK: - Published State
 
-    @Published public private(set) var isAuthorized: Bool = false
+    @Published public private(set) var isAuthorized = false
 
     // MARK: - Private Properties
 
@@ -46,6 +46,7 @@ public final class HealthKitService: HealthKitServiceProtocol, ObservableObject 
             .restingHeartRate,
             .vo2Max,
             .respiratoryRate,
+            .appleSleepingWristTemperature,
         ]
         for id in identifiers {
             if let type = HKQuantityType.quantityType(forIdentifier: id) {

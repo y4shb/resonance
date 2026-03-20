@@ -93,6 +93,14 @@ final class ContextCollector: ObservableObject {
             }
             .store(in: &cancellables)
 
+        // Subscribe to overnight temperature updates from Watch
+        watchManager.overnightTemperatureUpdates
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] packet in
+                self?.handleOvernightTemperature(packet)
+            }
+            .store(in: &cancellables)
+
         // Start polling for macOS context via CloudKit
         startMacOSContextPolling()
 
@@ -138,6 +146,14 @@ final class ContextCollector: ObservableObject {
             accelerometerMagnitude: accelMagnitude
         )
 
+        // Parse emotion state from raw string (backward-compatible)
+        let emotionalState: EmotionalState? = packet.emotionalState.flatMap {
+            EmotionalState(rawValue: $0)
+        }
+        let capabilityTier: WatchCapabilityTier? = packet.capabilityTier.flatMap {
+            WatchCapabilityTier(rawValue: $0)
+        }
+
         let signal = BiometricSignal(
             heartRate: packet.heartRate,
             hrv: packet.hrv,
@@ -147,7 +163,15 @@ final class ContextCollector: ObservableObject {
             sampleQuality: 1.0,
             sourceDevice: "watch",
             accelerometerMagnitude: accelMagnitude,
-            hrvQuality: hrvQuality
+            hrvQuality: hrvQuality,
+            movementMagnitude: packet.movementMagnitude,
+            movementVariability: packet.movementVariability,
+            movementEntropy: packet.movementEntropy,
+            rotationMagnitude: packet.rotationMagnitude,
+            gestureFrequency: packet.gestureFrequency,
+            emotionalState: emotionalState,
+            emotionConfidence: packet.emotionConfidence,
+            capabilityTier: capabilityTier
         )
 
         // 2. Update in-memory cache
@@ -208,6 +232,20 @@ final class ContextCollector: ObservableObject {
             category: .general
         )
         onMoodInput?(packet)
+    }
+
+    // MARK: - Overnight Temperature Handling
+
+    /// Callback for StateEngine to receive overnight temperature from Watch.
+    var onOvernightTemperature: ((OvernightTemperaturePacket) -> Void)?
+
+    private func handleOvernightTemperature(_ packet: OvernightTemperaturePacket) {
+        logInfo(
+            "Overnight temperature received: deviation=\(String(format: "%+.2f", packet.deviation))C, "
+            + "trend=\(packet.trend)",
+            category: .general
+        )
+        onOvernightTemperature?(packet)
     }
 
     // MARK: - macOS Context via CloudKit

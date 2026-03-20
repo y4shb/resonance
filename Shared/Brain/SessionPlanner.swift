@@ -295,6 +295,82 @@ public struct SessionPlanner: Sendable {
         }
     }
 
+    // MARK: - Trajectory Arc (Mood Journey)
+
+    /// Plans a session arc that transitions from the user's current mood
+    /// to their target mood using the iso-principle:
+    ///   Phase 1 (Match):   1-2 songs matching the current state.
+    ///   Phase 2 (Shift):   2-3 songs shifting by max 0.15 energy and 0.2 valence per song.
+    ///   Phase 3 (Arrive):  1 song reaching the target.
+    ///   Phase 4 (Sustain): Hold at target.
+    public func planTrajectoryArc(trajectory: MoodTrajectory) -> SessionArc {
+        let currentBPM = estimateBPMFromEnergy(trajectory.currentEnergy)
+        let targetBPM = estimateBPMFromEnergy(trajectory.targetEnergy)
+
+        // Phase 1: Match -- meet the user where they are
+        let matchPhase = ArcPhase(
+            phase: .match,
+            targetBPMRange: clamp(currentBPM - 5, 50, 200)...clamp(currentBPM + 5, 50, 200),
+            targetEnergyRange: clamp(trajectory.currentEnergy - 0.05, 0, 1)
+                ...clamp(trajectory.currentEnergy + 0.05, 0, 1),
+            songCount: trajectory.gapMagnitude > 0.3 ? 2 : 1
+        )
+
+        // Phase 2: Shift -- gradually move toward target
+        // Max shift per song: 0.15 energy, 0.2 valence
+        let energyDelta = trajectory.targetEnergy - trajectory.currentEnergy
+        let maxEnergyShiftPerSong = 0.15
+        let shiftSongCount: Int = {
+            guard abs(energyDelta) > 0.05 else { return 2 }
+            let needed = Int(ceil(abs(energyDelta) / maxEnergyShiftPerSong))
+            return min(max(needed, 2), 3)
+        }()
+
+        let midEnergy = trajectory.currentEnergy + energyDelta * 0.5
+        let midBPM = estimateBPMFromEnergy(midEnergy)
+        let bpmDelta: Double = {
+            guard shiftSongCount > 0 else { return 0.0 }
+            return (targetBPM - currentBPM) / Double(shiftSongCount)
+        }()
+
+        let shiftPhase = ArcPhase(
+            phase: .shift,
+            targetBPMRange: clamp(min(currentBPM, targetBPM) - 5, 50, 200)
+                ...clamp(max(midBPM, targetBPM) + 5, 50, 200),
+            targetEnergyRange: clamp(min(trajectory.currentEnergy, trajectory.targetEnergy), 0, 1)
+                ...clamp(max(midEnergy, trajectory.targetEnergy), 0, 1),
+            songCount: shiftSongCount,
+            bpmDeltaPerSong: bpmDelta
+        )
+
+        // Phase 3: Arrive -- land on the target
+        let arrivePhase = ArcPhase(
+            phase: .arrive,
+            targetBPMRange: clamp(targetBPM - 5, 50, 200)...clamp(targetBPM + 5, 50, 200),
+            targetEnergyRange: clamp(trajectory.targetEnergy - 0.05, 0, 1)
+                ...clamp(trajectory.targetEnergy + 0.05, 0, 1),
+            songCount: 1
+        )
+
+        // Phase 4: Sustain -- hold at target
+        let sustainPhase = ArcPhase(
+            phase: .sustain,
+            targetBPMRange: clamp(targetBPM - 10, 50, 200)...clamp(targetBPM + 10, 50, 200),
+            targetEnergyRange: clamp(trajectory.targetEnergy - 0.1, 0, 1)
+                ...clamp(trajectory.targetEnergy + 0.1, 0, 1),
+            songCount: 4
+        )
+
+        let phases = [matchPhase, shiftPhase, arrivePhase, sustainPhase]
+        logInfo(
+            "SessionPlanner: planned trajectory arc, "
+            + "\(phases.count) phases, ~\(phases.reduce(0) { $0 + $1.songCount }) songs, "
+            + "gap=\(String(format: "%.2f", trajectory.gapMagnitude))",
+            category: .decisionEngine
+        )
+        return SessionArc(phases: phases, template: .relaxationDescend)
+    }
+
     // MARK: - Helpers
 
     private func estimateBPMFromEnergy(_ energy: Double) -> Double { 60.0 + energy * 100.0 }

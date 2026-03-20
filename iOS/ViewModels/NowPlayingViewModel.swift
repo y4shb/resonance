@@ -23,13 +23,15 @@ struct SongDisplayInfo: Equatable {
     let albumTitle: String
     let artwork: MusicKit.Artwork?
     let duration: TimeInterval
+    let appleMusicId: String
 
     static let placeholder = SongDisplayInfo(
         title: "Not Playing",
         artistName: "--",
         albumTitle: "",
         artwork: nil,
-        duration: 0
+        duration: 0,
+        appleMusicId: ""
     )
 }
 
@@ -47,10 +49,10 @@ final class NowPlayingViewModel {
     private(set) var currentSong: SongDisplayInfo = .placeholder
 
     /// Whether audio is currently playing.
-    private(set) var isPlaying: Bool = false
+    private(set) var isPlaying = false
 
     /// Playback progress as a value from 0.0 to 1.0.
-    var playbackProgress: Double = 0.0
+    var playbackProgress = 0.0
 
     /// Current playback time in seconds.
     private(set) var currentTime: TimeInterval = 0
@@ -63,6 +65,9 @@ final class NowPlayingViewModel {
 
     /// Error message to display in the UI.
     var errorMessage: String?
+
+    /// Whether an AI song selection is currently in progress.
+    private(set) var isLoadingAISelection = false
 
     /// Dominant accent color extracted from the current album artwork.
     var artworkAccentColor: Color?
@@ -87,20 +92,33 @@ final class NowPlayingViewModel {
     /// State engine for current user state. Set externally after init.
     var stateEngine: StateEngine?
 
+    /// Bookmark manager for Sonic Bookmark feature. Set externally after init.
+    var bookmarkManager: BookmarkManager?
+
     /// The current AI explanation for why this song was selected (nil if manually chosen).
     var currentExplanation: String?
 
+    /// The BPM of the currently playing song as reported by the DecisionEngine's last selection.
+    /// Returns 0 when no AI selection has been made (e.g., manually chosen track).
+    var currentSongBPM: Double {
+        decisionEngine?.lastDecision?.score.bpm ?? 0
+    }
+
+    /// View model for mood forecast feature (pre-session energy curve prediction).
+    let moodForecastViewModel = MoodForecastViewModel()
+
     /// Whether the DJ should auto-select the next song when the current one ends.
-    var aiAutoAdvanceEnabled: Bool = true
+    var aiAutoAdvanceEnabled = true
 
     /// Guards against triggering auto-advance more than once per song.
-    private var hasTriggeredAutoAdvance: Bool = false
+    private var hasTriggeredAutoAdvance = false
 
     /// Guards against auto-advance triggering during a user seek operation.
-    private var isSeeking: Bool = false
+    private var isSeeking = false
 
     private var cancellables = Set<AnyCancellable>()
-    private var progressTimer: Timer?
+    nonisolated(unsafe) private var progressTimerTask: Task<Void, Never>?
+    private var aiSelectionTask: Task<Void, Never>?
 
     // MARK: - Initialization
 
@@ -253,10 +271,7 @@ final class NowPlayingViewModel {
     }
 
     deinit {
-        let timer = progressTimer
-        DispatchQueue.main.async {
-            timer?.invalidate()
-        }
+        progressTimerTask?.cancel()
     }
 
     // MARK: - Bindings
@@ -301,11 +316,13 @@ final class NowPlayingViewModel {
         let title = entry.title
         let subtitle = entry.subtitle ?? "--"
 
-        // Extract artwork from the entry's item
+        // Extract artwork and Apple Music ID from the entry's item
         var artwork: MusicKit.Artwork?
+        var appleMusicId = ""
         if case .song(let song) = entry.item {
             artwork = song.artwork
             duration = song.duration ?? 0
+            appleMusicId = song.id.rawValue
         } else {
             duration = 0
         }
@@ -315,7 +332,8 @@ final class NowPlayingViewModel {
             artistName: subtitle,
             albumTitle: "",
             artwork: artwork,
-            duration: duration
+            duration: duration,
+            appleMusicId: appleMusicId
         )
 
         logDebug("Now playing: \(title) by \(subtitle)", category: .ui)
@@ -349,12 +367,12 @@ final class NowPlayingViewModel {
 
         // Start/stop progress timer based on playback state to avoid unnecessary CPU usage
         if isPlaying {
-            if progressTimer == nil {
+            if progressTimerTask == nil {
                 startProgressTimer()
             }
         } else {
-            progressTimer?.invalidate()
-            progressTimer = nil
+            progressTimerTask?.cancel()
+            progressTimerTask = nil
         }
 
         if wasPlaying != isPlaying {
@@ -378,13 +396,14 @@ final class NowPlayingViewModel {
     // MARK: - Progress Timer
 
     private func startProgressTimer() {
-        let timer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
-            Task { @MainActor [weak self] in
+        progressTimerTask?.cancel()
+        progressTimerTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 500_000_000) // 0.5s interval
+                guard !Task.isCancelled else { break }
                 self?.updateProgress()
             }
         }
-        timer.tolerance = 0.05  // 10% tolerance for battery optimization
-        progressTimer = timer
     }
 
     private func updateProgress() {
@@ -486,6 +505,37 @@ final class NowPlayingViewModel {
         logDebug("Seeked to \(String(format: "%.1f", targetTime))s", category: .musicKit)
     }
 
+    // MARK: - Sonic Bookmark
+
+    /// Creates a bookmark capturing the current song, playback position, and biometric state.
+    /// Called from shake gesture, toolbar button, or Watch trigger.
+    @discardableResult
+    func createBookmark(source: BookmarkTriggerSource, heartRate: Double? = nil, hrv: Double? = nil) -> SonicBookmarkData? {
+        guard let manager = bookmarkManager else {
+            logWarning("BookmarkManager not set, cannot create bookmark", category: .general)
+            return nil
+        }
+
+        let state = stateEngine?.currentState ?? .empty
+
+        return manager.createBookmark(
+            triggerSource: source,
+            songTitle: currentSong.title,
+            artistName: currentSong.artistName,
+            songAppleMusicId: currentSong.appleMusicId,
+            playbackPosition: currentTime,
+            songDuration: duration,
+            heartRate: heartRate,
+            hrv: hrv,
+            arousal: state.arousal,
+            energy: state.energy,
+            stress: state.stress,
+            valence: state.valence,
+            activityContext: state.context.rawValue,
+            inferredNeed: state.inferredNeed.rawValue
+        )
+    }
+
     // MARK: - AI Song Selection
 
     /// The Core Data ID of the active playlist (set when a playlist is selected).
@@ -502,7 +552,13 @@ final class NowPlayingViewModel {
             return
         }
 
-        Task {
+        isLoadingAISelection = true
+
+        aiSelectionTask?.cancel()
+        aiSelectionTask = Task { [weak self] in
+            guard let self else { return }
+            defer { self.isLoadingAISelection = false }
+
             guard let result = await engine.selectNextSong(
                 playlistId: playlistId,
                 playlistName: playlistName,
@@ -510,6 +566,24 @@ final class NowPlayingViewModel {
             ) else {
                 logWarning("DecisionEngine returned no result", category: .decisionEngine)
                 return
+            }
+
+            // Apply biometric-adaptive crossfade before playing
+            if #available(iOS 18.0, *) {
+                let crossfade = result.crossfadeParameters
+                if crossfade.confidence > BiometricCrossfadeConstants.Thresholds.minimumConfidence {
+                    ApplicationMusicPlayer.shared.transition = .crossfade(duration: crossfade.duration)
+                    logDebug(
+                        "Applied biometric crossfade: \(crossfade.zone.rawValue) "
+                        + "(\(String(format: "%.1fs", crossfade.duration)))",
+                        category: .decisionEngine
+                    )
+                } else {
+                    // Low confidence: reset to user's configured crossfade to avoid
+                    // stale biometric durations persisting across transitions.
+                    let fallbackDuration = musicService.crossfadeDuration
+                    ApplicationMusicPlayer.shared.transition = .crossfade(duration: fallbackDuration)
+                }
             }
 
             // Play the selected song
@@ -537,7 +611,7 @@ final class NowPlayingViewModel {
             // Sync explanation to Watch
             sendNowPlayingToWatch()
 
-            logInfo(
+            self.logInfo(
                 "AI selected: '\(result.score.songTitle)' — \(result.explanation.short)",
                 category: .decisionEngine
             )

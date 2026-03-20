@@ -20,8 +20,23 @@ struct ResonanceApp: App {
     /// Whether the user has completed the onboarding flow
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
+    /// Whether the initial library analysis has been completed (or skipped)
+    @AppStorage("hasCompletedLibraryAnalysis") private var hasCompletedLibraryAnalysis = false
+
+    /// Whether the user has started their first DJ session (past the landing screen)
+    @AppStorage("hasStartedFirstSession") private var hasStartedFirstSession = false
+
+    /// Namespace for matchedGeometryEffect transitions between landing and main views
+    @Namespace private var heroNamespace
+
     /// Scene phase for detecting foreground/background transitions
     @Environment(\.scenePhase) private var scenePhase
+
+    /// Whether to show the MusicKit authorization denied/restricted alert
+    @State private var showMusicAuthAlert = false
+
+    /// The authorization denial message to display in the alert
+    @State private var musicAuthAlertMessage = ""
 
     /// Persistence controller for Core Data
     let persistenceController = PersistenceController.shared
@@ -58,6 +73,12 @@ struct ResonanceApp: App {
 
     /// Real-time guard adjuster
     @StateObject private var guardAdjuster: RealTimeGuardAdjuster
+
+    /// Sonic Bookmark manager
+    @StateObject private var bookmarkManager: BookmarkManager
+
+    /// Library analysis engine for first-launch processing
+    @State private var libraryAnalysisEngine = LibraryAnalysisEngine()
 
     /// WatchConnectivity manager for iPhone <-> Watch communication
     private let watchConnectivityManager = WatchConnectivityManager.shared
@@ -128,6 +149,11 @@ struct ResonanceApp: App {
         // Wire guard adjuster to DecisionEngine
         decisionEngine.guardAdjuster = guardAdjuster
 
+        // Create and wire Sonic Bookmark manager
+        let bookmarkManager = BookmarkManager()
+        _bookmarkManager = StateObject(wrappedValue: bookmarkManager)
+        nowPlaying.bookmarkManager = bookmarkManager
+
         // Wire mood input from Watch → StateEngine
         // Normalize [1,5] scale to [0.0,1.0] using (value - 1) / 4.0
         contextCollector.onMoodInput = { [weak stateEngine] packet in
@@ -149,22 +175,61 @@ struct ResonanceApp: App {
     var body: some Scene {
         WindowGroup {
             Group {
-                if hasCompletedOnboarding {
+                if !hasCompletedOnboarding {
+                    OnboardingContainerView(
+                        hasCompletedOnboarding: $hasCompletedOnboarding,
+                        musicService: musicService
+                    )
+                } else if !hasCompletedLibraryAnalysis {
+                    LibraryAnalysisView(engine: libraryAnalysisEngine) {
+                        hasCompletedLibraryAnalysis = true
+                    }
+                    .task {
+                        guard musicService.authorizationStatus == .authorized else { return }
+                        await libraryAnalysisEngine.analyzeFullLibrary(
+                            musicService: musicService,
+                            featureExtractor: FeatureExtractor(),
+                            songRepository: SongRepository()
+                        )
+                    }
+                } else if !hasStartedFirstSession {
+                    LandingView(
+                        hasStartedFirstSession: $hasStartedFirstSession,
+                        animationNamespace: heroNamespace
+                    )
+                    .transition(.opacity)
+                } else {
                     MainView(
                         nowPlayingViewModel: nowPlayingViewModel,
                         playlistViewModel: playlistViewModel,
                         musicService: musicService,
                         historicalEngine: historicalEngine,
-                        stateEngine: stateEngine
+                        stateEngine: stateEngine,
+                        heroNamespace: heroNamespace
                     )
-                } else {
-                    OnboardingContainerView(
-                        hasCompletedOnboarding: $hasCompletedOnboarding,
-                        musicService: musicService
-                    )
+                    .transition(.opacity)
                 }
             }
             .environment(\.managedObjectContext, persistenceController.viewContext)
+            .alert("Apple Music Access", isPresented: $showMusicAuthAlert) {
+                Button("Open Settings") {
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(url)
+                    }
+                }
+                // Only show "Try Again" for .notDetermined; for .denied the user
+                // must go to Settings -- re-requesting just re-denies silently.
+                if musicService.authorizationStatus == .notDetermined {
+                    Button("Try Again") {
+                        Task {
+                            await requestMusicKitAuthorization()
+                        }
+                    }
+                }
+                Button("Not Now", role: .cancel) { }
+            } message: {
+                Text(musicAuthAlertMessage)
+            }
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .active {
                     // Re-check authorization when returning from Settings
@@ -194,6 +259,18 @@ struct ResonanceApp: App {
                         if let hr = packet.heartRate {
                             guardAdjuster?.recordHeartRate(hr, currentNeed: stateEngine?.currentState.inferredNeed)
                         }
+                    }
+
+                // Wire Watch bookmark triggers to BookmarkManager
+                Self.bookmarkCancellable = watchConnectivityManager.bookmarkTriggers
+                    .receive(on: DispatchQueue.main)
+                    .sink { [weak nowPlayingViewModel] packet in
+                        let source = BookmarkTriggerSource(rawValue: packet.triggerSource) ?? .watchButton
+                        nowPlayingViewModel?.createBookmark(
+                            source: source,
+                            heartRate: packet.heartRate,
+                            hrv: packet.hrv
+                        )
                     }
 
                 // Wire state engine changes to iOS widgets
@@ -232,8 +309,12 @@ struct ResonanceApp: App {
             logInfo("MusicKit authorized -- ready to access Apple Music", category: .musicKit)
         case .denied:
             logWarning("MusicKit authorization denied -- features will be limited", category: .musicKit)
+            musicAuthAlertMessage = "Resonance needs Apple Music access to play music and browse your library. Please grant access in Settings, or try again."
+            showMusicAuthAlert = true
         case .restricted:
             logWarning("MusicKit authorization restricted on this device", category: .musicKit)
+            musicAuthAlertMessage = "Apple Music access is restricted on this device. This may be due to parental controls or a device management profile. Please check Settings to resolve this."
+            showMusicAuthAlert = true
         case .notDetermined:
             logDebug("MusicKit authorization still not determined", category: .musicKit)
         @unknown default:
@@ -245,6 +326,9 @@ struct ResonanceApp: App {
 
     /// Holds the biometric-to-guard-adjuster subscription across struct copies.
     private static var biometricCancellable: AnyCancellable?
+
+    /// Holds the Watch bookmark trigger subscription across struct copies.
+    private static var bookmarkCancellable: AnyCancellable?
 
     /// Holds the state-engine-to-widget subscription across struct copies.
     private static var widgetCancellables = Set<AnyCancellable>()
@@ -290,6 +374,17 @@ struct ResonanceApp: App {
                 return
             }
             Self.handleHistoricalAnalysis(task: processingTask)
+        }
+
+        BGTaskScheduler.shared.register(
+            forTaskWithIdentifier: BackgroundTaskConstants.TaskIdentifier.libraryAnalysis,
+            using: nil
+        ) { task in
+            guard let processingTask = task as? BGProcessingTask else {
+                task.setTaskCompleted(success: false)
+                return
+            }
+            Self.handleLibraryAnalysis(task: processingTask)
         }
 
         Self.schedulePlaylistSync()
@@ -397,6 +492,41 @@ struct ResonanceApp: App {
             logDebug("Historical analysis scheduled", category: .background)
         } catch {
             logError("Failed to schedule historical analysis", error: error, category: .background)
+        }
+    }
+
+    // MARK: - Library Analysis Background Task
+
+    private static func handleLibraryAnalysis(task: BGProcessingTask) {
+        let analysisTask = Task {
+            let engine = LibraryAnalysisEngine()
+            await engine.analyzeFullLibrary(
+                musicService: MusicKitService(),
+                featureExtractor: FeatureExtractor(),
+                songRepository: SongRepository()
+            )
+        }
+        task.expirationHandler = { analysisTask.cancel() }
+        Task {
+            await analysisTask.value
+            task.setTaskCompleted(success: true)
+            UserDefaults.standard.set(true, forKey: "hasCompletedLibraryAnalysis")
+        }
+    }
+
+    /// Schedules library analysis for background completion if it was not finished in the foreground.
+    static func scheduleLibraryAnalysis() {
+        let request = BGProcessingTaskRequest(
+            identifier: BackgroundTaskConstants.TaskIdentifier.libraryAnalysis
+        )
+        request.requiresNetworkConnectivity = false
+        request.requiresExternalPower = false
+        request.earliestBeginDate = Date(timeIntervalSinceNow: 60)
+        do {
+            try BGTaskScheduler.shared.submit(request)
+            logDebug("Library analysis background task scheduled", category: .background)
+        } catch {
+            logError("Failed to schedule library analysis", error: error, category: .background)
         }
     }
 }

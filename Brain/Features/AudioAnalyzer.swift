@@ -44,6 +44,20 @@ struct AudioAnalysisResult {
 
     /// Confidence in the analysis (0.0 - 1.0)
     let confidence: Double
+
+    // MARK: - Spectral Features
+
+    /// Spectral centroid in Hz (brightness / center of mass of spectrum)
+    let spectralCentroid: Double?
+
+    /// Spectral rolloff frequency in Hz (85th percentile energy boundary)
+    let spectralRolloff: Double?
+
+    /// Spectral flux (frame-to-frame spectral change, onset strength)
+    let spectralFlux: Double?
+
+    /// Mel-frequency cepstral coefficients (timbral shape, typically 12 values)
+    let mfccs: [Float]?
 }
 
 // MARK: - Audio Analyzer
@@ -55,16 +69,20 @@ final class AudioAnalyzer {
 
     // MARK: - Constants
 
-    private let sampleRate: Double = 44100
+    private let sampleRate = 44100.0
     private let bufferSize: AVAudioFrameCount = 4096
-    private let minBPM: Double = 40
-    private let maxBPM: Double = 220
+    private let minBPM = 40.0
+    private let maxBPM = 220.0
 
     /// 10 seconds of audio per chunk at 44.1kHz
     private let chunkSize: AVAudioFrameCount = 44100 * 10
 
     /// Duration in seconds of the middle segment used for BPM estimation
-    private let bpmSegmentSeconds: Double = 30
+    private let bpmSegmentSeconds = 30.0
+
+    /// Shared FFT processor, pre-allocates buffers and FFT setup once.
+    /// Uses 2048-sample frames to match the previous inline FFT size.
+    private lazy var fftProcessor: FFTProcessor? = FFTProcessor(fftSize: 2048)
 
     // MARK: - Analyze Audio URL
 
@@ -81,7 +99,9 @@ final class AudioAnalyzer {
             return AudioAnalysisResult(
                 bpm: 0, energy: 0.5, valence: 0.5,
                 instrumentalness: 0.5, acousticDensity: 0.5,
-                hasVocals: false, confidence: 0
+                hasVocals: false, confidence: 0,
+                spectralCentroid: nil, spectralRolloff: nil,
+                spectralFlux: nil, mfccs: nil
             )
         }
 
@@ -91,6 +111,13 @@ final class AudioAnalyzer {
         var chunkCentroids: [Double] = []
         var chunkVocalRatios: [Double] = []
         var framesRead: AVAudioFrameCount = 0
+
+        // Spectral feature accumulators
+        let spectralAnalyzer = SpectralAnalyzer(sampleRate: actualSampleRate)
+        var chunkSpectralCentroids: [Double] = []
+        var chunkSpectralRolloffs: [Double] = []
+        var chunkSpectralFluxes: [Double] = []
+        var chunkMFCCs: [[Float]] = []
 
         // Read and process audio in chunks to prevent OOM
         while framesRead < totalFrameCount {
@@ -123,6 +150,15 @@ final class AudioAnalyzer {
                     computeVocalEnergyRatio(channelData, count: count, sampleRate: actualSampleRate)
                 )
 
+                // Extract spectral features for this chunk
+                if let analyzer = spectralAnalyzer,
+                   let spectral = analyzer.analyzeChunk(channelData, count: count) {
+                    chunkSpectralCentroids.append(Double(spectral.centroid))
+                    chunkSpectralRolloffs.append(Double(spectral.rolloff))
+                    chunkSpectralFluxes.append(Double(spectral.flux))
+                    chunkMFCCs.append(spectral.mfccs)
+                }
+
                 framesRead += framesToRead
             }
         }
@@ -131,7 +167,9 @@ final class AudioAnalyzer {
             return AudioAnalysisResult(
                 bpm: 0, energy: 0.5, valence: 0.5,
                 instrumentalness: 0.5, acousticDensity: 0.5,
-                hasVocals: false, confidence: 0
+                hasVocals: false, confidence: 0,
+                spectralCentroid: nil, spectralRolloff: nil,
+                spectralFlux: nil, mfccs: nil
             )
         }
 
@@ -158,6 +196,31 @@ final class AudioAnalyzer {
         ))
         let hasVocals = avgVocalRatio > 0.3
 
+        // Aggregate spectral features across chunks
+        let avgSpectralCentroid: Double? = chunkSpectralCentroids.isEmpty
+            ? nil
+            : chunkSpectralCentroids.reduce(0, +) / Double(chunkSpectralCentroids.count)
+
+        let avgSpectralRolloff: Double? = chunkSpectralRolloffs.isEmpty
+            ? nil
+            : chunkSpectralRolloffs.reduce(0, +) / Double(chunkSpectralRolloffs.count)
+
+        let avgSpectralFlux: Double? = chunkSpectralFluxes.isEmpty
+            ? nil
+            : chunkSpectralFluxes.reduce(0, +) / Double(chunkSpectralFluxes.count)
+
+        let avgMFCCs: [Float]? = chunkMFCCs.isEmpty ? nil : {
+            let count = chunkMFCCs[0].count
+            var sums = [Float](repeating: 0, count: count)
+            for mfccSet in chunkMFCCs {
+                for i in 0..<min(count, mfccSet.count) {
+                    sums[i] += mfccSet[i]
+                }
+            }
+            let divisor = Float(chunkMFCCs.count)
+            return sums.map { $0 / divisor }
+        }()
+
         return AudioAnalysisResult(
             bpm: bpm,
             energy: normalizedEnergy,
@@ -165,7 +228,11 @@ final class AudioAnalyzer {
             instrumentalness: normalizedInstrumentalness,
             acousticDensity: normalizedAcousticDensity,
             hasVocals: hasVocals,
-            confidence: 0.85
+            confidence: 0.85,
+            spectralCentroid: avgSpectralCentroid,
+            spectralRolloff: avgSpectralRolloff,
+            spectralFlux: avgSpectralFlux,
+            mfccs: avgMFCCs
         )
     }
 
@@ -226,54 +293,26 @@ final class AudioAnalyzer {
         return Double(crossings) / Double(count)
     }
 
-    // MARK: - Spectral Centroid (using Accelerate FFT)
+    // MARK: - Spectral Centroid (via shared FFTProcessor)
 
     private func computeSpectralCentroid(_ data: UnsafePointer<Float>, count: Int, sampleRate: Double) -> Double {
-        let fftSize = 2048
+        guard let processor = fftProcessor else { return 4000.0 }
+        let fftSize = processor.fftSize
         guard count >= fftSize else { return 4000.0 }  // Default mid-range
 
-        // Take a sample from the middle of the track
+        // Take a sample from the middle of the chunk
         let midOffset = max(0, (count - fftSize) / 2)
 
-        // Setup FFT
-        guard let fftSetup = vDSP_create_fftsetup(vDSP_Length(Int(log2(Double(fftSize)))), FFTRadix(kFFTRadix2)) else {
+        guard let magnitudes = processor.computeMagnitudes(data, offset: midOffset) else {
             return 4000.0
         }
-        defer { vDSP_destroy_fftsetup(fftSetup) }
-
-        var realPart = [Float](repeating: 0, count: fftSize / 2)
-        var imagPart = [Float](repeating: 0, count: fftSize / 2)
-        var splitComplex = DSPSplitComplex(realp: &realPart, imagp: &imagPart)
-
-        // Copy and window the data
-        var windowed = [Float](repeating: 0, count: fftSize)
-        for i in 0..<fftSize {
-            windowed[i] = data[midOffset + i]
-        }
-
-        // Apply Hann window
-        var window = [Float](repeating: 0, count: fftSize)
-        vDSP_hann_window(&window, vDSP_Length(fftSize), Int32(vDSP_HANN_NORM))
-        vDSP_vmul(windowed, 1, window, 1, &windowed, 1, vDSP_Length(fftSize))
-
-        // Pack real samples into split-complex form for vDSP_fft_zrip:
-        // even-indexed samples go to realp, odd-indexed to imagp.
-        for i in 0..<(fftSize / 2) {
-            realPart[i] = windowed[2 * i]
-            imagPart[i] = windowed[2 * i + 1]
-        }
-        vDSP_fft_zrip(fftSetup, &splitComplex, 1, vDSP_Length(Int(log2(Double(fftSize)))), FFTDirection(FFT_FORWARD))
-
-        // Compute magnitude spectrum
-        var magnitudes = [Float](repeating: 0, count: fftSize / 2)
-        vDSP_zvmags(&splitComplex, 1, &magnitudes, 1, vDSP_Length(fftSize / 2))
 
         // Compute spectral centroid = sum(f * magnitude) / sum(magnitude)
         let binWidth = Float(sampleRate) / Float(fftSize)
         var weightedSum: Float = 0
         var totalMag: Float = 0
 
-        for i in 0..<(fftSize / 2) {
+        for i in 0..<magnitudes.count {
             let freq = Float(i) * binWidth
             weightedSum += freq * magnitudes[i]
             totalMag += magnitudes[i]
@@ -283,7 +322,7 @@ final class AudioAnalyzer {
         return Double(weightedSum / totalMag)
     }
 
-    // MARK: - Vocal Energy Ratio
+    // MARK: - Vocal Energy Ratio (via shared FFTProcessor)
 
     /// Computes the ratio of energy in vocal formant bands (300Hz-3.4kHz) vs total energy.
     /// Vocals have characteristic formant patterns concentrated in this range.
@@ -292,53 +331,24 @@ final class AudioAnalyzer {
         count: Int,
         sampleRate: Double
     ) -> Double {
-        let fftSize = 2048
+        guard let processor = fftProcessor else { return 0.0 }
+        let fftSize = processor.fftSize
         guard count >= fftSize else { return 0.0 }
 
         let midOffset = max(0, (count - fftSize) / 2)
 
-        guard let fftSetup = vDSP_create_fftsetup(
-            vDSP_Length(Int(log2(Double(fftSize)))),
-            FFTRadix(kFFTRadix2)
-        ) else {
+        guard let magnitudes = processor.computeMagnitudes(data, offset: midOffset) else {
             return 0.0
         }
-        defer { vDSP_destroy_fftsetup(fftSetup) }
-
-        var realPart = [Float](repeating: 0, count: fftSize / 2)
-        var imagPart = [Float](repeating: 0, count: fftSize / 2)
-        var splitComplex = DSPSplitComplex(realp: &realPart, imagp: &imagPart)
-
-        var windowed = [Float](repeating: 0, count: fftSize)
-        for i in 0..<fftSize {
-            windowed[i] = data[midOffset + i]
-        }
-
-        var window = [Float](repeating: 0, count: fftSize)
-        vDSP_hann_window(&window, vDSP_Length(fftSize), Int32(vDSP_HANN_NORM))
-        vDSP_vmul(windowed, 1, window, 1, &windowed, 1, vDSP_Length(fftSize))
-
-        for i in 0..<(fftSize / 2) {
-            realPart[i] = windowed[2 * i]
-            imagPart[i] = windowed[2 * i + 1]
-        }
-        vDSP_fft_zrip(
-            fftSetup, &splitComplex, 1,
-            vDSP_Length(Int(log2(Double(fftSize)))),
-            FFTDirection(FFT_FORWARD)
-        )
-
-        var magnitudes = [Float](repeating: 0, count: fftSize / 2)
-        vDSP_zvmags(&splitComplex, 1, &magnitudes, 1, vDSP_Length(fftSize / 2))
 
         let binWidth = Float(sampleRate) / Float(fftSize)
         let vocalLowBin = Int(300.0 / binWidth)
-        let vocalHighBin = min(fftSize / 2, Int(3400.0 / binWidth))
+        let vocalHighBin = min(magnitudes.count, Int(3400.0 / binWidth))
 
         var vocalEnergy: Float = 0
         var totalEnergy: Float = 0
 
-        for i in 0..<(fftSize / 2) {
+        for i in 0..<magnitudes.count {
             totalEnergy += magnitudes[i]
             if i >= vocalLowBin && i <= vocalHighBin {
                 vocalEnergy += magnitudes[i]

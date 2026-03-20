@@ -23,25 +23,25 @@ import HealthKit
 
 enum SensorConfidenceConstants {
     /// R-R interval CV threshold above which HRV is flagged as low quality.
-    static let rrCVThreshold: Double = 0.25
+    static let rrCVThreshold = 0.25
 
     /// Minimum HRV quality below which the HRV signal should be heavily discounted.
-    static let minimumUsableQuality: Double = 0.3
+    static let minimumUsableQuality = 0.3
 
     /// Quality floor for stationary readings (always at least this quality).
-    static let stationaryFloor: Double = 0.85
+    static let stationaryFloor = 0.85
 
     /// Quality penalty for motion-context recordings.
-    static let motionPenalty: Double = 0.3
+    static let motionPenalty = 0.3
 
     /// Quality penalty for high R-R variability.
-    static let highCVPenalty: Double = 0.35
+    static let highCVPenalty = 0.35
 
     /// Quality penalty for workout context.
-    static let workoutPenalty: Double = 0.5
+    static let workoutPenalty = 0.5
 
     /// Threshold for hrvQuality below which HRV credit is discounted.
-    static let discountThreshold: Double = 0.8
+    static let discountThreshold = 0.8
 }
 
 // MARK: - Sensor Confidence Scorer

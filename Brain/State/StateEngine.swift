@@ -36,9 +36,19 @@ final class StateEngine: ObservableObject {
     /// Personal HRV baseline tracker, replacing the hardcoded 50ms population default.
     let personalBaseline: PersonalBaseline
 
+    /// Learned circadian rhythm profile manager for personalized energy/context inference.
+    let circadianManager: CircadianProfileManager
+
+    /// Refines Watch-side emotion classification with iPhone context.
+    let emotionRefinementEngine: EmotionRefinementEngine
+
     // MARK: - Internal State
 
     var manualMood: ManualMoodInput?
+
+    /// Active mood trajectory for guided mood journeys (MoodTabView).
+    @Published private(set) var moodTrajectory: MoodTrajectory?
+
     private var updateTimer: Timer?
     private var isRunning = false
 
@@ -49,7 +59,7 @@ final class StateEngine: ObservableObject {
     private var lastRestingHRFetch: Date?
 
     /// Current crown-based energy adjustment (-0.5 to 0.5)
-    var crownEnergyAdjustment: Double = 0.0
+    var crownEnergyAdjustment = 0.0
     /// When the crown adjustment was last applied
     var crownAdjustmentTimestamp: Date?
 
@@ -59,29 +69,45 @@ final class StateEngine: ObservableObject {
     private var lastVO2MaxFetch: Date?
 
     /// Whether an irregular heart rhythm was recently detected (Workstream 3.8).
-    private var hasRecentIrregularRhythm: Bool = false
+    private var hasRecentIrregularRhythm = false
     /// Last time we checked for irregular rhythm events.
     private var lastIrregularRhythmCheck: Date?
+
+    // MARK: - R3: HR Acceleration Tracking (Appelhans & Luecken 2006)
+    /// Rolling HR buffer for acceleration: ~4 samples (2 min at 30s intervals).
+    private var recentHRSamples: [(timestamp: Date, hr: Double)] = []
+    private let maxHRHistorySamples = 4
+    /// Most recent HR acceleration rate (BPM/min). Updated each cycle.
+    private(set) var lastHRAcceleration: Double = 0.0
+
+    // MARK: - R6: Sleep-Derived Morning Baseline (de Zambotti et al. 2023)
+    /// Cached morning mood baseline from overnight metrics. Nil until available.
+    private(set) var morningMoodBaseline: MorningMoodBaseline?
 
     // MARK: - MusicNeed Hysteresis
 
     /// Minimum hold time (seconds) and consecutive sample count before switching.
-    private let musicNeedHoldSeconds: TimeInterval = 60.0
-    private let musicNeedDebounceCount: Int = 3
-    private var lastNeedChangeTimestamp: Date?
-    private var committedNeed: MusicNeed = .maintain
-    private var candidateNeedHistory: [MusicNeed] = []
+    /// Note: internal access for MusicNeedInference.swift extension.
+    let musicNeedHoldSeconds: TimeInterval = 60.0
+    let musicNeedDebounceCount = 3
+    var lastNeedChangeTimestamp: Date?
+    var committedNeed: MusicNeed = .maintain
+    var candidateNeedHistory: [MusicNeed] = []
 
     // MARK: - Initialization
 
     init(
         contextCollector: ContextCollector,
         healthKitService: HealthKitService,
-        personalBaseline: PersonalBaseline = PersonalBaseline()
+        personalBaseline: PersonalBaseline = PersonalBaseline(),
+        circadianManager: CircadianProfileManager = CircadianProfileManager(),
+        emotionRefinementEngine: EmotionRefinementEngine = EmotionRefinementEngine()
     ) {
         self.contextCollector = contextCollector
         self.healthKitService = healthKitService
         self.personalBaseline = personalBaseline
+        self.circadianManager = circadianManager
+        self.emotionRefinementEngine = emotionRefinementEngine
         logInfo("StateEngine initialized", category: .stateEngine)
     }
 
@@ -99,13 +125,19 @@ final class StateEngine: ObservableObject {
         guard !isRunning else { return }
         isRunning = true
 
+        // Wire up overnight temperature callback to emotion refinement engine
+        contextCollector.onOvernightTemperature = { [weak self] packet in
+            self?.emotionRefinementEngine.processOvernightTemperature(packet)
+        }
+
         // Fetch initial resting HR, VO2 Max, check irregular rhythm,
-        // compute sleep baseline, then perform first state update
+        // compute sleep baseline, refresh circadian profile, then perform first state update
         Task {
             await refreshRestingHeartRate()
             await refreshVO2Max()
             await checkIrregularHeartRhythm()
             contextCollector.computeSleepBaselineIfNeeded(using: healthKitService)
+            circadianManager.refreshProfileIfNeeded(using: healthKitService)
             await updateState()
         }
 
@@ -151,6 +183,32 @@ final class StateEngine: ObservableObject {
         Task { await updateState() }
     }
 
+    // MARK: - Mood Trajectory
+
+    /// Sets a mood trajectory for guided mood journeys. Also sets the manual
+    /// mood to the current values so the state engine immediately reflects input.
+    func setMoodTrajectory(
+        current: (energy: Double, valence: Double),
+        target: (energy: Double, valence: Double)
+    ) {
+        let t = MoodTrajectory(
+            currentEnergy: Self.clamp(current.energy, 0.0, 1.0),
+            currentValence: Self.clamp(current.valence, 0.0, 1.0),
+            targetEnergy: Self.clamp(target.energy, 0.0, 1.0),
+            targetValence: Self.clamp(target.valence, 0.0, 1.0),
+            timestamp: Date()
+        )
+        moodTrajectory = t
+        setManualMood(energy: current.energy, valence: current.valence)
+        logInfo("Mood trajectory set: gap=\(String(format: "%.2f", t.gapMagnitude)), ~\(t.estimatedSongsToTarget) songs", category: .stateEngine)
+    }
+
+    /// Clears the active mood trajectory.
+    func clearMoodTrajectory() {
+        moodTrajectory = nil
+        logInfo("Mood trajectory cleared", category: .stateEngine)
+    }
+
     // MARK: - Crown Adjustment
 
     /// Applies a crown rotation adjustment from Watch.
@@ -193,11 +251,55 @@ final class StateEngine: ObservableObject {
         let context = contextCollector.aggregatedContext
         let biometric = context.biometric
 
+        // R3: Track HR history for acceleration-based transition detection
+        if let hr = biometric?.heartRate, hr > 0 {
+            recentHRSamples.append((timestamp: Date(), hr: hr))
+            if recentHRSamples.count > maxHRHistorySamples {
+                recentHRSamples.removeFirst()
+            }
+        }
+
+        // R3: Compute HR acceleration (BPM change per minute)
+        let hrSample2MinAgo: Double? = {
+            guard recentHRSamples.count >= maxHRHistorySamples else { return nil }
+            return recentHRSamples.first?.hr
+        }()
+        lastHRAcceleration = Self.calculateHRAcceleration(
+            currentHR: biometric?.heartRate ?? 0.0,
+            hrSample2MinAgo: hrSample2MinAgo
+        )
+
+        // R6: Compute morning mood baseline from overnight metrics if available
+        let hour = Calendar.current.component(.hour, from: Date())
+        if hour >= 5 && hour < 12 && morningMoodBaseline == nil {
+            if let sleepBaseline = context.sleepBaseline {
+                morningMoodBaseline = MorningMoodBaseline.compute(
+                    sleepDuration: sleepBaseline.totalSleepHours,
+                    deepSleepPct: sleepBaseline.deepSleepPercentage,
+                    overnightHRV: personalBaseline.currentBaseline,
+                    baselineHRV: PersonalBaseline.populationDefault,
+                    overnightRespRate: biometric?.respiratoryRate)
+                logDebug("Morning mood baseline: stress=\(String(format: "%.3f", morningMoodBaseline?.stressAdjustment ?? 0)), valence=\(String(format: "%.3f", morningMoodBaseline?.valenceAdjustment ?? 0))", category: .stateEngine)
+            }
+        } else if hour >= 12 {
+            // Reset morning baseline after noon so it recomputes next morning
+            morningMoodBaseline = nil
+        }
+
         // 1. Calculate arousal from heart rate (uses VO2 Max if available)
         let arousalResult = calculateArousal(biometric: biometric)
 
-        // 2. Calculate stress from HRV
+        // 2. Calculate stress from HRV (R1: now includes circadian HRV correction)
         var stressResult = calculateStress(biometric: biometric)
+
+        // R6: Apply sleep-derived morning stress adjustment
+        if hour >= 5 && hour < 12, let moodBaseline = morningMoodBaseline {
+            let adjustedStress = Self.clamp(
+                stressResult.value + moodBaseline.stressAdjustment,
+                0.0, 1.0
+            )
+            stressResult = EstimateResult(value: adjustedStress, confidence: stressResult.confidence)
+        }
 
         // 3. If irregular rhythm detected, set biometric reliability to 0.0 (Workstream 3.8)
         if hasRecentIrregularRhythm {
@@ -234,84 +336,16 @@ final class StateEngine: ObservableObject {
 
         logDebug(
             "State updated: \(state.summary) | arousal=\(String(format: "%.2f", state.arousal)), "
-            + "stress=\(String(format: "%.2f", state.stress)), energy=\(String(format: "%.2f", state.energy))",
+            + "stress=\(String(format: "%.2f", state.stress)), energy=\(String(format: "%.2f", state.energy)), "
+            + "hrAccel=\(String(format: "%.1f", lastHRAcceleration)) BPM/min",
             category: .stateEngine
         )
     }
 
     // MARK: - Music Need Inference (plan.md Section 5.1.5)
     // Note: inferActivityContext is in ActivityContextInference.swift
-
-    /// Determines what the user needs from music. Applies hysteresis (60s hold,
-    /// 3 consecutive agreeing samples) to prevent rapid need switching.
-    func inferMusicNeed(state: StateVector) -> MusicNeed {
-        return applyNeedHysteresis(computeRawMusicNeed(state: state))
-    }
-
-    private func computeRawMusicNeed(state: StateVector) -> MusicNeed {
-        // Context-driven needs (highest priority)
-        switch state.context {
-        case .workout:
-            return state.energy < 0.5 ? .energize : .maintain
-        case .postWorkout:
-            return .calm
-        case .preSleep:
-            return .calm
-        case .deepWork:
-            return .focus
-        case .work:
-            if state.focus > 0.6 {
-                return .focus
-            }
-        default:
-            break
-        }
-
-        // State-driven needs
-        if state.stress > 0.7 {
-            return .calm
-        }
-
-        if state.energy < 0.3 && state.arousal < 0.4 {
-            return .energize
-        }
-
-        // Detect significant state change
-        if let prev = previousState {
-            let delta = abs(state.arousal - prev.arousal) + abs(state.stress - prev.stress)
-            if delta > 0.4 {
-                return .transition
-            }
-        }
-
-        return .maintain
-    }
-
-    /// Applies hysteresis: requires hold time + consecutive agreement.
-    private func applyNeedHysteresis(_ rawNeed: MusicNeed) -> MusicNeed {
-        if rawNeed == committedNeed {
-            candidateNeedHistory.removeAll()
-            return committedNeed
-        }
-
-        candidateNeedHistory.append(rawNeed)
-
-        let recent = candidateNeedHistory.suffix(musicNeedDebounceCount)
-        let allAgree = recent.count >= musicNeedDebounceCount
-            && recent.allSatisfy { $0 == rawNeed }
-        guard allAgree else { return committedNeed }
-
-        if let lastChange = lastNeedChangeTimestamp,
-           Date().timeIntervalSince(lastChange) < musicNeedHoldSeconds {
-            return committedNeed
-        }
-
-        committedNeed = rawNeed
-        lastNeedChangeTimestamp = Date()
-        candidateNeedHistory.removeAll()
-        logInfo("MusicNeed changed to \(rawNeed.rawValue) (hysteresis passed)", category: .stateEngine)
-        return committedNeed
-    }
+    // Note: computeRawMusicNeed and applyNeedHysteresis are in
+    //       MusicNeedInference.swift to keep this file under 500 lines.
 
     // MARK: - StateVector Synthesis (plan.md Section 5.1.4)
 
@@ -326,7 +360,51 @@ final class StateEngine: ObservableObject {
     ) -> StateVector {
         var energy = calculateEnergy(arousal: arousal.value, stress: stress.value)
         let focus = calculateFocus(stress: stress.value, arousal: arousal.value, context: activityContext)
-        var valence = calculateValence(stress: stress.value)
+
+        // R2: Use multi-signal valence when biometric data is available,
+        // falling back to stress-only valence otherwise.
+        // Reference: Kreibig, Cognition & Emotion 2010
+        let sleepBaseline = contextCollector.aggregatedContext.sleepBaseline
+        var valence: Double
+        if biometric != nil {
+            valence = calculateValence(
+                stress: stress.value,
+                arousal: arousal.value,
+                biometric: biometric,
+                sleepBaseline: sleepBaseline
+            )
+        } else {
+            valence = calculateValence(stress: stress.value)
+        }
+
+        // R6: Apply sleep-derived morning valence adjustment
+        let currentHour = Calendar.current.component(.hour, from: Date())
+        if currentHour >= 5 && currentHour < 12, let moodBaseline = morningMoodBaseline {
+            valence = Self.clamp(valence + moodBaseline.valenceAdjustment, 0.0, 1.0)
+        }
+
+        // Emotion refinement: adjust valence based on Watch emotion classification
+        let watchEmotionalState = biometric?.emotionalState
+        let watchEmotionConfidence = biometric?.emotionConfidence ?? 0.0
+        let refinedEmotion = emotionRefinementEngine.refineEmotionalState(
+            watchState: watchEmotionalState,
+            watchConfidence: watchEmotionConfidence,
+            currentStress: stress.value,
+            currentEnergy: energy,
+            isFocusModeActive: contextCollector.aggregatedContext.isFocusModeActive,
+            isInWorkout: biometric?.isInWorkout ?? false
+        )
+        valence = emotionRefinementEngine.refineValence(
+            baseValence: valence,
+            emotionalStateRaw: refinedEmotion?.rawValue,
+            confidence: watchEmotionConfidence
+        )
+
+        // Apply temperature-based morning energy adjustment
+        energy = Self.clamp(
+            energy + emotionRefinementEngine.morningEnergyAdjustment(),
+            0.0, 1.0
+        )
 
         // Blend with manual mood input if active
         if let mood = manualMood, mood.isActive {
@@ -369,6 +447,19 @@ final class StateEngine: ObservableObject {
         if crownAdjustmentTimestamp != nil {
             dataSources.insert(.crownInput)
         }
+        if let profile = circadianManager.currentProfile,
+           profile.confidence >= CircadianIntegrationConstants.minimumConfidenceForDataSource {
+            dataSources.insert(.circadianProfile)
+        }
+        if biometric?.movementMagnitude != nil {
+            dataSources.insert(.watchMotionDetail)
+        }
+        if emotionRefinementEngine.latestOvernightTemp != nil {
+            dataSources.insert(.skinTemperature)
+        }
+        if refinedEmotion != nil {
+            dataSources.insert(.emotionClassification)
+        }
 
         // Confidence: average of biometric confidence, boosted by data source count
         let biometricConfidence = (arousal.confidence + stress.confidence) / 2.0
@@ -385,7 +476,8 @@ final class StateEngine: ObservableObject {
             inferredNeed: .maintain,  // Set below
             timestamp: Date(),
             confidence: confidence,
-            dataSources: dataSources
+            dataSources: dataSources,
+            emotionalState: refinedEmotion
         )
 
         state.inferredNeed = inferMusicNeed(state: state)
@@ -393,66 +485,6 @@ final class StateEngine: ObservableObject {
         return state
     }
 
-    // MARK: - Helpers
-
-    private func refreshRestingHeartRate() async {
-        do {
-            if let rhr = try await healthKitService.fetchRestingHeartRate() {
-                restingHeartRate = rhr
-                logDebug("Resting HR updated: \(rhr) BPM", category: .stateEngine)
-            }
-        } catch {
-            logDebug("Could not fetch resting HR: \(error.localizedDescription)", category: .stateEngine)
-        }
-        lastRestingHRFetch = Date()
-    }
-
-    // MARK: - VO2 Max (Workstream 3.1)
-
-    private func refreshVO2Max() async {
-        do {
-            if let vo2 = try await healthKitService.fetchVO2Max() {
-                cachedVO2Max = vo2
-                logDebug(
-                    "VO2 Max updated: \(String(format: "%.1f", vo2)) mL/kg/min",
-                    category: .stateEngine
-                )
-            }
-        } catch {
-            logDebug(
-                "Could not fetch VO2 Max: \(error.localizedDescription)",
-                category: .stateEngine
-            )
-        }
-        lastVO2MaxFetch = Date()
-    }
-
-    // MARK: - Irregular Heart Rhythm (Workstream 3.8)
-
-    private func checkIrregularHeartRhythm() async {
-        do {
-            let events = try await healthKitService.fetchIrregularHeartRhythmEvents(days: 7)
-
-            // Consider it "recent" if any event occurred in the last 24 hours
-            let oneDayAgo = Date().addingTimeInterval(-86400)
-            let recentEvents = events.filter { $0 > oneDayAgo }
-            hasRecentIrregularRhythm = !recentEvents.isEmpty
-
-            if hasRecentIrregularRhythm {
-                logWarning(
-                    "Irregular heart rhythm detected (\(recentEvents.count) events in last 24h) "
-                    + "- biometric reliability reduced",
-                    category: .stateEngine
-                )
-            }
-        } catch {
-            logDebug(
-                "Could not check irregular rhythm: \(error.localizedDescription)",
-                category: .stateEngine
-            )
-        }
-        lastIrregularRhythmCheck = Date()
-    }
 }
 
 #endif

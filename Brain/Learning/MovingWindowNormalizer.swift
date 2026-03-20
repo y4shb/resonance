@@ -29,12 +29,12 @@ struct MovingWindowNormalizer {
 
     /// Fraction of personal baseline that constitutes a "significant" change.
     /// 0.2 means a 20% change from baseline is a full-magnitude reward signal.
-    static let significantChangeFraction: Double = 0.2
+    static let significantChangeFraction = 0.2
 
     /// Minimum baseline value to prevent division by zero or extreme normalization
     /// when the baseline is very low (e.g., first few samples).
-    static let minimumHRVBaseline: Double = 10.0
-    static let minimumHRBaseline: Double = 40.0
+    static let minimumHRVBaseline = 10.0
+    static let minimumHRBaseline = 40.0
 
     // MARK: - HRV Normalization
 
@@ -122,13 +122,13 @@ final class PersonalHRBaseline {
     }
 
     /// Population-level fallback resting heart rate.
-    static let populationDefault: Double = 70.0
+    static let populationDefault = 70.0
 
     /// EMA smoothing factor for HR baseline.
-    private let alpha: Double = 0.02
+    private let alpha = 0.02
 
     /// Minimum samples before trusting the personal baseline.
-    private let minimumSamples: Int = 10
+    private let minimumSamples = 10
 
     // MARK: - State
 

@@ -23,7 +23,7 @@ final class FocusModeService: ObservableObject {
     // MARK: - Published State
 
     /// Whether any Focus mode is currently active on the device.
-    @Published private(set) var isFocused: Bool = false
+    @Published private(set) var isFocused = false
 
     // MARK: - Private Properties
 

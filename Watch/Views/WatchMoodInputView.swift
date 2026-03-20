@@ -14,8 +14,8 @@ struct WatchMoodInputView: View {
     let connectivityService: PhoneConnectivityService
 
     @State private var step: InputStep = .energy
-    @State private var selectedEnergy: Int = 0
-    @State private var selectedMood: Int = 0
+    @State private var selectedEnergy = 0
+    @State private var selectedMood = 0
     @State private var hasSubmitted = false
 
     @Environment(\.dismiss) private var dismiss
@@ -62,30 +62,30 @@ struct WatchMoodInputView: View {
                 WKInterfaceDevice.current().play(.click)
                 step = .mood
             } label: {
-                Label("Low", systemImage: "battery.25percent")
+                Label("Low", systemImage: "tortoise")
                     .frame(maxWidth: .infinity)
             }
-            .tint(.blue)
+            .tint(.cyan)
 
             Button {
                 selectedEnergy = 3
                 WKInterfaceDevice.current().play(.click)
                 step = .mood
             } label: {
-                Label("Medium", systemImage: "battery.50percent")
+                Label("Medium", systemImage: "hare")
                     .frame(maxWidth: .infinity)
             }
-            .tint(.orange)
+            .tint(.yellow)
 
             Button {
                 selectedEnergy = 5
                 WKInterfaceDevice.current().play(.click)
                 step = .mood
             } label: {
-                Label("High", systemImage: "battery.100percent")
+                Label("High", systemImage: "bolt.fill")
                     .frame(maxWidth: .infinity)
             }
-            .tint(.green)
+            .tint(.red)
         }
     }
 
@@ -102,7 +102,7 @@ struct WatchMoodInputView: View {
                 Label("Down", systemImage: "cloud.rain")
                     .frame(maxWidth: .infinity)
             }
-            .tint(.blue)
+            .tint(.indigo)
 
             Button {
                 submitMood(moodLevel: 3)
@@ -110,7 +110,7 @@ struct WatchMoodInputView: View {
                 Label("Neutral", systemImage: "cloud.sun")
                     .frame(maxWidth: .infinity)
             }
-            .tint(.orange)
+            .tint(.gray)
 
             Button {
                 submitMood(moodLevel: 5)
@@ -174,7 +174,7 @@ struct WatchMoodInputView: View {
             step = .confirmed
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             dismiss()
         }
     }

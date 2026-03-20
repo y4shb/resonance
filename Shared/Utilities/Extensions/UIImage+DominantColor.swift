@@ -85,10 +85,22 @@ extension UIImage {
 
     /// Resizes the image to the given size.
     private func resized(to targetSize: CGSize) -> UIImage? {
-        let renderer = UIGraphicsImageRenderer(size: targetSize)
-        return renderer.image { _ in
-            self.draw(in: CGRect(origin: .zero, size: targetSize))
-        }
+        let width = Int(targetSize.width)
+        let height = Int(targetSize.height)
+        guard let cgImage = self.cgImage,
+              let colorSpace = cgImage.colorSpace,
+              let ctx = CGContext(
+                  data: nil,
+                  width: width,
+                  height: height,
+                  bitsPerComponent: 8,
+                  bytesPerRow: width * 4,
+                  space: colorSpace,
+                  bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+              ) else { return nil }
+        ctx.draw(cgImage, in: CGRect(origin: .zero, size: targetSize))
+        guard let resizedCG = ctx.makeImage() else { return nil }
+        return UIImage(cgImage: resizedCG)
     }
 }
 #endif

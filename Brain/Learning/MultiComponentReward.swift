@@ -78,17 +78,17 @@ struct RewardWeights {
 
 enum MultiComponentRewardConstants {
     /// Number of song interactions before transitioning to established weights.
-    static let establishedThreshold: Int = 50
+    static let establishedThreshold = 50
 
     /// Steepness of the sigmoid transition curve.
     /// At 0.1, the transition spans roughly 20 interactions around the threshold.
-    static let transitionSteepness: Double = 0.1
+    static let transitionSteepness = 0.1
 
     /// Significant HRV change threshold as a fraction of personal baseline.
-    static let significantHRVChangeFraction: Double = 0.2
+    static let significantHRVChangeFraction = 0.2
 
     /// Significant HR change threshold in BPM.
-    static let significantHRChangeBPM: Double = 10.0
+    static let significantHRChangeBPM = 10.0
 }
 
 // MARK: - Multi-Component Reward Calculator

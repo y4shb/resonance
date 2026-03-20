@@ -14,7 +14,7 @@ struct HeartPulseRing: View {
     let accentColor: Color      // Derived from album art
     let reduceMotion: Bool
 
-    @State private var isPulsed: Bool = false
+    @State private var isPulsed = false
 
     /// How closely music BPM matches heart rate (0.0 - 1.0)
     private var entrainment: Double {
@@ -77,4 +77,17 @@ struct HeartPulseRing: View {
             }
         }
     }
+}
+
+// MARK: - Preview
+
+#Preview {
+    HeartPulseRing(
+        heartRate: 72,
+        musicBPM: 120,
+        accentColor: .blue,
+        reduceMotion: false
+    )
+    .frame(width: 200, height: 200)
+    .padding()
 }

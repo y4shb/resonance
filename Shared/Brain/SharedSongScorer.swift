@@ -157,7 +157,10 @@ public struct SharedSongScorer: Sendable {
             ))
         }
 
-        let confidence = features.isAnalyzed ? 0.8 : 0.4
+        // Use graduated confidence from the feature extraction pipeline:
+        // 0.4 genre-only / 0.45 enhanced heuristic / 0.65 ML / 0.85 audio-analyzed.
+        // Falls back to the binary check only when confidence was never set.
+        let confidence = features.confidence > 0.0 ? features.confidence : (features.isAnalyzed ? 0.8 : 0.4)
 
         return SongScore(
             songId: songId,

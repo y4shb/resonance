@@ -3,7 +3,9 @@
 //  Resonance
 //
 //  Root tab-based navigation view for the iOS app.
-//  Three tabs for M1: Now Playing, Playlists, Settings.
+//  Four tabs: Now Playing, Mood, Playlists, Settings.
+//  Includes a persistent MiniPlayerView as a tab bar bottom accessory
+//  (iOS 26+) that shows current track info and transport controls.
 //
 
 import SwiftUI
@@ -19,18 +21,23 @@ struct MainView: View {
     @ObservedObject var historicalEngine: HistoricalEngine
     @ObservedObject var stateEngine: StateEngine
 
+    /// Optional namespace for matchedGeometryEffect transition from landing screen
+    var heroNamespace: Namespace.ID?
+
     @State private var selectedTab: Tab = .nowPlaying
 
     // MARK: - Tab Definition
 
     enum Tab: Int, CaseIterable {
         case nowPlaying
+        case mood
         case playlists
         case settings
 
         var title: String {
             switch self {
             case .nowPlaying: return "Now Playing"
+            case .mood: return "Mood"
             case .playlists: return "Playlists"
             case .settings: return "Settings"
             }
@@ -38,7 +45,8 @@ struct MainView: View {
 
         var systemImage: String {
             switch self {
-            case .nowPlaying: return "play.circle.fill"
+            case .nowPlaying: return "play.circle"
+            case .mood: return "face.smiling"
             case .playlists: return "music.note.list"
             case .settings: return "gear"
             }
@@ -49,11 +57,22 @@ struct MainView: View {
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            NowPlayingView(viewModel: nowPlayingViewModel, stateEngine: stateEngine)
+            NowPlayingView(
+                    viewModel: nowPlayingViewModel,
+                    stateEngine: stateEngine,
+                    heroNamespace: heroNamespace,
+                    onBrowsePlaylists: { selectedTab = .playlists }
+                )
                 .tabItem {
                     Label(Tab.nowPlaying.title, systemImage: Tab.nowPlaying.systemImage)
                 }
                 .tag(Tab.nowPlaying)
+
+            MoodTabView(stateEngine: stateEngine)
+                .tabItem {
+                    Label(Tab.mood.title, systemImage: Tab.mood.systemImage)
+                }
+                .tag(Tab.mood)
 
             PlaylistBrowserView(
                 viewModel: playlistViewModel,
@@ -77,10 +96,37 @@ struct MainView: View {
             }
             .tag(Tab.settings)
         }
-        .tint(.blue)
+        .safeAreaInset(edge: .bottom) {
+            if shouldShowMiniPlayer {
+                MiniPlayerView(
+                    viewModel: nowPlayingViewModel,
+                    onTapNavigate: {
+                        selectedTab = .nowPlaying
+                    }
+                )
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: shouldShowMiniPlayer)
+        .tint(ResonanceColors.accent)
         .onAppear {
+            // When no playlist is active, default to .playlists so the user
+            // lands on the playlist picker instead of an empty Now Playing screen.
+            if nowPlayingViewModel.activePlaylistName == nil {
+                selectedTab = .playlists
+            }
             logDebug("MainView appeared", category: .ui)
         }
+    }
+
+    // MARK: - Mini Player Visibility
+
+    /// Shows the mini player when a song is loaded and the user is NOT on the Now Playing tab.
+    /// The mini player is hidden on the Now Playing tab to avoid duplicating controls.
+    private var shouldShowMiniPlayer: Bool {
+        let hasSong = nowPlayingViewModel.currentSong != .placeholder
+        let isOnNowPlaying = selectedTab == .nowPlaying
+        return hasSong && !isOnNowPlaying
     }
 }
 

@@ -8,14 +8,14 @@ final class CrownHandler: ObservableObject {
     // MARK: - Published State
 
     @Published var isDJModeActive = false
-    @Published var crownValue: Double = 0.0
-    @Published var energyAdjustment: Double = 0.0
+    @Published var crownValue = 0.0
+    @Published var energyAdjustment = 0.0
 
     // MARK: - Dependencies
 
     private let connectivityService: PhoneConnectivityService
     private var debounceTimer: Timer?
-    private var lastSentValue: Double = 0.0
+    private var lastSentValue = 0.0
 
     init(connectivityService: PhoneConnectivityService) {
         self.connectivityService = connectivityService

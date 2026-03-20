@@ -6,6 +6,11 @@
 //  Includes Yerkes-Dodson arousal optimization (6.5) and sleep preparation
 //  detection (6.4).
 //
+//  Research enhancements:
+//  - R1 Circadian HRV correction: Boudreau et al., PMC 2022
+//  - R2 Multi-signal valence: Kreibig, Cognition & Emotion 2010
+//  - R3 HR acceleration: Appelhans & Luecken, Psychophysiology 2006
+//
 
 import Foundation
 
@@ -55,18 +60,28 @@ public final class SharedStateEngine: @unchecked Sendable {
     private var _restingHeartRate: Double
     private var _maxHeartRate: Double
     /// Typical bedtime hour (24h format). Used for sleep preparation detection.
+    /// Falls back to circadian profile's typicalSleepHour when available.
     private var _typicalBedtimeHour: Int
-    private let sleepPrepLeadMinutes: Int = 45
+    private let sleepPrepLeadMinutes = 45
+
+    /// Circadian profile manager for personalized energy and context inference.
+    private let _circadianManager: CircadianProfileManager
 
     // MARK: - State
 
     private var _currentState: StateVector
     private var _arousalState: ArousalState = .optimal
-    private var _isSleepPrepActive: Bool = false
+    private var _isSleepPrepActive = false
     private var _recentRMSSD: [Double] = []
-    private let maxRMSSDSamples: Int = 10
+    private let maxRMSSDSamples = 10
     private var _recentHeartRates: [Double] = []
-    private let maxHeartRateSamples: Int = 10
+    private let maxHeartRateSamples = 10
+
+    // MARK: - R3: HR Acceleration (Appelhans & Luecken 2006)
+    /// Rolling HR buffer for acceleration: ~4 samples (2 min at 30s intervals).
+    private var _hrAccelHistory: [Double] = []
+    private let maxHRAccelSamples = 4
+    private var _lastHRAcceleration: Double = 0.0
 
     // MARK: - Thread-Safe Accessors
 
@@ -74,16 +89,20 @@ public final class SharedStateEngine: @unchecked Sendable {
     public var arousalState: ArousalState { lock.withLock { _arousalState } }
     public var isSleepPrepActive: Bool { lock.withLock { _isSleepPrepActive } }
 
+    public var lastHRAcceleration: Double { lock.withLock { _lastHRAcceleration } }
+
     // MARK: - Initialization
 
     public init(
         restingHeartRate: Double = StateEngineConstants.defaultRestingHeartRate,
         userAge: Int = StateEngineConstants.defaultUserAge,
-        typicalBedtimeHour: Int = 23
+        typicalBedtimeHour: Int = 23,
+        circadianManager: CircadianProfileManager = CircadianProfileManager()
     ) {
         self._restingHeartRate = restingHeartRate
         self._maxHeartRate = StateEngineConstants.maxHeartRateBase - Double(userAge)
         self._typicalBedtimeHour = typicalBedtimeHour
+        self._circadianManager = circadianManager
         self._currentState = .empty
 
         logInfo("SharedStateEngine initialized (resting HR: \(restingHeartRate), max HR: \(_maxHeartRate))",
@@ -100,6 +119,7 @@ public final class SharedStateEngine: @unchecked Sendable {
             let energy = _estimateEnergy(from: context, arousal: arousal)
             let focus = _estimateFocus(from: context)
             let stress = _estimateStress(from: context)
+            // R2: Use enhanced multi-signal valence
             let valence = _estimateValence(from: context, stress: stress)
             let activityContext = _inferActivityContext(from: context)
             let confidence = _calculateConfidence(from: context)
@@ -110,7 +130,12 @@ public final class SharedStateEngine: @unchecked Sendable {
             }
             if let hr = context.biometric?.heartRate {
                 _appendHeartRate(hr)
+                // R3: Track HR for acceleration calculation
+                _appendHRAccelSample(hr)
             }
+
+            // R3: Compute HR acceleration (BPM change per minute)
+            _lastHRAcceleration = _calculateHRAcceleration()
 
             // Yerkes-Dodson arousal classification (6.5)
             _arousalState = _classifyArousalState(
@@ -143,6 +168,10 @@ public final class SharedStateEngine: @unchecked Sendable {
             if context.biometric?.hrv != nil { dataSources.insert(.hrv) }
             if context.biometric != nil { dataSources.insert(.motion) }
             if context.macOS != nil { dataSources.insert(.macOSContext) }
+            if let profile = _circadianManager.currentProfile,
+               profile.confidence >= CircadianIntegrationConstants.minimumConfidenceForDataSource {
+                dataSources.insert(.circadianProfile)
+            }
 
             let stateVector = StateVector(
                 arousal: arousal,
@@ -164,6 +193,7 @@ public final class SharedStateEngine: @unchecked Sendable {
                 + "energy=\(String(format: "%.2f", energy)), "
                 + "yerkesState=\(_arousalState.rawValue), "
                 + "sleepPrep=\(_isSleepPrepActive), "
+                + "hrAccel=\(String(format: "%.1f", _lastHRAcceleration)) BPM/min, "
                 + "need=\(inferredNeed.rawValue)",
                 category: .stateEngine
             )
@@ -200,13 +230,11 @@ public final class SharedStateEngine: @unchecked Sendable {
     private func _estimateEnergy(from context: AggregatedContext, arousal: Double) -> Double {
         var energy = arousal
         let hour = Calendar.current.component(.hour, from: context.timestamp)
-        switch hour {
-        case 6..<10: energy += 0.1
-        case 10..<14: energy += 0.15
-        case 14..<16: energy -= 0.05
-        case 22..<24, 0..<6: energy -= 0.15
-        default: break
-        }
+
+        // Apply circadian energy modifier (blends learned profile with static fallback)
+        let circadianModifier = _circadianManager.blendedEnergyModifier(forHour: hour)
+        energy += circadianModifier
+
         if context.biometric?.isInWorkout == true { energy = max(energy, 0.7) }
         return clamp(energy, 0.0, 1.0)
     }
@@ -231,27 +259,75 @@ public final class SharedStateEngine: @unchecked Sendable {
         return clamp(focus, 0.0, 1.0)
     }
 
+    /// R1: Stress estimation with circadian HRV correction.
+    /// Scales HRV thresholds by time-of-day to prevent afternoon false positives.
+    /// Reference: Boudreau et al., PMC 2022; Hernando et al., Sensors 2018
     private func _estimateStress(from context: AggregatedContext) -> Double {
         var stress = 0.3
         if let hrv = context.biometric?.hrv {
-            if hrv < 25 { stress += 0.35 }
-            else if hrv < 40 { stress += 0.2 }
-            else if hrv < 60 { stress += 0.05 }
-            else if hrv > 80 { stress -= 0.15 }
+            // R1: Scale thresholds by circadian factor (afternoon HRV naturally lower)
+            let hour = Calendar.current.component(.hour, from: context.timestamp)
+            let circadianFactor = Self.circadianHRVFactor(for: hour)
+
+            let adjustedLow = 25.0 * circadianFactor
+            let adjustedMedLow = 40.0 * circadianFactor
+            let adjustedMedHigh = 60.0 * circadianFactor
+            let adjustedHigh = 80.0 * circadianFactor
+
+            if hrv < adjustedLow { stress += 0.35 }
+            else if hrv < adjustedMedLow { stress += 0.2 }
+            else if hrv < adjustedMedHigh { stress += 0.05 }
+            else if hrv > adjustedHigh { stress -= 0.15 }
         }
+
         if let hr = context.biometric?.heartRate {
             let hrElevation = hr - _restingHeartRate
             if hrElevation > 30 && context.biometric?.isInWorkout != true { stress += 0.2 }
         }
+
         return clamp(stress, 0.0, 1.0)
     }
 
+    /// R2: Multi-signal valence incorporating HRV trend and activity.
+    /// Reference: Kreibig, Cognition & Emotion 2010; Mauss & Robinson, 2009
     private func _estimateValence(from context: AggregatedContext, stress: Double) -> Double {
-        var valence = 0.5
-        valence -= (stress - 0.5) * 0.4
-        if context.biometric?.isInWorkout == true { valence += 0.15 }
-        if context.macOS?.inferredWorkState == .entertainment { valence += 0.1 }
-        return clamp(valence, 0.0, 1.0)
+        let stressComponent = -(stress - 0.5) * 0.35
+        let activityBonus: Double = (context.biometric?.isInWorkout == true) ? 0.15 : 0.0
+        let entertainmentBonus: Double = (context.macOS?.inferredWorkState == .entertainment) ? 0.1 : 0.0
+        // R2: Rising HRV trend suggests improving mood
+        let hrvTrendComponent: Double = {
+            let trend = _calculateRMSSDTrend()
+            return clamp(trend / 200.0, -0.10, 0.10)
+        }()
+        return clamp(0.5 + stressComponent + activityBonus + entertainmentBonus + hrvTrendComponent, 0.0, 1.0)
+    }
+
+    // MARK: - R1: Circadian HRV Factor (Boudreau et al. 2022)
+    static func circadianHRVFactor(for hour: Int) -> Double {
+        switch hour {
+        case 0..<6:   return 1.15  // Early morning: HRV naturally elevated
+        case 6..<10:  return 1.10  // Morning: still above average
+        case 10..<14: return 1.00  // Late morning: baseline
+        case 14..<18: return 0.85  // Afternoon: HRV naturally lower (nadir)
+        case 18..<22: return 0.95  // Evening: recovering
+        default:      return 1.05  // Night: rising with parasympathetic dominance
+        }
+    }
+
+    // MARK: - R3: HR Acceleration (Appelhans & Luecken 2006)
+    private func _calculateHRAcceleration() -> Double {
+        guard _hrAccelHistory.count >= maxHRAccelSamples else { return 0.0 }
+        let oldest = _hrAccelHistory.first ?? 0.0
+        let newest = _hrAccelHistory.last ?? 0.0
+        // maxHRAccelSamples samples at 30s intervals = 2 minutes
+        return (newest - oldest) / 2.0
+    }
+
+    /// Transition signal (0-1) from HR acceleration. >0 = likely state transition.
+    static func transitionSignalFromHRAcceleration(_ hrAcceleration: Double) -> Double {
+        let absAccel = abs(hrAcceleration)
+        guard absAccel > 5.0 else { return 0.0 }
+        return min(1.0, absAccel / 10.0)
     }
 
     // MARK: - Activity Context Inference
@@ -272,13 +348,13 @@ public final class SharedStateEngine: @unchecked Sendable {
             }
         }
 
-        // Time-based fallbacks
+        // Circadian-aware time-based fallbacks
         let hour = Calendar.current.component(.hour, from: context.timestamp)
-        switch hour {
-        case 6..<9: return .morning
-        case 22..<24, 0..<6: return .preSleep
-        default: return .unknown
-        }
+        let isWeekend: Bool = {
+            let weekday = Calendar.current.component(.weekday, from: context.timestamp)
+            return weekday == 1 || weekday == 7
+        }()
+        return _circadianManager.circadianActivityContext(forHour: hour, isWeekend: isWeekend)
     }
 
     // MARK: - Yerkes-Dodson Arousal Classification (6.5)
@@ -305,30 +381,16 @@ public final class SharedStateEngine: @unchecked Sendable {
 
     // MARK: - Sleep Preparation Detection (6.4)
 
-    /// Detects sleep prep mode 30-45 min before bedtime, confirmed by rising RMSSD.
+    /// Detects sleep prep 30-45 min before bedtime, confirmed by rising RMSSD.
     private func _detectSleepPreparation(currentHour: Int, currentMinute: Int) -> Bool {
-        // Calculate minutes until bedtime
+        let effectiveBedtimeHour = _circadianManager.currentProfile?.typicalSleepHour ?? _typicalBedtimeHour
         let currentTotalMinutes = currentHour * 60 + currentMinute
-        let bedtimeTotalMinutes = _typicalBedtimeHour * 60
-
-        let minutesUntilBedtime: Int
-        if bedtimeTotalMinutes > currentTotalMinutes {
-            minutesUntilBedtime = bedtimeTotalMinutes - currentTotalMinutes
-        } else {
-            // Handle midnight crossing
-            minutesUntilBedtime = (24 * 60 - currentTotalMinutes) + bedtimeTotalMinutes
-        }
-
-        // Only activate within 45-minute window before bedtime
-        guard minutesUntilBedtime <= sleepPrepLeadMinutes && minutesUntilBedtime >= 0 else {
-            return false
-        }
-
-        // Physiological confirmation: check for rising RMSSD trend
-        // (parasympathetic activation = body winding down)
+        let bedtimeTotalMinutes = effectiveBedtimeHour * 60
+        let minutesUntilBedtime = bedtimeTotalMinutes > currentTotalMinutes
+            ? bedtimeTotalMinutes - currentTotalMinutes
+            : (24 * 60 - currentTotalMinutes) + bedtimeTotalMinutes
+        guard minutesUntilBedtime <= sleepPrepLeadMinutes && minutesUntilBedtime >= 0 else { return false }
         let rmssdTrend = _calculateRMSSDTrend()
-
-        // Activate if within time window AND RMSSD is rising (or we have no data)
         return rmssdTrend >= 0.0 || _recentRMSSD.isEmpty
     }
 
@@ -337,49 +399,29 @@ public final class SharedStateEngine: @unchecked Sendable {
         guard _recentRMSSD.count >= 3 else { return 0.0 }
         let recent = Array(_recentRMSSD.suffix(5))
         let firstHalf = recent.prefix(recent.count / 2)
-        let secondHalf = recent.suffix(recent.count / 2)
-        let firstAvg = firstHalf.reduce(0, +) / Double(firstHalf.count)
-        let secondAvg = secondHalf.reduce(0, +) / Double(secondHalf.count)
+        let secondHalf = recent.suffix(recent.count - recent.count / 2)
+        let firstAvg = firstHalf.isEmpty ? 0.0 : firstHalf.reduce(0, +) / Double(firstHalf.count)
+        let secondAvg = secondHalf.isEmpty ? 0.0 : secondHalf.reduce(0, +) / Double(secondHalf.count)
         return secondAvg - firstAvg
     }
 
     // MARK: - Music Need Inference
 
     /// Infers music need incorporating Yerkes-Dodson arousal optimization.
-    private func _inferMusicNeed(
-        arousal: Double,
-        energy: Double,
-        focus: Double,
-        stress: Double,
-        activityContext: ActivityContext,
-        arousalState: ArousalState,
-        isSleepPrep: Bool
-    ) -> MusicNeed {
-        // Sleep preparation overrides everything
-        if isSleepPrep {
-            return .calm
-        }
-
-        // Context-specific overrides
+    private func _inferMusicNeed(arousal: Double, energy: Double, focus: Double,
+                                  stress: Double, activityContext: ActivityContext,
+                                  arousalState: ArousalState, isSleepPrep: Bool) -> MusicNeed {
+        if isSleepPrep { return .calm }
         switch activityContext {
-        case .workout:
-            return .energize
-        case .deepWork:
-            return .focus
-        case .postWorkout:
-            return .calm
-        default:
-            break
+        case .workout: return .energize
+        case .deepWork: return .focus
+        case .postWorkout: return .calm
+        default: break
         }
-
-        // Yerkes-Dodson: optimal->maintain, under->energize, over->calm
         switch arousalState {
-        case .optimal:
-            return .maintain
-        case .underAroused:
-            return .energize
-        case .overAroused:
-            return .calm
+        case .optimal: return .maintain
+        case .underAroused: return .energize
+        case .overAroused: return .calm
         }
     }
 
@@ -412,18 +454,21 @@ public final class SharedStateEngine: @unchecked Sendable {
         }
     }
 
+    /// R3: Appends an HR sample to the acceleration tracking buffer.
+    private func _appendHRAccelSample(_ value: Double) {
+        _hrAccelHistory.append(value)
+        if _hrAccelHistory.count > maxHRAccelSamples {
+            _hrAccelHistory.removeFirst()
+        }
+    }
+
     private func clamp(_ value: Double, _ lower: Double, _ upper: Double) -> Double {
         min(max(value, lower), upper)
     }
-}
 
-// MARK: - SharedStateEngine Arousal Queries
+    // MARK: - Arousal Queries
 
-extension SharedStateEngine {
-    /// Returns the current arousal state's recommended tempo adjustment.
-    /// - underAroused: increase tempo/complexity (+5 to +15 BPM)
-    /// - optimal: no change (0 BPM)
-    /// - overAroused: decrease tempo/complexity (-5 to -15 BPM)
+    /// Recommended tempo adjustment: under=-10, optimal=0, over=+10 BPM.
     public var arousalBPMAdjustment: Double {
         switch arousalState {
         case .underAroused: return 10.0
@@ -432,10 +477,7 @@ extension SharedStateEngine {
         }
     }
 
-    /// Returns the recommended energy complexity multiplier.
-    /// - underAroused: increase complexity (1.2x)
-    /// - optimal: maintain (1.0x)
-    /// - overAroused: decrease complexity (0.8x)
+    /// Recommended complexity multiplier: under=1.2x, optimal=1.0x, over=0.8x.
     public var arousalComplexityMultiplier: Double {
         switch arousalState {
         case .underAroused: return 1.2

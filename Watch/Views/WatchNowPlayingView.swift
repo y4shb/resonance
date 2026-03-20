@@ -2,17 +2,37 @@
 //  WatchNowPlayingView.swift
 //  Resonance Watch
 //
-//  watchOS Now Playing view with song info, playback controls, and explanation
+//  watchOS Now Playing view with song info, playback controls, and explanation.
+//
+//  Layout priority: song info -> playback controls -> secondary actions.
 //
 
 import SwiftUI
+import WatchKit
+
+// MARK: - Hand Gesture Modifier (watchOS 11+)
+
+/// Wraps `.handGestureShortcut(.primaryAction)` behind an availability check.
+/// On watchOS 11+, the double-tap crown gesture triggers the button's action.
+/// On older versions, this modifier is a no-op.
+private struct HandGestureModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(watchOS 11.0, *) {
+            content
+                .handGestureShortcut(.primaryAction)
+        } else {
+            content
+        }
+    }
+}
 
 // MARK: - Watch Now Playing View
 
 struct WatchNowPlayingView: View {
     @ObservedObject var connectivityService: PhoneConnectivityService
     @ObservedObject var crownHandler: CrownHandler
-    @State private var crownRotation: Double = 0.0
+    var sensorCoordinator: SensorCoordinator?
+    @State private var crownRotation = 0.0
     @FocusState private var isCrownFocused: Bool
 
     var body: some View {
@@ -33,6 +53,33 @@ struct WatchNowPlayingView: View {
 
                 // Song Info
                 songInfoSection(nowPlaying)
+
+                // Progress Bar
+                progressBar(progress: nowPlaying.progress, duration: nowPlaying.duration)
+
+                // Playback Controls (primary -- immediately after song info)
+                playbackControls(isPlaying: nowPlaying.isPlaying)
+
+                // State Info Row
+                if let state = connectivityService.currentState {
+                    HStack(spacing: 8) {
+                        if let hr = state.heartRate {
+                            HStack(spacing: 2) {
+                                Image(systemName: "heart.fill")
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(.red)
+                                Text("\(Int(hr))")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        if let context = state.currentContext {
+                            Text(context)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
 
                 // DJ Mode Energy Gauge
                 if crownHandler.isDJModeActive {
@@ -62,32 +109,7 @@ struct WatchNowPlayingView: View {
                     .transition(.opacity.combined(with: .scale))
                 }
 
-                // Progress Bar
-                progressBar(progress: nowPlaying.progress, duration: nowPlaying.duration)
-
-                // State Info Row
-                if let state = connectivityService.currentState {
-                    HStack(spacing: 8) {
-                        if let hr = state.heartRate {
-                            HStack(spacing: 2) {
-                                Image(systemName: "heart.fill")
-                                    .font(.system(size: 10))
-                                    .foregroundStyle(.red)
-                                Text("\(Int(hr))")
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                        if let context = state.currentContext {
-                            Text(context)
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                }
-
-                // Playback Controls
-                playbackControls(isPlaying: nowPlaying.isPlaying)
+                // --- Secondary actions ---
 
                 // DJ Mode Toggle
                 Button {
@@ -102,6 +124,9 @@ struct WatchNowPlayingView: View {
                 }
                 .buttonStyle(.bordered)
                 .tint(crownHandler.isDJModeActive ? .orange : .gray)
+
+                // Sonic Bookmark
+                bookmarkButton
 
                 // Explanation
                 if let explanation = nowPlaying.explanation, !explanation.isEmpty {
@@ -251,6 +276,40 @@ struct WatchNowPlayingView: View {
         .padding(.vertical, 4)
     }
 
+    // MARK: - Bookmark Button
+
+    private var bookmarkButton: some View {
+        Button {
+            triggerBookmark(source: .watchButton)
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "bookmark.fill")
+                    .font(.caption)
+                Text("Bookmark")
+                    .font(.caption2)
+            }
+        }
+        .buttonStyle(.bordered)
+        .tint(.yellow)
+        .modifier(HandGestureModifier())
+        .accessibilityLabel("Bookmark this moment")
+        .accessibilityHint("Double-tap crown to bookmark quickly")
+    }
+
+    /// Sends a bookmark trigger to the iPhone with current biometric readings.
+    private func triggerBookmark(source: BookmarkTriggerSource) {
+        let hr = sensorCoordinator?.latestHeartRate
+        let hrv = sensorCoordinator?.latestHRV
+        connectivityService.sendBookmarkTrigger(
+            heartRate: hr,
+            hrv: hrv,
+            source: source.rawValue
+        )
+
+        // Haptic feedback
+        WKInterfaceDevice.current().play(.success)
+    }
+
     // MARK: - Explanation
 
     private func explanationView(_ explanation: String) -> some View {
@@ -285,6 +344,11 @@ struct WatchNowPlayingView: View {
                     Text("iPhone not connected")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+
+                    Text("Open Resonance on iPhone")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                        .padding(.top, 2)
                 }
             }
         }

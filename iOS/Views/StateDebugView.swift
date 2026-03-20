@@ -4,7 +4,10 @@
 //
 //  Debug view showing the current StateVector, data sources,
 //  confidence level, and inferred context/need. Accessible from Settings.
+//  Wrapped in #if DEBUG to prevent exposure of internal data in production.
 //
+
+#if DEBUG
 
 import SwiftUI
 
@@ -172,3 +175,5 @@ private struct DimensionBar: View {
         )
     }
 }
+
+#endif

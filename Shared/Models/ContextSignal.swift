@@ -278,6 +278,32 @@ public struct BiometricSignal: Codable, Sendable {
     /// (Workstream 3.8). When true, biometric reliability should be reduced.
     public var hasRecentIrregularRhythm: Bool
 
+    // MARK: - Emotion Detection Fields
+
+    /// RMS of user acceleration magnitude (g) from Watch motion sensor.
+    public var movementMagnitude: Double?
+
+    /// Standard deviation of acceleration magnitude.
+    public var movementVariability: Double?
+
+    /// Shannon entropy of acceleration magnitude.
+    public var movementEntropy: Double?
+
+    /// RMS of gyroscope rotation rate (rad/s).
+    public var rotationMagnitude: Double?
+
+    /// Acceleration peaks per second above threshold.
+    public var gestureFrequency: Double?
+
+    /// Watch-side classified emotional state.
+    public var emotionalState: EmotionalState?
+
+    /// Confidence of the emotion classification (0.0 - 1.0).
+    public var emotionConfidence: Double?
+
+    /// Watch sensor capability tier.
+    public var capabilityTier: WatchCapabilityTier?
+
     public init(
         id: UUID = UUID(),
         timestamp: Date = Date(),
@@ -292,7 +318,15 @@ public struct BiometricSignal: Codable, Sendable {
         accelerometerMagnitude: Double = 0.0,
         hrvQuality: Double = 1.0,
         respiratoryRate: Double? = nil,
-        hasRecentIrregularRhythm: Bool = false
+        hasRecentIrregularRhythm: Bool = false,
+        movementMagnitude: Double? = nil,
+        movementVariability: Double? = nil,
+        movementEntropy: Double? = nil,
+        rotationMagnitude: Double? = nil,
+        gestureFrequency: Double? = nil,
+        emotionalState: EmotionalState? = nil,
+        emotionConfidence: Double? = nil,
+        capabilityTier: WatchCapabilityTier? = nil
     ) {
         self.id = id
         self.timestamp = timestamp
@@ -308,6 +342,14 @@ public struct BiometricSignal: Codable, Sendable {
         self.hrvQuality = hrvQuality
         self.respiratoryRate = respiratoryRate
         self.hasRecentIrregularRhythm = hasRecentIrregularRhythm
+        self.movementMagnitude = movementMagnitude
+        self.movementVariability = movementVariability
+        self.movementEntropy = movementEntropy
+        self.rotationMagnitude = rotationMagnitude
+        self.gestureFrequency = gestureFrequency
+        self.emotionalState = emotionalState
+        self.emotionConfidence = emotionConfidence
+        self.capabilityTier = capabilityTier
     }
 }
 

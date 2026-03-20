@@ -65,6 +65,18 @@ enum SessionIntent: String, CaseIterable, Identifiable, Codable {
         case .autoDetect: return (0.15, 0.20, 0.15, 0.25, 0.25)
         }
     }
+
+    /// Maps to MusicNeed for the Mood Forecast engine.
+    var musicNeed: MusicNeed {
+        switch self {
+        case .deepWork:       return .focus
+        case .workout:        return .energize
+        case .windDown:       return .calm
+        case .morningRampUp:  return .transition
+        case .creativeFlow:   return .maintain
+        case .autoDetect:     return .maintain
+        }
+    }
 }
 
 // MARK: - Session Intent Picker
@@ -72,6 +84,18 @@ enum SessionIntent: String, CaseIterable, Identifiable, Codable {
 struct SessionIntentPicker: View {
     @Binding var selectedIntent: SessionIntent?
     @Environment(\.dismiss) private var dismiss
+
+    /// View model for mood forecast generation and display.
+    var forecastViewModel: MoodForecastViewModel?
+
+    /// Songs available in the current playlist for forecast-based reordering.
+    var availableSongs: [SongFeatures] = []
+
+    /// Callback invoked when the user accepts a forecast with reordered songs.
+    var onForecastAccepted: (([SongFeatures]) -> Void)?
+
+    /// Tracks the intent chosen before showing the forecast sheet.
+    @State private var pendingIntent: SessionIntent?
 
     var body: some View {
         NavigationStack {
@@ -97,8 +121,7 @@ struct SessionIntentPicker: View {
                                 intent: intent,
                                 isSelected: selectedIntent == intent
                             ) {
-                                selectedIntent = intent
-                                dismiss()
+                                handleIntentSelection(intent)
                             }
                         }
                     }
@@ -116,6 +139,53 @@ struct SessionIntentPicker: View {
                     }
                 }
             }
+            .sheet(isPresented: Binding(
+                get: { forecastViewModel?.isShowingForecast ?? false },
+                set: { newValue in
+                    if !newValue { forecastViewModel?.dismiss() }
+                }
+            )) {
+                if let vm = forecastViewModel, let forecast = vm.forecast {
+                    MoodForecastView(
+                        forecast: forecast,
+                        onAccept: { acceptedForecast in
+                            vm.applyUserModification(acceptedForecast, songs: availableSongs)
+                            onForecastAccepted?(vm.reorderedSongs)
+                            selectedIntent = pendingIntent
+                            dismiss()
+                        },
+                        onDismiss: {
+                            vm.dismiss()
+                            // Still apply the selected intent without forecast
+                            selectedIntent = pendingIntent
+                            dismiss()
+                        }
+                    )
+                    .presentationDetents([.medium, .large])
+                    .presentationDragIndicator(.visible)
+                }
+            }
+        }
+    }
+
+    /// Handles intent selection: generates a forecast if possible, otherwise applies directly.
+    private func handleIntentSelection(_ intent: SessionIntent) {
+        pendingIntent = intent
+
+        if let vm = forecastViewModel, !availableSongs.isEmpty {
+            let currentHour = Calendar.current.component(.hour, from: Date())
+            let timeSlot = TimeSlot(hour: currentHour)
+
+            vm.generateForecast(
+                intent: intent.musicNeed,
+                timeSlot: timeSlot,
+                currentHRV: nil,
+                playlistSongs: availableSongs
+            )
+        } else {
+            // No forecast capability -- apply intent directly
+            selectedIntent = intent
+            dismiss()
         }
     }
 }

@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import CoreMotion
 import Combine
 import HealthKit
 
@@ -19,6 +20,31 @@ final class SensorCoordinator: ObservableObject {
     private let heartRateSensor = HeartRateSensor()
     private let motionSensor = MotionSensor()
     private let workoutDetector = WorkoutDetector()
+
+    // MARK: - Emotion Detection Sensors
+
+    /// Shared CMMotionManager instance (only one per app).
+    private let sharedMotionManager = CMMotionManager()
+    private lazy var emotionMotionSensor = EmotionMotionSensor(motionManager: sharedMotionManager)
+    private let emotionFeatureExtractor = EmotionFeatureExtractor()
+    private let emotionClassifier = WatchEmotionClassifier()
+    private lazy var overnightTemperatureSensor: OvernightTemperatureSensor = {
+        OvernightTemperatureSensor(connectivityService: connectivityService)
+    }()
+
+    /// Latest emotion classification result.
+    private(set) var latestEmotionClassification: EmotionClassification?
+
+    /// Watch capability tier.
+    private(set) var capabilityTier: WatchCapabilityTier = .basic
+
+    // MARK: - Public Accessors
+
+    /// Latest heart rate reading from the heart rate sensor (BPM).
+    var latestHeartRate: Double? { heartRateSensor.latestHeartRate }
+
+    /// Latest HRV reading from the heart rate sensor (ms).
+    var latestHRV: Double? { heartRateSensor.latestHRV }
 
     // MARK: - Dependencies
 
@@ -49,7 +75,7 @@ final class SensorCoordinator: ObservableObject {
 
     // MARK: - Public Interface
 
-    /// Starts all three sensors and the batching timer.
+    /// Starts all sensors including emotion detection and the batching timer.
     func startAllSensors() {
         guard !isRunning else {
             logDebug("SensorCoordinator already running", category: .healthKit)
@@ -59,18 +85,34 @@ final class SensorCoordinator: ObservableObject {
         heartRateSensor.startMonitoring()
         motionSensor.startMonitoring()
         workoutDetector.startObserving()
+
+        // Detect capability tier and start emotion sensors if available
+        capabilityTier = WatchCapabilityDetector.shared.currentTier
+        if capabilityTier != .basic {
+            emotionMotionSensor.startMonitoring(
+                isStationary: motionSensor.isStationary,
+                isInWorkout: workoutDetector.isInWorkout
+            )
+        }
+
+        // Query overnight temperature on morning launch (full tier only)
+        if capabilityTier == .full {
+            overnightTemperatureSensor.queryIfMorning()
+        }
+
         startBatchTimer()
-        logInfo("All Watch sensors started", category: .healthKit)
+        logInfo("All Watch sensors started (tier: \(capabilityTier.rawValue))", category: .healthKit)
     }
 
-    /// Stops all three sensors and the batching timer, flushing any remaining
-    /// buffered packets before shutting down.
+    /// Stops all sensors including emotion detection and the batching timer,
+    /// flushing any remaining buffered packets before shutting down.
     func stopAllSensors() {
         guard isRunning else { return }
         isRunning = false
         heartRateSensor.stopMonitoring()
         motionSensor.stopMonitoring()
         workoutDetector.stopObserving()
+        emotionMotionSensor.stopMonitoring()
         stopBatchTimer()
         // Flush whatever is left in the buffer on a clean shutdown.
         flushBuffer()
@@ -118,6 +160,29 @@ final class SensorCoordinator: ObservableObject {
             }
             .store(in: &cancellables)
 
+        // Update emotion motion sensor sampling rate when activity changes.
+        Publishers.CombineLatest(
+            motionSensor.$isStationary.dropFirst(),
+            workoutDetector.$isInWorkout.dropFirst()
+        )
+        .receive(on: DispatchQueue.main)
+        .sink { [weak self] isStationary, isInWorkout in
+            self?.emotionMotionSensor.updateSamplingRate(
+                isStationary: isStationary,
+                isInWorkout: isInWorkout
+            )
+        }
+        .store(in: &cancellables)
+
+        // React to emotion motion feature updates.
+        emotionMotionSensor.$latestFeatures
+            .dropFirst()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.updateEmotionClassification()
+            }
+            .store(in: &cancellables)
+
         logDebug("SensorCoordinator Combine subscriptions configured", category: .healthKit)
     }
 
@@ -152,17 +217,44 @@ final class SensorCoordinator: ObservableObject {
 
     // MARK: - Packet Collection
 
+    // MARK: - Emotion Classification
+
+    /// Runs the emotion feature extractor and classifier with latest data.
+    private func updateEmotionClassification() {
+        let features = emotionFeatureExtractor.extractFeatures(
+            heartRate: heartRateSensor.latestHeartRate,
+            hrv: heartRateSensor.latestHRV,
+            restingHeartRate: StateEngineConstants.defaultRestingHeartRate,
+            hrvBaseline: 50.0,
+            motionFeatures: emotionMotionSensor.latestFeatures,
+            isStationary: motionSensor.isStationary,
+            isInWorkout: workoutDetector.isInWorkout
+        )
+        latestEmotionClassification = emotionClassifier.classify(features: features)
+    }
+
     /// Snapshots the current sensor readings into a BiometricPacket and appends
     /// it to the buffer. If the buffer has reached maxSamplesPerBatch, flush
     /// immediately to avoid unbounded growth.
     private func collectAndBuffer() {
+        let motionFeatures = emotionMotionSensor.latestFeatures
+        let emotion = latestEmotionClassification
+
         let packet = BiometricPacket(
             heartRate: heartRateSensor.latestHeartRate,
             hrv: heartRateSensor.latestHRV,
             isStationary: motionSensor.isStationary,
             isInWorkout: workoutDetector.isInWorkout,
             workoutType: workoutDetector.workoutType,
-            timestamp: Date()
+            timestamp: Date(),
+            movementMagnitude: motionFeatures?.movementMagnitude,
+            movementVariability: motionFeatures?.movementVariability,
+            movementEntropy: motionFeatures?.movementEntropy,
+            rotationMagnitude: motionFeatures?.rotationMagnitude,
+            gestureFrequency: motionFeatures?.gestureFrequency,
+            emotionalState: emotion?.state.rawValue,
+            emotionConfidence: emotion?.confidence,
+            capabilityTier: capabilityTier.rawValue
         )
 
         sampleBuffer.append(packet)

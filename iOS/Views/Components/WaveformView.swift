@@ -29,7 +29,7 @@ struct WaveformView: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    @State private var scrubProgress: Double = 0.0
+    @State private var scrubProgress = 0.0
 
     var body: some View {
         GeometryReader { geometry in

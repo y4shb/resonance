@@ -47,8 +47,10 @@ final class PhoneConnectivityService: NSObject, ObservableObject {
 
     private var cancellables = Set<AnyCancellable>()
     private var pendingBiometricData: [BiometricPacket] = []
+    private var pendingBookmarks: [BookmarkTriggerPacket] = []
     private let pendingDataLock = NSLock()
     private let maxPendingBiometricEntries = 10
+    private let maxPendingBookmarks = 10
 
     // MARK: - Initialization
 
@@ -138,6 +140,71 @@ final class PhoneConnectivityService: NSObject, ObservableObject {
         sendMessage(message)
     }
 
+    /// Sends a bookmark trigger to the iPhone with current biometric data.
+    /// Falls back to buffering if the phone is not reachable.
+    func sendBookmarkTrigger(heartRate: Double?, hrv: Double?, source: String) {
+        let packet = BookmarkTriggerPacket(
+            triggerSource: source,
+            heartRate: heartRate,
+            hrv: hrv
+        )
+
+        guard let session = session, session.activationState == .activated, session.isReachable else {
+            logWarning("Phone not reachable, queuing bookmark trigger for later", category: .watchConnectivity)
+            pendingDataLock.lock()
+            pendingBookmarks.append(packet)
+            if pendingBookmarks.count > maxPendingBookmarks {
+                pendingBookmarks = Array(pendingBookmarks.suffix(maxPendingBookmarks))
+            }
+            pendingDataLock.unlock()
+            return
+        }
+
+        let message = WatchMessage.bookmarkTrigger(packet)
+        sendMessageGuaranteed(message)
+        logInfo("Bookmark trigger sent to phone via \(source)", category: .watchConnectivity)
+    }
+
+    /// Sends all pending bookmark triggers that were queued while the phone was unreachable.
+    private func flushPendingBookmarks() {
+        pendingDataLock.lock()
+        guard !pendingBookmarks.isEmpty else {
+            pendingDataLock.unlock()
+            return
+        }
+        let bookmarksToSend = pendingBookmarks
+        pendingBookmarks.removeAll()
+        pendingDataLock.unlock()
+
+        guard let session = session, session.activationState == .activated, session.isReachable else {
+            pendingDataLock.lock()
+            pendingBookmarks = bookmarksToSend + pendingBookmarks
+            if pendingBookmarks.count > maxPendingBookmarks {
+                pendingBookmarks = Array(pendingBookmarks.suffix(maxPendingBookmarks))
+            }
+            pendingDataLock.unlock()
+            logWarning("Cannot flush pending bookmarks: phone still not reachable", category: .watchConnectivity)
+            return
+        }
+
+        logInfo("Flushing \(bookmarksToSend.count) pending bookmark triggers", category: .watchConnectivity)
+        for packet in bookmarksToSend {
+            let message = WatchMessage.bookmarkTrigger(packet)
+            sendMessageGuaranteed(message)
+        }
+    }
+
+    /// Sends a pre-encoded dictionary via guaranteed delivery (transferUserInfo).
+    /// Used by OvernightTemperatureSensor for temperature data.
+    func sendGuaranteedMessage(_ dict: [String: Any]) {
+        guard let session = session, session.activationState == .activated else {
+            logWarning("Cannot send guaranteed message: session not activated", category: .watchConnectivity)
+            return
+        }
+        session.transferUserInfo(dict)
+        logDebug("Guaranteed message queued via transferUserInfo", category: .watchConnectivity)
+    }
+
     // MARK: - Private Helpers
 
     /// Send message with real-time preference, falling back to application context
@@ -209,7 +276,7 @@ final class PhoneConnectivityService: NSObject, ObservableObject {
                 self?.complicationSubject.send(data)
             }
 
-        case .biometricUpdate, .moodInput, .playbackCommand, .crownAdjustment, .requestNowPlaying:
+        case .biometricUpdate, .moodInput, .playbackCommand, .crownAdjustment, .requestNowPlaying, .bookmarkTrigger, .overnightTemperature:
             // These are watch -> phone messages; should not be received on watchOS
             logWarning("Received unexpected watch->phone message on watchOS side", category: .watchConnectivity)
         }
@@ -274,6 +341,7 @@ extension PhoneConnectivityService: WCSessionDelegate {
 
         if session.isReachable {
             flushPendingData()
+            flushPendingBookmarks()
         }
     }
 

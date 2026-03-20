@@ -71,6 +71,7 @@ final class ContextBroadcaster: ObservableObject {
         calendarProvider.startMonitoring()
 
         // Broadcast every 60 seconds
+        broadcastTimer?.invalidate()
         broadcastTimer = Timer.scheduledTimer(
             withTimeInterval: 60,
             repeats: true
@@ -183,12 +184,14 @@ final class ContextBroadcaster: ObservableObject {
         record["focusModeActive"] = signal.focusModeActive as NSNumber
         record["focusModeName"] = signal.focusModeName as NSString?
         record["activeAppName"] = signal.activeAppName as NSString?
+        record["activeAppBundleId"] = signal.activeAppBundleId as NSString?
         record["activeAppCategory"] = signal.activeAppCategory?.rawValue as NSString?
         record["productivityMinutes"] = signal.productivityMinutes as NSNumber
         record["entertainmentMinutes"] = signal.entertainmentMinutes as NSNumber
         record["socialMinutes"] = signal.socialMinutes as NSNumber
         record["hasOngoingMeeting"] = signal.hasOngoingMeeting as NSNumber
         record["minutesUntilNextEvent"] = signal.minutesUntilNextEvent.map { $0 as NSNumber }
+        record["nextEventType"] = signal.nextEventType?.rawValue as NSString?
         record["inferredWorkState"] = signal.inferredWorkState.rawValue as NSString
 
         let database = container.privateCloudDatabase

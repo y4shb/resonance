@@ -197,8 +197,8 @@ final class GuardFilters {
         // Only hard-filter in deep work context
         guard context.stateVector.context == .deepWork else { return false }
 
-        // Only filter if hasVocals is confirmed
-        return song.hasVocals
+        // Only filter if instrumentalness is low (i.e. has vocals)
+        return song.instrumentalness < 0.3
     }
 
     // MARK: - Driving Safety Filter (Workstream 3.5)
@@ -215,7 +215,7 @@ final class GuardFilters {
         }
 
         // Filter very high energy + high BPM combinations
-        if songBPM > 140 && song.energy > 0.85 {
+        if songBPM > 140 && song.energyEstimate > 0.85 {
             return true
         }
 

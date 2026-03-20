@@ -82,6 +82,14 @@ public struct UserPreferences: Codable, Sendable {
     /// Crossfade duration in seconds (1-10)
     public var crossfadeDuration: Double
 
+    /// Whether biometric-adaptive crossfade is enabled (adjusts crossfade duration
+    /// based on heart rate and HRV in real time)
+    public var biometricCrossfadeEnabled: Bool
+
+    /// Whether the AI DJ can pick songs from playlists other than the active one
+    /// when they fit the current mood better
+    public var allowCrossPlaylistRecommendations: Bool
+
     // MARK: - Initialization
 
     public init(
@@ -104,7 +112,9 @@ public struct UserPreferences: Codable, Sendable {
         shareAnalytics: Bool = false,
         backupToiCloud: Bool = true,
         crossfadeEnabled: Bool = true,
-        crossfadeDuration: Double = 4.0
+        crossfadeDuration: Double = 4.0,
+        biometricCrossfadeEnabled: Bool = true,
+        allowCrossPlaylistRecommendations: Bool = false
     ) {
         self.bpmWeight = bpmWeight
         self.energyWeight = energyWeight
@@ -126,6 +136,8 @@ public struct UserPreferences: Codable, Sendable {
         self.backupToiCloud = backupToiCloud
         self.crossfadeEnabled = crossfadeEnabled
         self.crossfadeDuration = crossfadeDuration
+        self.biometricCrossfadeEnabled = biometricCrossfadeEnabled
+        self.allowCrossPlaylistRecommendations = allowCrossPlaylistRecommendations
     }
 
     // MARK: - Codable (Backward Compatible)
@@ -136,7 +148,8 @@ public struct UserPreferences: Codable, Sendable {
         case morningMaxBPM, nightMaxBPM, nightStartHour, morningEndHour
         case skipPenaltyWeight, hrvResponseWeight, learningRate
         case shareAnalytics, backupToiCloud
-        case crossfadeEnabled, crossfadeDuration
+        case crossfadeEnabled, crossfadeDuration, biometricCrossfadeEnabled
+        case allowCrossPlaylistRecommendations
     }
 
     /// Custom decoder that handles missing fields from older saved JSON.
@@ -165,6 +178,8 @@ public struct UserPreferences: Codable, Sendable {
         // New fields — default gracefully when absent in older JSON
         crossfadeEnabled = try c.decodeIfPresent(Bool.self, forKey: .crossfadeEnabled) ?? true
         crossfadeDuration = try c.decodeIfPresent(Double.self, forKey: .crossfadeDuration) ?? 4.0
+        biometricCrossfadeEnabled = try c.decodeIfPresent(Bool.self, forKey: .biometricCrossfadeEnabled) ?? true
+        allowCrossPlaylistRecommendations = try c.decodeIfPresent(Bool.self, forKey: .allowCrossPlaylistRecommendations) ?? false
     }
 
     // MARK: - Defaults
@@ -210,6 +225,7 @@ extension UserPreferences {
         copy.skipPenaltyWeight = max(0, min(1, copy.skipPenaltyWeight))
         copy.hrvResponseWeight = max(0, min(1, copy.hrvResponseWeight))
         copy.learningRate = max(0.05, min(0.5, copy.learningRate))
+        copy.crossfadeDuration = max(1.0, min(10.0, copy.crossfadeDuration))
 
         return copy
     }
@@ -230,7 +246,8 @@ extension UserPreferences {
         Self.defaults.set(data, forKey: Self.userDefaultsKey)
     }
 
-    /// Loads preferences from App Group UserDefaults
+    /// Loads preferences from App Group UserDefaults.
+    /// Returns defaults if no saved preferences exist or decoding fails.
     public static func load() -> UserPreferences {
         guard let data = defaults.data(forKey: userDefaultsKey) else {
             return .default
@@ -240,6 +257,9 @@ extension UserPreferences {
             let decoder = JSONDecoder()
             return try decoder.decode(UserPreferences.self, from: data)
         } catch {
+            #if DEBUG
+            print("UserPreferences: failed to decode saved preferences, using defaults: \(error)")
+            #endif
             return .default
         }
     }

@@ -5,6 +5,9 @@
 //  Settings view for managing MusicKit/HealthKit authorization,
 //  user preferences, ranking weights, behavioral rules, and data.
 //
+//  Split into basic (main screen) and advanced (DJ Tuning, Data & Analysis)
+//  sub-views for reduced cognitive load.
+//
 
 import SwiftUI
 import HealthKit
@@ -19,17 +22,13 @@ struct SettingsView: View {
     @ObservedObject var historicalEngine: HistoricalEngine
     @ObservedObject var stateEngine: StateEngine
 
-    @State private var isRequestingAuth: Bool = false
+    @State private var isRequestingAuth = false
     @State private var preferences = UserPreferences.load()
 
     // HealthKit
-    @State private var healthReadAccessVerified: Bool = false
-    @State private var isRequestingHealthAuth: Bool = false
-    @State private var healthAuthRequested: Bool = false
-
-    // Alerts
-    @State private var showClearHistoryAlert: Bool = false
-    @State private var showResetPreferencesAlert: Bool = false
+    @State private var healthReadAccessVerified = false
+    @State private var isRequestingHealthAuth = false
+    @State private var healthAuthRequested = false
 
     // MARK: - Body
 
@@ -38,17 +37,39 @@ struct SettingsView: View {
             List {
                 musicKitSection
                 healthKitSection
-                historicalAnalysisSection
-                stateEngineSection
-                rankingWeightsSection
-                behavioralPreferencesSection
-                timeOfDaySection
-                dataManagementSection
+
+                advancedNavigationSection
+
                 privacySection
                 aboutSection
             }
             .listStyle(.insetGrouped)
             .navigationTitle("Settings")
+        }
+    }
+
+    // MARK: - Advanced Navigation Section
+
+    private var advancedNavigationSection: some View {
+        Section {
+            NavigationLink {
+                DJTuningView(preferences: $preferences, onSave: savePreferences)
+            } label: {
+                Label("DJ Tuning", systemImage: "slider.horizontal.3")
+            }
+
+            NavigationLink {
+                DataAnalysisView(
+                    historicalEngine: historicalEngine,
+                    stateEngine: stateEngine,
+                    preferences: $preferences,
+                    onSave: savePreferences
+                )
+            } label: {
+                Label("Data & Analysis", systemImage: "chart.bar.xaxis")
+            }
+        } header: {
+            Text("Advanced")
         }
     }
 
@@ -132,7 +153,7 @@ struct SettingsView: View {
                 healthAuthStatusBadge
             }
 
-            if !healthAuthRequested && !healthReadAccessVerified {
+            if !healthReadAccessVerified {
                 Button {
                     requestHealthAuthorization()
                 } label: {
@@ -147,7 +168,7 @@ struct SettingsView: View {
                 .disabled(isRequestingHealthAuth)
             }
 
-            if healthAuthRequested || healthReadAccessVerified {
+            if healthReadAccessVerified {
                 Label("Heart Rate: Available", systemImage: "waveform.path.ecg")
                     .font(.subheadline)
                     .foregroundStyle(.green)
@@ -168,7 +189,7 @@ struct SettingsView: View {
 
     @ViewBuilder
     private var healthAuthStatusBadge: some View {
-        if healthAuthRequested || healthReadAccessVerified {
+        if healthReadAccessVerified {
             Label("Connected", systemImage: "checkmark.circle.fill")
                 .font(.caption)
                 .foregroundStyle(.green)
@@ -181,321 +202,10 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: - Historical Analysis Section
-
-    private var historicalAnalysisSection: some View {
-        Section {
-            switch historicalEngine.progress {
-            case .idle:
-                HStack {
-                    Label("Last Run", systemImage: "clock")
-                    Spacer()
-                    Text(historicalEngine.lastBackfillDate?.formatted(date: .abbreviated, time: .shortened) ?? "Never")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-
-                Button {
-                    Task { await historicalEngine.runFullBackfill() }
-                } label: {
-                    Label("Run Full Backfill", systemImage: "arrow.clockwise")
-                }
-
-            case .reconstructingSessions:
-                HStack {
-                    ProgressView()
-                        .padding(.trailing, 8)
-                    Text("Reconstructing sessions...")
-                        .foregroundStyle(.secondary)
-                }
-
-            case .calculatingSongImpacts:
-                HStack {
-                    ProgressView()
-                        .padding(.trailing, 8)
-                    Text("Calculating song impacts...")
-                        .foregroundStyle(.secondary)
-                }
-
-            case .calculatingPlaylistImpacts:
-                HStack {
-                    ProgressView()
-                        .padding(.trailing, 8)
-                    Text("Calculating playlist impacts...")
-                        .foregroundStyle(.secondary)
-                }
-
-            case .completed(let sessions, let events, let playlists):
-                Label(
-                    "\(sessions) sessions, \(events) events, \(playlists) playlists",
-                    systemImage: "checkmark.circle.fill"
-                )
-                .foregroundStyle(.green)
-                .font(.caption)
-
-                HStack {
-                    Label("Last Run", systemImage: "clock")
-                    Spacer()
-                    Text(historicalEngine.lastBackfillDate?.formatted(date: .abbreviated, time: .shortened) ?? "Just now")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-
-            case .failed(let message):
-                Label(message, systemImage: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.red)
-                    .font(.caption)
-
-                Button {
-                    Task { await historicalEngine.runFullBackfill() }
-                } label: {
-                    Label("Retry", systemImage: "arrow.clockwise")
-                }
-            }
-        } header: {
-            Text("Historical Analysis")
-        } footer: {
-            Text("Analyzes your listening history to learn song effectiveness across different contexts.")
-        }
-    }
-
-    // MARK: - State Engine Section
-
-    private var stateEngineSection: some View {
-        Section {
-            HStack {
-                Label(stateEngine.currentState.context.displayName, systemImage: "brain.head.profile")
-                Spacer()
-                Text(stateEngine.currentState.inferredNeed.displayName)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            NavigationLink {
-                StateDebugView(stateEngine: stateEngine)
-            } label: {
-                Label("State Debug", systemImage: "ant")
-            }
-        } header: {
-            Text("State Engine")
-        } footer: {
-            Text("Real-time estimation of your current state for intelligent song selection.")
-        }
-    }
-
-    // MARK: - Ranking Weights Section
-
-    private var rankingWeightsSection: some View {
-        Section {
-            weightSlider(label: "BPM Match", value: $preferences.bpmWeight)
-            weightSlider(label: "Energy Level", value: $preferences.energyWeight)
-            weightSlider(label: "Familiarity", value: $preferences.familiarityWeight)
-            weightSlider(label: "Historical", value: $preferences.historicalWeight)
-            weightSlider(label: "Context", value: $preferences.contextWeight)
-
-            Button("Normalize Weights") {
-                preferences.normalizeWeights()
-                savePreferences()
-            }
-
-            HStack(spacing: 12) {
-                Button("Focus") {
-                    preferences = .focusPreset
-                    savePreferences()
-                }
-                .buttonStyle(.bordered)
-
-                Button("Workout") {
-                    preferences = .workoutPreset
-                    savePreferences()
-                }
-                .buttonStyle(.bordered)
-
-                Button("Relaxation") {
-                    preferences = .relaxationPreset
-                    savePreferences()
-                }
-                .buttonStyle(.bordered)
-            }
-
-            Button("Reset to Defaults") {
-                preferences = .default
-                savePreferences()
-            }
-            .foregroundStyle(.red)
-        } header: {
-            Text("Ranking Weights")
-        } footer: {
-            Text("Adjust how different factors influence song selection. Weights should sum to 100%. Use Normalize to rebalance.")
-        }
-    }
-
-    private func weightSlider(label: String, value: Binding<Double>) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text(label)
-                    .font(.subheadline)
-                Spacer()
-                Text("\(Int(value.wrappedValue * 100))%")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .monospacedDigit()
-            }
-            Slider(value: value, in: 0.0...1.0, step: 0.01) { editing in
-                if !editing {
-                    savePreferences()
-                }
-            }
-        }
-    }
-
-    // MARK: - Behavioral Preferences Section
-
-    private var behavioralPreferencesSection: some View {
-        Section {
-            Stepper(
-                "Avoid Recent: \(preferences.avoidRecentMinutes) min",
-                value: $preferences.avoidRecentMinutes,
-                in: 0...480,
-                step: 15
-            ) { editing in
-                if !editing {
-                    savePreferences()
-                }
-            }
-
-            Stepper(
-                "Max Same Artist in Row: \(preferences.maxSameArtistInRow)",
-                value: $preferences.maxSameArtistInRow,
-                in: 1...10
-            ) { editing in
-                if !editing {
-                    savePreferences()
-                }
-            }
-
-            Toggle("Prefer Familiar in Stress", isOn: $preferences.preferFamiliarInStress)
-                .onChange(of: preferences.preferFamiliarInStress) { _, _ in
-                    savePreferences()
-                }
-
-            Toggle("Enable Smooth Transitions", isOn: $preferences.enableSmoothTransitions)
-                .onChange(of: preferences.enableSmoothTransitions) { _, _ in
-                    savePreferences()
-                }
-        } header: {
-            Text("Behavioral Preferences")
-        } footer: {
-            Text("Control playback behavior such as song repetition avoidance and artist variety.")
-        }
-    }
-
-    // MARK: - Time of Day Section
-
-    private var timeOfDaySection: some View {
-        Section {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text("Morning Max BPM")
-                        .font(.subheadline)
-                    Spacer()
-                    Text("\(Int(preferences.morningMaxBPM))")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .monospacedDigit()
-                }
-                Slider(value: $preferences.morningMaxBPM, in: 60...200, step: 5) { editing in
-                    if !editing {
-                        savePreferences()
-                    }
-                }
-            }
-
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text("Night Max BPM")
-                        .font(.subheadline)
-                    Spacer()
-                    Text("\(Int(preferences.nightMaxBPM))")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .monospacedDigit()
-                }
-                Slider(value: $preferences.nightMaxBPM, in: 40...200, step: 5) { editing in
-                    if !editing {
-                        savePreferences()
-                    }
-                }
-            }
-
-            Picker("Morning Ends At", selection: $preferences.morningEndHour) {
-                ForEach(5...12, id: \.self) { hour in
-                    Text("\(hour):00").tag(hour)
-                }
-            }
-            .onChange(of: preferences.morningEndHour) { _, _ in
-                savePreferences()
-            }
-
-            Picker("Night Starts At", selection: $preferences.nightStartHour) {
-                ForEach(18...23, id: \.self) { hour in
-                    Text("\(hour):00").tag(hour)
-                }
-            }
-            .onChange(of: preferences.nightStartHour) { _, _ in
-                savePreferences()
-            }
-        } header: {
-            Text("Time-of-Day Rules")
-        } footer: {
-            Text("Limit BPM during morning and evening hours for gentler music at appropriate times.")
-        }
-    }
-
-    // MARK: - Data Management Section
-
-    private var dataManagementSection: some View {
-        Section {
-            Button(role: .destructive) {
-                showClearHistoryAlert = true
-            } label: {
-                Label("Clear All Listening History", systemImage: "trash")
-            }
-            .alert("Clear All Listening History?", isPresented: $showClearHistoryAlert) {
-                Button("Cancel", role: .cancel) { }
-                Button("Clear All", role: .destructive) {
-                    try? PersistenceController.shared.deleteAllData()
-                }
-            } message: {
-                Text("This will permanently delete all listening history, session data, and learned song effectiveness scores. This action cannot be undone.")
-            }
-
-            Button(role: .destructive) {
-                showResetPreferencesAlert = true
-            } label: {
-                Label("Reset Preferences", systemImage: "arrow.counterclockwise")
-            }
-            .alert("Reset All Preferences?", isPresented: $showResetPreferencesAlert) {
-                Button("Cancel", role: .cancel) { }
-                Button("Reset", role: .destructive) {
-                    UserPreferences.reset()
-                    preferences = UserPreferences.load()
-                }
-            } message: {
-                Text("This will restore all preferences to their default values.")
-            }
-
-            Button {
-                Task { await historicalEngine.runFullBackfill() }
-            } label: {
-                Label("Re-run Historical Backfill", systemImage: "arrow.clockwise")
-            }
-        } header: {
-            Text("Data Management")
-        }
-    }
-
     // MARK: - Privacy Section
+
+    @State private var showDeleteConfirmation = false
+    @State private var isDeleting = false
 
     private var privacySection: some View {
         Section {
@@ -515,9 +225,85 @@ struct SettingsView: View {
                     }
                 }
             }
+
+            Button(role: .destructive) {
+                showDeleteConfirmation = true
+            } label: {
+                HStack {
+                    Label("Delete All My Data", systemImage: "trash")
+                    if isDeleting {
+                        Spacer()
+                        ProgressView()
+                    }
+                }
+            }
+            .disabled(isDeleting)
+            .confirmationDialog(
+                "Delete All Data",
+                isPresented: $showDeleteConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("Delete Everything", role: .destructive) {
+                    performDeleteAllData()
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("This will permanently delete all your listening history, preferences, circadian profile, bookmarks, and learned data. This action cannot be undone.")
+            }
         } header: {
             Text("Privacy")
         }
+    }
+
+    private func performDeleteAllData() {
+        isDeleting = true
+        logInfo("User initiated Delete All Data", category: .ui)
+
+        // 1. Delete Core Data
+        do {
+            try PersistenceController.shared.deleteAllData()
+            logInfo("Core Data cleared", category: .persistence)
+        } catch {
+            logError("Failed to clear Core Data", error: error, category: .persistence)
+        }
+
+        // 2. Clear App Group UserDefaults (preferences, circadian profile, watermarks)
+        let appGroupDefaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier)
+        if let appGroupDefaults = appGroupDefaults,
+           let bundleId = Bundle.main.bundleIdentifier {
+            appGroupDefaults.removePersistentDomain(forName: bundleId)
+        }
+        // Also remove known keys explicitly for safety
+        let appGroupKeys = [
+            "com.y4sh.resonance.userPreferences",
+            "\(CircadianConstants.persistenceKeyPrefix).profileData",
+            "\(CircadianConstants.persistenceKeyPrefix).lastRefresh",
+            BackfillConstants.WatermarkKey.sessionReconstruction,
+            BackfillConstants.WatermarkKey.songImpact,
+            BackfillConstants.WatermarkKey.lastFullBackfill
+        ]
+        for key in appGroupKeys {
+            appGroupDefaults?.removeObject(forKey: key)
+        }
+
+        // 3. Clear standard UserDefaults (bookmarks)
+        let standardKeys = [
+            "sonic_bookmarks_v1",
+            "sonic_bookmarks_sessions_v1"
+        ]
+        for key in standardKeys {
+            UserDefaults.standard.removeObject(forKey: key)
+        }
+
+        // 4. Reset circadian profile
+        CircadianProfileManager().reset()
+
+        // 5. Reset UserPreferences
+        UserPreferences.reset()
+        preferences = UserPreferences.default
+
+        isDeleting = false
+        logInfo("All user data deleted successfully", category: .ui)
     }
 
     // MARK: - About Section
@@ -606,6 +392,7 @@ struct SettingsView: View {
             do {
                 try await healthStore.requestAuthorization(toShare: [], read: readTypes)
                 await MainActor.run {
+                    healthReadAccessVerified = true
                     healthAuthRequested = true
                     isRequestingHealthAuth = false
                 }

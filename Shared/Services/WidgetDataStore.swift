@@ -108,7 +108,7 @@ struct WidgetDataStore {
 // MARK: - Snapshots
 
 /// A point-in-time snapshot of Now Playing data read from shared defaults.
-struct WidgetNowPlayingSnapshot {
+struct WidgetNowPlayingSnapshot: Sendable {
     let songTitle: String
     let artistName: String
     let isPlaying: Bool
@@ -124,7 +124,7 @@ struct WidgetNowPlayingSnapshot {
 }
 
 /// A point-in-time snapshot of State data read from shared defaults.
-struct WidgetStateSnapshot {
+struct WidgetStateSnapshot: Sendable {
     let stateEmoji: String
     let stateName: String
     let energy: Double

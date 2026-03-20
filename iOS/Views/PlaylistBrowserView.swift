@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import CoreData
 import MusicKit
 
 // MARK: - Playlist Browser View
@@ -20,7 +21,28 @@ struct PlaylistBrowserView: View {
     var onPlaylistSelected: ((PlaylistDisplayInfo) -> Void)?
 
     // Haptic feedback trigger for playlist selection
-    @State private var selectionTrigger: Int = 0
+    @State private var selectionTrigger = 0
+
+    // Search text for filtering playlists
+    @State private var searchText = ""
+
+    // Navigation path for mood playlist detail
+    @State private var selectedMoodPlaylist: MoodPlaylist?
+
+    // Mood playlist song counts (loaded from Core Data)
+    @State private var moodPlaylistCounts: [MoodPlaylist: Int] = [:]
+
+    private let songRepository = SongRepository()
+
+    /// Playlists filtered by the current search text.
+    private var filteredPlaylists: [PlaylistDisplayInfo] {
+        if searchText.isEmpty {
+            return viewModel.playlists
+        }
+        return viewModel.playlists.filter {
+            $0.name.localizedCaseInsensitiveContains(searchText)
+        }
+    }
 
     // MARK: - Body
 
@@ -39,17 +61,22 @@ struct PlaylistBrowserView: View {
                     loadingView
                 } else if viewModel.playlists.isEmpty {
                     emptyStateView
+                } else if !searchText.isEmpty && filteredPlaylists.isEmpty {
+                    searchEmptyStateView
                 } else {
                     playlistList
                 }
             }
             .navigationTitle("Your Playlists")
+            .searchable(text: $searchText, prompt: "Search playlists")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { viewModel.fetchPlaylists() }) {
                         Image(systemName: "arrow.clockwise")
                     }
                     .disabled(viewModel.isLoading)
+                    .accessibilityLabel("Refresh playlists")
+                    .accessibilityHint("Reload your playlists from Apple Music")
                 }
             }
             .alert("Error", isPresented: showErrorBinding) {
@@ -62,6 +89,14 @@ struct PlaylistBrowserView: View {
                 if viewModel.playlists.isEmpty {
                     viewModel.fetchPlaylists()
                 }
+                loadMoodPlaylistCounts()
+            }
+            .navigationDestination(item: $selectedMoodPlaylist) { moodPlaylist in
+                MoodDetailView(
+                    title: moodPlaylist.displayName,
+                    songs: fetchSongs(for: moodPlaylist),
+                    accentColor: moodPlaylistAccentColor(moodPlaylist)
+                )
             }
         }
     }
@@ -78,13 +113,8 @@ struct PlaylistBrowserView: View {
     // MARK: - Loading View
 
     private var loadingView: some View {
-        VStack(spacing: 16) {
-            ProgressView()
-                .scaleEffect(1.2)
-
-            Text("Loading Playlists...")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+        TimedSkeletonView(message: "Loading your playlists...") {
+            SkeletonPlaylistCard()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -99,47 +129,109 @@ struct PlaylistBrowserView: View {
         )
     }
 
+    // MARK: - Search Empty State View
+
+    private var searchEmptyStateView: some View {
+        ContentUnavailableView.search(text: searchText)
+    }
+
+    // MARK: - Mood Playlist Helpers
+
+    /// Loads song counts for each mood playlist from Core Data.
+    private func loadMoodPlaylistCounts() {
+        let context = PersistenceController.shared.viewContext
+        var counts: [MoodPlaylist: Int] = [:]
+
+        for moodPlaylist in MoodPlaylist.allCases {
+            let request = NSFetchRequest<Song>(entityName: "Song")
+            request.predicate = moodPlaylist.predicate
+            let count = (try? context.count(for: request)) ?? 0
+            counts[moodPlaylist] = count
+        }
+
+        moodPlaylistCounts = counts
+    }
+
+    /// Fetches songs matching a mood playlist's predicate.
+    private func fetchSongs(for moodPlaylist: MoodPlaylist) -> [Song] {
+        let context = PersistenceController.shared.viewContext
+        let request = NSFetchRequest<Song>(entityName: "Song")
+        request.predicate = moodPlaylist.predicate
+        request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
+        return (try? context.fetch(request)) ?? []
+    }
+
+    /// Maps a mood playlist's accent color string to a SwiftUI Color.
+    private func moodPlaylistAccentColor(_ moodPlaylist: MoodPlaylist) -> Color {
+        switch moodPlaylist.accentColor {
+        case "teal":   return .teal
+        case "blue":   return .blue
+        case "red":    return .red
+        case "yellow": return .yellow
+        case "purple": return .purple
+        case "cyan":   return .cyan
+        default:       return .blue
+        }
+    }
+
     // MARK: - Playlist List
 
     private var playlistList: some View {
         List {
+            // MARK: - Resonance Mixes
+
             Section {
-                ForEach(viewModel.playlists) { playlistInfo in
-                    PlaylistRow(
-                        playlistInfo: playlistInfo,
-                        isActive: viewModel.activePlaylistName == playlistInfo.name
+                ForEach(MoodPlaylist.allCases) { moodPlaylist in
+                    MoodPlaylistRow(
+                        playlist: moodPlaylist,
+                        songCount: moodPlaylistCounts[moodPlaylist] ?? 0
                     )
                     .contentShape(Rectangle())
                     .onTapGesture {
-                        selectionTrigger += 1
-                        viewModel.selectPlaylist(playlistInfo)
-                        onPlaylistSelected?(playlistInfo)
+                        selectedMoodPlaylist = moodPlaylist
+                    }
+                }
+            } header: {
+                Label("Resonance Mixes", systemImage: "brain.head.profile")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+            }
+
+            // MARK: - User Playlists
+
+            Section {
+                ForEach(filteredPlaylists) { playlistInfo in
+                    NavigationLink(value: playlistInfo) {
+                        PlaylistRow(
+                            playlistInfo: playlistInfo,
+                            isActive: viewModel.activePlaylistName == playlistInfo.name
+                        )
                     }
                     .sensoryFeedback(.selection, trigger: selectionTrigger)
                 }
             } header: {
                 if viewModel.isLoading {
                     HStack(spacing: 8) {
-                        ProgressView()
+                        SkeletonShape(width: 12, height: 12, cornerRadius: 6)
+                            .shimmer()
                         Text("Updating...")
                             .font(.caption)
                     }
                 } else {
-                    Text("\(viewModel.playlists.count) playlists")
+                    Text("\(filteredPlaylists.count) playlists")
                 }
             }
         }
         .listStyle(.insetGrouped)
+        .navigationDestination(for: PlaylistDisplayInfo.self) { playlistInfo in
+            PlaylistDetailView(
+                playlistInfo: playlistInfo,
+                viewModel: viewModel,
+                onPlaylistSelected: onPlaylistSelected
+            )
+        }
         .refreshable {
-            viewModel.fetchPlaylists()
-            // Wait for the fetch to actually complete before dismissing the spinner,
-            // but cap at ~30 seconds (300 iterations x 100ms) to avoid infinite polling.
-            var iterations = 0
-            let maxIterations = 300
-            while viewModel.isLoading && iterations < maxIterations {
-                try? await Task.sleep(nanoseconds: 100_000_000)
-                iterations += 1
-            }
+            await viewModel.refreshPlaylists()
         }
     }
 }
@@ -189,6 +281,13 @@ private struct PlaylistRow: View {
             }
         }
         .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(
+            "\(playlistInfo.name)"
+            + (playlistInfo.songCount.map { ", \($0) \($0 == 1 ? "song" : "songs")" } ?? "")
+            + (isActive ? ", currently playing" : "")
+        )
+        .accessibilityHint(isActive ? "Currently active playlist" : "Tap to view songs")
     }
 
     // MARK: - Artwork
@@ -196,7 +295,8 @@ private struct PlaylistRow: View {
     @ViewBuilder
     private var playlistArtwork: some View {
         if let artwork = playlistInfo.artwork {
-            ArtworkImage(artwork, width: UIConstants.ArtworkSize.small)
+            // Request thumbnail-sized artwork to avoid loading full-resolution images
+            ArtworkImage(artwork, width: UIConstants.ArtworkSize.small, height: UIConstants.ArtworkSize.small)
         } else {
             RoundedRectangle(cornerRadius: 6)
                 .fill(.ultraThinMaterial)

@@ -44,18 +44,18 @@ public final class SharedDecisionEngine: @unchecked Sendable {
     private var _currentArc: SessionArc?
 
     /// Number of songs played in the current arc.
-    private var _arcSongsPlayed: Int = 0
+    private var _arcSongsPlayed = 0
 
     // MARK: - Iso-Principle State (6.3)
 
     /// Whether iso mode is currently active (first 1-2 songs of a session/context change).
-    private var _isIsoModeActive: Bool = false
+    private var _isIsoModeActive = false
 
     /// Number of songs played since iso mode was activated.
-    private var _isoModeSongCount: Int = 0
+    private var _isoModeSongCount = 0
 
     /// Number of songs to play in iso mode before transitioning.
-    private let isoModeDuration: Int = 2
+    private let isoModeDuration = 2
 
     /// The BPM target during iso mode (matches current arousal).
     private var _isoTargetBPM: Double?
@@ -67,15 +67,34 @@ public final class SharedDecisionEngine: @unchecked Sendable {
     private var _lastSelectedBPM: Double?
 
     /// Session song count at last decision (to detect session resets).
-    private var _lastSessionSongCount: Int = 0
+    private var _lastSessionSongCount = 0
 
     // MARK: - Iso-Principle Transition Rates
 
+    /// Perceptual shift mode (existing): used for user-initiated context changes.
     /// BPM change per song when activating (shifting up).
-    private let activationBPMRate: ClosedRange<Double> = 5.0...8.0
+    private let perceptualActivationRate: ClosedRange<Double> = 5.0...8.0
 
-    /// BPM change per song when deactivating (shifting down).
-    private let deactivationBPMRate: ClosedRange<Double> = 5.0...10.0
+    /// Perceptual shift mode: BPM change per song when deactivating (shifting down).
+    private let perceptualDeactivationRate: ClosedRange<Double> = 5.0...10.0
+
+    // R4: Entrainment-mode ISO principle rates (new).
+    // Used for Brain-initiated stress reduction when stress > 0.7.
+    // Research: successful physiological entrainment requires ~2% tempo
+    // change per song (~2-3 BPM). Larger shifts break the entrainment
+    // coupling and reduce calming effectiveness.
+    // Reference: Thaut, Rhythm, Music and the Brain 2005;
+    //            Ellis & Thayer, Music Perception 2010
+
+    /// Entrainment mode: BPM change per song when activating (shifting up).
+    private let entrainmentActivationRate: ClosedRange<Double> = 2.0...3.0
+
+    /// Entrainment mode: BPM change per song when deactivating (shifting down).
+    private let entrainmentDeactivationRate: ClosedRange<Double> = 2.0...3.0
+
+    /// Whether the engine should use entrainment (gentle) rates for the current transition.
+    /// True when stress > 0.7 and the Brain is doing calming autonomously.
+    private var _useEntrainmentMode = false
 
     // MARK: - Thread-Safe Accessors
 
@@ -211,6 +230,7 @@ public final class SharedDecisionEngine: @unchecked Sendable {
             _lastSessionSongCount = 0
             _currentArc = nil
             _arcSongsPlayed = 0
+            _useEntrainmentMode = false
         }
         logInfo("SharedDecisionEngine: state reset", category: .decisionEngine)
     }
@@ -315,11 +335,20 @@ public final class SharedDecisionEngine: @unchecked Sendable {
     }
 
     /// Activates iso mode: sets the target BPM to match current arousal.
+    /// R4: When stress > 0.7 and the inferred need is .calm, uses entrainment
+    /// mode with gentler BPM shift rates (~2-3 BPM/song) for successful
+    /// physiological entrainment.
     /// Must be called while holding `lock`.
     private func _enterIsoMode(context: DecisionContext) {
         _isIsoModeActive = true
         _isoModeSongCount = 0
         _isoModeStartContext = context.stateVector.context
+
+        // R4: Determine if entrainment mode should be used.
+        // Brain-initiated calming (stress > 0.7) benefits from gentler tempo shifts.
+        // Reference: Thaut, Rhythm, Music and the Brain 2005
+        _useEntrainmentMode = context.stateVector.stress > 0.7
+            && context.stateVector.inferredNeed == .calm
 
         // Derive BPM from current arousal level
         // arousal 0.0-1.0 maps to approximately 60-160 BPM
@@ -327,8 +356,11 @@ public final class SharedDecisionEngine: @unchecked Sendable {
         let arousalBPM = 60.0 + arousal * 100.0
         _isoTargetBPM = arousalBPM
 
+        let modeLabel = _useEntrainmentMode ? "entrainment" : "perceptual"
         logInfo(
-            "SharedDecisionEngine: entering iso mode, arousal=\(String(format: "%.2f", arousal)), "
+            "SharedDecisionEngine: entering iso mode (\(modeLabel)), "
+            + "arousal=\(String(format: "%.2f", arousal)), "
+            + "stress=\(String(format: "%.2f", context.stateVector.stress)), "
             + "isoBPM=\(Int(arousalBPM)), context=\(context.stateVector.context.rawValue)",
             category: .decisionEngine
         )
@@ -348,9 +380,13 @@ public final class SharedDecisionEngine: @unchecked Sendable {
     /// the gradual shift from arousal-matched BPM toward therapeutic target.
     /// Must be called while holding `lock`.
     ///
-    /// Transition rates:
-    /// - Activation (energize): +5 to +8 BPM per song
-    /// - Deactivation (calm): -5 to -10 BPM per song
+    /// R4: Uses two rate profiles:
+    /// - Perceptual mode (user-initiated): +5 to +8 / -5 to -10 BPM per song
+    /// - Entrainment mode (Brain-initiated calming): +2 to +3 / -2 to -3 BPM per song
+    ///
+    /// Entrainment mode activates when stress > 0.7 and the Brain is calming.
+    /// Reference: Thaut, Rhythm, Music and the Brain 2005;
+    ///            Ellis & Thayer, Music Perception 2010
     private func _calculateEffectiveIsoTargetBPM(context: DecisionContext) -> Double? {
         guard _isIsoModeActive, let baseBPM = _isoTargetBPM else { return nil }
 
@@ -364,15 +400,29 @@ public final class SharedDecisionEngine: @unchecked Sendable {
             need: context.stateVector.inferredNeed
         )
 
-        // Determine direction and rate
+        // Determine direction and rate.
+        // R4: Select rate profile based on entrainment mode.
         let bpmDifference = therapeuticTarget - baseBPM
         let isActivating = bpmDifference > 0
 
+        let activeActivationRate: ClosedRange<Double>
+        let activeDeactivationRate: ClosedRange<Double>
+
+        if _useEntrainmentMode {
+            // R4: Entrainment mode -- gentle ~2% tempo change per song
+            activeActivationRate = entrainmentActivationRate
+            activeDeactivationRate = entrainmentDeactivationRate
+        } else {
+            // Standard perceptual shift mode
+            activeActivationRate = perceptualActivationRate
+            activeDeactivationRate = perceptualDeactivationRate
+        }
+
         let ratePerSong: Double
         if isActivating {
-            ratePerSong = (activationBPMRate.lowerBound + activationBPMRate.upperBound) / 2.0
+            ratePerSong = (activeActivationRate.lowerBound + activeActivationRate.upperBound) / 2.0
         } else {
-            ratePerSong = -(deactivationBPMRate.lowerBound + deactivationBPMRate.upperBound) / 2.0
+            ratePerSong = -(activeDeactivationRate.lowerBound + activeDeactivationRate.upperBound) / 2.0
         }
 
         // Apply gradual shift

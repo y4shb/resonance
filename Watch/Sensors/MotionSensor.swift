@@ -23,8 +23,8 @@ final class MotionSensor: ObservableObject {
 
     // MARK: - Published Properties
 
-    @Published private(set) var isStationary: Bool = true
-    @Published private(set) var recentSteps: Int = 0
+    @Published private(set) var isStationary = true
+    @Published private(set) var recentSteps = 0
 
     // MARK: - Private Properties
 

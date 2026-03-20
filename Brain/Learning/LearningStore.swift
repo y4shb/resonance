@@ -28,9 +28,17 @@ final class LearningStore: ObservableObject {
     /// Running session quality tracker
     @Published private(set) var runningSession = SessionQualityScorer.RunningSession()
 
+    /// Per-track resonance data accumulated during the current session.
+    private(set) var trackResonanceData: [TrackResonanceData] = []
+
+    /// Whether biometric data was available during this session.
+    private(set) var sessionHadBiometrics = false
+
     // MARK: - Dependencies
 
     private let persistence: PersistenceController
+    private let resonanceCalculator = ResonanceScoreCalculator()
+    private let resonanceStore = ResonanceScoreStore()
 
     // MARK: - Initialization
 
@@ -159,6 +167,13 @@ final class LearningStore: ObservableObject {
             // absolute values, not deltas, so it can compute session-level change).
             let currentAbsoluteHRV: Double? = event.hrvAtStart > 0 ? (event.hrvAtStart + event.hrvDelta) : nil
 
+            // 11. Capture per-track resonance data for post-session scoring
+            let songTitle = song.title ?? "Unknown"
+            let artistName = song.artistName ?? "Unknown"
+            let songAppleMusicId = song.appleMusicId ?? ""
+            let hrDelta = event.hrDelta
+            let hasBio = responseResult.hasBiometricData
+
             // Publish result and update running session on main thread
             Task { @MainActor [weak self] in
                 self?.lastProcessedImpact = impact
@@ -167,6 +182,18 @@ final class LearningStore: ObservableObject {
                     listenPercentage: listenPercentage,
                     currentHRV: currentAbsoluteHRV
                 )
+
+                // Record per-track resonance data (intent will be applied at scoring time)
+                self?.recordTrackResonance(
+                    songTitle: songTitle,
+                    artistName: artistName,
+                    songAppleMusicId: songAppleMusicId,
+                    hrDelta: hrDelta,
+                    completionRatio: listenPercentage,
+                    wasSkipped: isSkip,
+                    hasBiometrics: hasBio
+                )
+
                 logInfo(
                     "LearningStore: processed event -- calm=\(String(format: "%.2f", calmImpact)), "
                     + "energy=\(String(format: "%.2f", energyImpact)), skip=\(isSkip), "
@@ -177,11 +204,121 @@ final class LearningStore: ObservableObject {
         }
     }
 
+    // MARK: - Per-Track Resonance Recording
+
+    /// Records per-track biometric alignment data for resonance scoring.
+    /// Called on the main actor after each playback event is processed.
+    private func recordTrackResonance(
+        songTitle: String,
+        artistName: String,
+        songAppleMusicId: String,
+        hrDelta: Double,
+        completionRatio: Double,
+        wasSkipped: Bool,
+        hasBiometrics: Bool
+    ) {
+        if hasBiometrics {
+            sessionHadBiometrics = true
+        }
+
+        // Use a neutral alignment for now; final alignment is computed
+        // at score time when we know the session intent.
+        let trackData = TrackResonanceData(
+            songTitle: songTitle,
+            artistName: artistName,
+            songAppleMusicId: songAppleMusicId,
+            alignment: hasBiometrics ? 0.5 : 0.5, // Placeholder; recomputed in computeResonanceScore
+            hrDirectionMatch: false,                // Placeholder; recomputed in computeResonanceScore
+            completionRatio: completionRatio,
+            wasSkipped: wasSkipped
+        )
+
+        // Store the raw HR delta alongside the track data for later recomputation
+        pendingHRDeltas.append(hrDelta)
+        trackResonanceData.append(trackData)
+    }
+
+    /// Raw HR deltas for each track, aligned by index with `trackResonanceData`.
+    private var pendingHRDeltas: [Double] = []
+
+    // MARK: - Resonance Score Computation
+
+    /// Computes the resonance score for the current session and persists it.
+    ///
+    /// - Parameter sessionIntent: The session's music need, used to interpret
+    ///   whether HR direction changes are aligned with the goal.
+    /// - Returns: The computed `ResonanceScoreResult`, or nil if no tracks were played.
+    func computeResonanceScore(sessionIntent: MusicNeed) -> ResonanceScoreResult? {
+        guard !trackResonanceData.isEmpty else { return nil }
+
+        let sessionDuration = Date().timeIntervalSince(runningSession.startTime)
+        guard sessionDuration >= ResonanceScoreCalculator.minimumSessionDuration else {
+            logInfo("LearningStore: session too short for resonance score (\(Int(sessionDuration))s)", category: .learning)
+            return nil
+        }
+
+        // Recompute alignment per track using the session intent and stored HR deltas
+        var finalTracks: [TrackResonanceData] = []
+        for (index, track) in trackResonanceData.enumerated() {
+            let hrDelta = index < pendingHRDeltas.count ? pendingHRDeltas[index] : 0.0
+            let (alignment, hrMatch) = ResonanceScoreCalculator.computeTrackAlignment(
+                hrDelta: hrDelta,
+                sessionIntent: sessionIntent,
+                completionRatio: track.completionRatio,
+                wasSkipped: track.wasSkipped
+            )
+
+            let updatedTrack = TrackResonanceData(
+                songTitle: track.songTitle,
+                artistName: track.artistName,
+                songAppleMusicId: track.songAppleMusicId,
+                alignment: alignment,
+                hrDirectionMatch: hrMatch,
+                completionRatio: track.completionRatio,
+                wasSkipped: track.wasSkipped
+            )
+            finalTracks.append(updatedTrack)
+        }
+
+        // Compute the score
+        let result = resonanceCalculator.computeScore(
+            tracks: finalTracks,
+            sessionIntent: sessionIntent,
+            sessionDuration: sessionDuration,
+            biometricAvailable: sessionHadBiometrics
+        )
+
+        // Persist to history
+        let historyEntry = ResonanceScoreHistoryEntry(
+            id: UUID(),
+            date: Date(),
+            score: result.overallScore,
+            biometricScore: result.biometricScore,
+            engagementScore: result.engagementScore,
+            tracksPlayed: result.tracksPlayed,
+            sessionDuration: sessionDuration,
+            sessionIntent: sessionIntent.rawValue
+        )
+        resonanceStore.save(historyEntry)
+
+        logInfo(
+            "LearningStore: resonance score computed -- overall=\(result.overallScore), "
+            + "bio=\(result.biometricScore), engagement=\(result.engagementScore), "
+            + "tracks=\(result.tracksPlayed)",
+            category: .learning
+        )
+
+        return result
+    }
+
     // MARK: - Session Management
 
     /// Reset the running session tracker (e.g., after 30min gap).
     func resetSession() {
         runningSession = SessionQualityScorer.RunningSession()
+        trackResonanceData = []
+        pendingHRDeltas = []
+        sessionHadBiometrics = false
         logInfo("LearningStore: session reset", category: .learning)
     }
 

@@ -87,17 +87,6 @@ final class ConversationalExplanationGenerator {
 
     @available(iOS 26.0, *)
     private func generateWithFoundationModel(context: PromptContext) async -> String? {
-        // The Foundation Models framework provides access to the on-device
-        // Apple Intelligence model. All processing happens locally on the
-        // Neural Engine — no data leaves the device.
-        //
-        // Usage:
-        // let session = LanguageModelSession()
-        // let response = try await session.respond(to: prompt)
-        //
-        // For now, we prepare the prompt structure. The actual API call
-        // will be wired when Foundation Models SDK is finalized.
-
         let prompt = """
         You are an AI DJ explaining why you chose a song. Be warm, brief (1-2 sentences), and personal.
 
@@ -109,18 +98,9 @@ final class ConversationalExplanationGenerator {
         Write a brief, conversational explanation (no more than 2 sentences):
         """
 
-        // Foundation Models API call would go here:
-        // do {
-        //     let session = LanguageModelSession()
-        //     let response = try await session.respond(to: prompt)
-        //     return response.content
-        // } catch {
-        //     logDebug("Foundation Model unavailable, using template", category: .decisionEngine)
-        //     return nil
-        // }
-
-        // For now, use enhanced template since the Foundation Models API
-        // requires the actual device runtime
+        // Foundation Models API requires the actual device runtime with
+        // Apple Intelligence enabled. Use enhanced template as fallback.
+        _ = prompt
         return generateEnhancedTemplate(context: context)
     }
 

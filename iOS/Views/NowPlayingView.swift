@@ -5,6 +5,9 @@
 //  Displays the currently playing track with album artwork, song info,
 //  playback progress, and transport controls.
 //
+//  P2-20: Dark Mode Palette Refinement — uses ResonanceColors for backgrounds
+//  P2-21: Album Art Ambient Glow — adds radial glow behind artwork
+//
 
 import SwiftUI
 import MusicKit
@@ -17,18 +20,31 @@ struct NowPlayingView: View {
     @Bindable var viewModel: NowPlayingViewModel
     @ObservedObject var stateEngine: StateEngine
 
+    /// Optional namespace for matchedGeometryEffect transition from landing screen
+    var heroNamespace: Namespace.ID?
+
+    /// Callback to switch to the playlists tab from the empty state
+    var onBrowsePlaylists: (() -> Void)?
+
     // Accessibility
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    // Dark mode detection (P2-20)
+    @Environment(\.colorScheme) private var colorScheme
+
     // Track whether user is actively scrubbing the slider
-    @State private var isScrubbing: Bool = false
-    @State private var scrubProgress: Double = 0.0
-    @State private var showMoodInput: Bool = false
-    @State private var isExplanationExpanded: Bool = false
+    @State private var isScrubbing = false
+    @State private var scrubProgress = 0.0
+    @State private var showMoodInput = false
+    @State private var isExplanationExpanded = false
+
+    // Dominant color for ambient glow (P2-21)
+    @State private var dominantGlowColor: Color?
 
     // Haptic feedback triggers for transport controls
-    @State private var skipTrigger: Int = 0
-    @State private var previousTrigger: Int = 0
+    @State private var skipTrigger = 0
+    @State private var previousTrigger = 0
+    @State private var bookmarkTrigger = 0
 
     // MARK: - Body
 
@@ -36,40 +52,83 @@ struct NowPlayingView: View {
         NavigationStack {
             Group {
                 if viewModel.activePlaylistName == nil && viewModel.currentSong == .placeholder {
-                    ContentUnavailableView(
-                        "No Playlist Selected",
-                        systemImage: "music.note.list",
-                        description: Text("Select a playlist from the Playlists tab to start your AI DJ session.")
-                    )
+                    emptyStateView
                 } else {
-                    VStack(spacing: 0) {
-                        Spacer()
+                    ZStack {
+                        // P2-20: Dark mode palette background
+                        ResonanceColors.adaptiveBackground(for: colorScheme)
+                            .ignoresSafeArea()
 
-                        artworkView
+                        // P2-21: Ambient glow behind artwork
+                        if let glowColor = dominantGlowColor {
+                            AmbientGlowView(
+                                color: ResonanceColors.darkModeAdjusted(glowColor, for: colorScheme),
+                                reduceMotion: reduceMotion
+                            )
+                        }
+
+                        VStack(spacing: 0) {
+                            Spacer()
+
+                            ZStack {
+                                artworkView
+
+                                if viewModel.isLoadingAISelection {
+                                    // Skeleton overlay during AI song selection
+                                    TimedSkeletonView(message: "AI is analyzing your state and library...") {
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .fill(.ultraThinMaterial)
+                                            .frame(
+                                                width: UIConstants.ArtworkSize.large,
+                                                height: UIConstants.ArtworkSize.large
+                                            )
+                                            .overlay(
+                                                VStack(spacing: 16) {
+                                                    SkeletonShape(width: 120, height: 14, cornerRadius: 4)
+                                                    SkeletonShape(width: 80, height: 10, cornerRadius: 3)
+                                                }
+                                                .shimmer()
+                                            )
+                                    }
+                                    .accessibilityLabel("Loading next song")
+                                }
+                            }
                             .padding(.bottom, 24)
 
-                        songInfoView
-                            .padding(.bottom, 28)
+                            songInfoView
+                                .padding(.bottom, 8)
 
-                        progressView
-                            .padding(.horizontal, 24)
-                            .padding(.bottom, 16)
+                            explanationBar
+                                .padding(.bottom, 16)
 
-                        transportControls
-                            .padding(.bottom, 24)
+                            progressView
+                                .padding(.horizontal, 20)
+                                .padding(.bottom, 16)
 
-                        Spacer()
+                            transportControls
+                                .padding(.bottom, 16)
 
-                        explanationBar
+                            volumeAndRouteControls
+                                .padding(.horizontal, 20)
+                                .padding(.bottom, 16)
 
-                        hrvZoneBar
+                            Spacer()
 
-                        stateInfoBar
+                            hrvZoneBar
 
-                        activePlaylistBar
+                            stateInfoBar
+
+                            activePlaylistBar
+                        }
+                        .padding(.horizontal, 20)
+                        .background(artworkBackgroundGradient)
                     }
-                    .padding(.horizontal)
-                    .background(artworkBackgroundGradient)
+                    .onChange(of: viewModel.artworkAccentColor) {
+                        updateDominantGlowColor()
+                    }
+                    .onAppear {
+                        updateDominantGlowColor()
+                    }
                 }
             }
             .navigationTitle("Resonance")
@@ -86,12 +145,23 @@ struct NowPlayingView: View {
                 }
 
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showMoodInput = true
-                    } label: {
-                        Image(systemName: "face.smiling")
+                    HStack(spacing: 12) {
+                        Button {
+                            bookmarkTrigger += 1
+                            viewModel.createBookmark(source: .iphoneButton)
+                        } label: {
+                            Image(systemName: "bookmark.fill")
+                        }
+                        .disabled(viewModel.currentSong == .placeholder)
+                        .accessibilityLabel("Bookmark this moment")
+
+                        Button {
+                            showMoodInput = true
+                        } label: {
+                            Image(systemName: "face.smiling")
+                        }
+                        .accessibilityLabel("Set Mood")
                     }
-                    .accessibilityLabel("Set Mood")
                 }
             }
             .sheet(isPresented: $showMoodInput) {
@@ -106,6 +176,12 @@ struct NowPlayingView: View {
             } message: {
                 Text(viewModel.errorMessage ?? "")
             }
+            .onShake {
+                guard viewModel.currentSong != .placeholder else { return }
+                bookmarkTrigger += 1
+                viewModel.createBookmark(source: .iphoneShake)
+            }
+            .sensoryFeedback(.success, trigger: bookmarkTrigger)
         }
     }
 
@@ -130,8 +206,8 @@ struct NowPlayingView: View {
             // Heart pulse ring behind artwork
             HeartPulseRing(
                 heartRate: approximateHeartRate,
-                musicBPM: 0, // No direct BPM access from current song
-                accentColor: viewModel.artworkAccentColor ?? .blue,
+                musicBPM: viewModel.currentSongBPM,
+                accentColor: viewModel.artworkAccentColor ?? ResonanceColors.accent,
                 reduceMotion: reduceMotion
             )
             .frame(
@@ -161,6 +237,7 @@ struct NowPlayingView: View {
                         .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
                 }
             }
+            .modifier(HeroArtworkModifier(namespace: heroNamespace))
         }
         .accessibilityLabel("Album art: \(viewModel.currentSong.title) by \(viewModel.currentSong.artistName)")
     }
@@ -180,7 +257,7 @@ struct NowPlayingView: View {
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 20)
     }
 
     // MARK: - Progress View
@@ -205,7 +282,7 @@ struct NowPlayingView: View {
                     }
                 }
             )
-            .tint(.blue)
+            .tint(ResonanceColors.accent)
             .accessibilityLabel("Playback progress")
             .accessibilityValue("\(viewModel.currentTime.formattedMinutesSeconds) of \(viewModel.duration.formattedMinutesSeconds)")
 
@@ -236,34 +313,61 @@ struct NowPlayingView: View {
                     viewModel.previous()
                 }) {
                     Image(systemName: "backward.fill")
-                        .font(.title2)
+                        .font(.title3)
                         .foregroundStyle(.primary)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Circle())
                 }
                 .glassEffect(.regular.interactive())
                 .accessibilityLabel("Previous track")
-                .sensoryFeedback(.impact(.light), trigger: previousTrigger)
+                .sensoryFeedback(.impact(weight: .light), trigger: previousTrigger)
 
                 Button(action: { viewModel.togglePlayPause() }) {
                     Image(systemName: viewModel.isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                        .font(.system(size: 56))
-                        .foregroundStyle(.blue)
+                        .font(.system(size: 48))
+                        .foregroundStyle(ResonanceColors.accent)
+                        .frame(width: 64, height: 64)
+                        .contentShape(Circle())
                 }
                 .glassEffect(.regular.interactive())
                 .accessibilityLabel(viewModel.isPlaying ? "Pause" : "Play")
-                .sensoryFeedback(.impact(.medium), trigger: viewModel.isPlaying)
+                .sensoryFeedback(.impact(weight: .medium), trigger: viewModel.isPlaying)
 
                 Button(action: {
                     skipTrigger += 1
                     viewModel.skip()
                 }) {
                     Image(systemName: "forward.fill")
-                        .font(.title2)
+                        .font(.title3)
                         .foregroundStyle(.primary)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Circle())
                 }
                 .glassEffect(.regular.interactive())
                 .accessibilityLabel("Skip to next track")
-                .sensoryFeedback(.impact(.light), trigger: skipTrigger)
+                .sensoryFeedback(.impact(weight: .light), trigger: skipTrigger)
             }
+        }
+    }
+
+    // MARK: - Volume & Route Controls
+
+    private var volumeAndRouteControls: some View {
+        HStack(spacing: 16) {
+            Image(systemName: "speaker.fill")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            SystemVolumeSlider()
+                .frame(height: 36)
+                .tint(ResonanceColors.accent)
+
+            Image(systemName: "speaker.wave.3.fill")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            AirPlayButton()
+                .frame(width: 44, height: 44)
         }
     }
 
@@ -280,7 +384,7 @@ struct NowPlayingView: View {
                     }) {
                         HStack(alignment: .top, spacing: 8) {
                             Image(systemName: "wand.and.stars")
-                                .foregroundStyle(.blue)
+                                .foregroundStyle(ResonanceColors.accent)
                                 .font(.caption)
                                 .padding(.top, 2)
 
@@ -300,7 +404,7 @@ struct NowPlayingView: View {
                     }
                     .buttonStyle(.plain)
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, 20)
                 .padding(.vertical, 8)
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel("AI explanation: \(explanation)")
@@ -324,7 +428,7 @@ struct NowPlayingView: View {
 
             Spacer()
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 20)
         .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Heart rate variability zone: \(hrvZoneName)")
@@ -356,11 +460,15 @@ struct NowPlayingView: View {
 
     // MARK: - Album Art Background Gradient
 
+    /// Linear gradient tinted by the artwork accent color.
+    /// In dark mode (P2-20), saturation is reduced by 15-20% to prevent
+    /// oversaturated gradients on the dark palette.
     private var artworkBackgroundGradient: some View {
         Group {
             if let accentColor = viewModel.artworkAccentColor {
+                let adjustedColor = ResonanceColors.darkModeAdjusted(accentColor, for: colorScheme)
                 LinearGradient(
-                    colors: [accentColor.opacity(0.15), .clear],
+                    colors: [adjustedColor.opacity(0.15), .clear],
                     startPoint: .top,
                     endPoint: .center
                 )
@@ -370,6 +478,15 @@ struct NowPlayingView: View {
                 Color.clear
             }
         }
+    }
+
+    // MARK: - Dominant Color Extraction (P2-21)
+
+    /// Syncs the ambient glow color with the ViewModel's accent color.
+    /// The accent color is already extracted by the ViewModel; we use it
+    /// directly for the ambient glow to avoid duplicate extraction work.
+    private func updateDominantGlowColor() {
+        dominantGlowColor = viewModel.artworkAccentColor
     }
 
     // MARK: - State Info Bar
@@ -398,8 +515,14 @@ struct NowPlayingView: View {
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 20)
         .padding(.vertical, 8)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(
+            "Context: \(stateEngine.currentState.context.displayName), "
+            + "need: \(stateEngine.currentState.inferredNeed.displayName), "
+            + "confidence: \(Int(stateEngine.currentState.confidence * 100)) percent"
+        )
     }
 
     // MARK: - Active Playlist Bar
@@ -419,12 +542,65 @@ struct NowPlayingView: View {
 
                     Spacer()
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, 20)
                 .padding(.vertical, 12)
                 .glassEffect(.regular.interactive())
                 .padding(.horizontal, 4)
                 .padding(.bottom, 8)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Playing from playlist: \(playlistName)")
             }
+        }
+    }
+
+    // MARK: - Empty State View
+
+    /// Contextual empty state with time-based greeting and a button to navigate to playlists.
+    private var emptyStateView: some View {
+        ContentUnavailableView {
+            Label(timeBasedGreeting, systemImage: "music.note.list")
+        } description: {
+            Text("Pick a playlist to start your AI DJ session.")
+        } actions: {
+            if let onBrowsePlaylists {
+                Button(action: onBrowsePlaylists) {
+                    Label("Browse Playlists", systemImage: "music.note.list")
+                }
+                .buttonStyle(.borderedProminent)
+            }
+        }
+    }
+
+    /// Returns a time-of-day greeting to personalize the empty state.
+    private var timeBasedGreeting: String {
+        let hour = Calendar.current.component(.hour, from: Date())
+        switch hour {
+        case 5..<12:
+            return "Good morning! Ready for your morning playlist?"
+        case 12..<17:
+            return "Good afternoon! Time for some tunes?"
+        case 17..<21:
+            return "Good evening! Let's set the mood."
+        default:
+            return "Late night vibes? Let's find the right sound."
+        }
+    }
+}
+
+// MARK: - Hero Artwork Modifier
+
+/// Conditionally applies matchedGeometryEffect when a namespace is provided.
+/// This enables the brain-to-artwork transition from the landing screen without
+/// requiring a non-optional namespace in views that don't participate in the animation.
+private struct HeroArtworkModifier: ViewModifier {
+    let namespace: Namespace.ID?
+
+    func body(content: Content) -> some View {
+        if let namespace {
+            content
+                .matchedGeometryEffect(id: "heroArtwork", in: namespace)
+        } else {
+            content
         }
     }
 }

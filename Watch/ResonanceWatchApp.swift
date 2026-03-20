@@ -34,7 +34,8 @@ struct ResonanceWatchApp: App {
         WindowGroup {
             WatchNowPlayingView(
                     connectivityService: connectivityService,
-                    crownHandler: crownHandler
+                    crownHandler: crownHandler,
+                    sensorCoordinator: sensorCoordinator
                 )
                 .onAppear {
                     connectivityService.activate()
@@ -52,12 +53,16 @@ struct ResonanceWatchApp: App {
                 .task {
                     if HKHealthStore.isHealthDataAvailable() {
                         let store = HKHealthStore()
-                        let types: Set<HKObjectType> = [
+                        var types: Set<HKObjectType> = [
                             HKQuantityType(.heartRate),
                             HKQuantityType(.heartRateVariabilitySDNN),
                             HKQuantityType(.stepCount),
                             HKObjectType.workoutType()
                         ]
+                        // Request wrist temperature access for emotion detection (Series 8+)
+                        if #available(watchOS 9.0, *) {
+                            types.insert(HKQuantityType(.appleSleepingWristTemperature))
+                        }
                         try? await store.requestAuthorization(toShare: [], read: types)
                         sensorCoordinator.startAllSensors()
                         logInfo("Watch sensors started", category: .healthKit)

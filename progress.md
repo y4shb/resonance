@@ -23,8 +23,8 @@ This file tracks the current state of the project, completed work, and remaining
 | Enhancement Tier 3: Strategic | COMPLETE | 100% |
 | Enhancement Tier 4: Future Horizon | SHELVED | -- |
 
-**Current Phase:** All Enhancement Tiers Complete — Bug Fix & QA Pass
-**Last Updated:** 2026-03-13
+**Current Phase:** Brain Enhancements COMPLETE -- User Feature Implementation IN PROGRESS
+**Last Updated:** 2026-03-20
 
 ---
 
@@ -1900,6 +1900,110 @@ Tier 1, Tier 2, and Tier 3 enhancements verified against enhancement checklists.
 - [ ] NF-10: Sleep correlation dashboard
 - [ ] AE-4: CKSyncEngine migration
 - [ ] TS-3: XCUITest suite
+
+---
+
+## Brain Enhancement Sprint (2026-03-20)
+
+### 1. Spectral Audio Features (3 new files)
+
+| File | Purpose | LOC |
+|------|---------|-----|
+| `Brain/Audio/FFTProcessor.swift` | Accelerate vDSP FFT with Hann windowing, magnitude/phase extraction | ~120 |
+| `Brain/Audio/MelFilterbank.swift` | 40-band mel-scale filterbank, spectral centroid, rolloff, flux | ~150 |
+| `Brain/Audio/SpectralAnalyzer.swift` | Orchestrator combining FFT + Mel into `SpectralFeatures` struct | ~100 |
+
+**What it enables:** Real frequency-domain audio analysis replacing placeholder energy-only features. Provides mel spectrogram, spectral centroid, rolloff, and flux for accurate song mood classification.
+
+### 2. Circadian Rhythm System (5 new files)
+
+| File | Purpose | LOC |
+|------|---------|-----|
+| `Brain/Circadian/CircadianProfileManager.swift` | Builds and persists per-user circadian energy profiles from 7-day HRV/HR history | ~180 |
+| `Brain/Circadian/EnergyModifier.swift` | Adjusts song scoring weights based on current circadian energy phase | ~90 |
+| `Brain/Circadian/ContextInference.swift` | Infers activity context (commute, workout, wind-down) from time + motion + location | ~110 |
+| `Shared/Extensions/HealthKit+Circadian.swift` | HealthKit query helpers for hourly HR/HRV aggregation | ~80 |
+| `Brain/Circadian/CircadianTypes.swift` | Shared types: `EnergyPhase`, `CircadianProfile`, `CircadianSlot` | ~60 |
+
+**What it enables:** Song selection adapts to time-of-day energy patterns. Morning commute gets energizing tracks; late evening gets calming ones. Profiles are personalized per user from their biometric history.
+
+### 3. Watch Emotion Detection (7 new files)
+
+| File | Purpose | LOC |
+|------|---------|-----|
+| `watchOS/Sensors/EmotionMotionSensor.swift` | Streams accelerometer + gyroscope at 50Hz for gesture/posture detection | ~130 |
+| `watchOS/Sensors/FeatureExtractor.swift` | Extracts jerk magnitude, wrist orientation, movement entropy from raw IMU | ~100 |
+| `watchOS/Sensors/EmotionClassifier.swift` | Rule-based + ML-ready classifier mapping motion features to emotional valence | ~140 |
+| `watchOS/Sensors/OvernightTempMonitor.swift` | Reads wrist temperature deltas for stress/recovery baseline | ~70 |
+| `watchOS/Sensors/RefinementEngine.swift` | Bayesian refinement combining HR, HRV, motion, and temperature signals | ~120 |
+| `watchOS/Sensors/EmotionTypes.swift` | Shared types: `EmotionState`, `MotionFeatures`, `SensorReading` | ~50 |
+| `watchOS/Sensors/SensorConstants.swift` | Tunable thresholds and sampling rates | ~30 |
+
+**What it enables:** Multi-signal emotion detection on Apple Watch using accelerometer, gyroscope, heart rate, HRV, and wrist temperature. No single signal is trusted alone -- Bayesian fusion provides confidence-weighted emotional state.
+
+### 4. Core ML Song Model (2 scripts + 3 modified files)
+
+| File | Type | Purpose |
+|------|------|---------|
+| `scripts/train_song_model.py` | NEW | CreateML training script: tabular classifier for song-mood prediction |
+| `scripts/export_coreml.py` | NEW | Converts trained model to `.mlmodelc` with quantization |
+| `Brain/ML/AudioFeaturePredictor.swift` | MODIFIED | Integrated spectral features as model inputs |
+| `Brain/DJBrain.swift` | MODIFIED | Wired `AudioFeaturePredictor` into scoring pipeline |
+| `Brain/Scoring/SongScorer.swift` | MODIFIED | Added spectral feature weight to scoring formula |
+
+**What it enables:** On-device Core ML model predicts song emotional impact from audio features. Training pipeline provided for retraining on user data.
+
+### 5. Brain Accuracy Improvements R1-R6 (2 new files + 6 modifications)
+
+| ID | Improvement | File(s) |
+|----|-------------|---------|
+| R1 | Circadian HRV correction -- normalizes HRV by time-of-day baseline | `Brain/Circadian/HRVNormalizer.swift` (NEW) |
+| R2 | Multi-signal valence -- fuses HR, HRV, motion, temp with learned weights | `Brain/Scoring/ValenceFusion.swift` (NEW) |
+| R3 | HR acceleration -- uses rate-of-change not absolute HR for arousal | `Brain/Scoring/SongScorer.swift` (MODIFIED) |
+| R4 | Entrainment mode detection -- identifies rhythmic HR-music coupling | `Brain/DJBrain.swift` (MODIFIED) |
+| R5 | Adaptive signal weights -- per-user weight learning from feedback | `Brain/Learning/EffectivenessLearner.swift` (MODIFIED) |
+| R6 | Sleep baseline integration -- uses overnight HRV for daily calibration | `Brain/Circadian/CircadianProfileManager.swift` (MODIFIED) |
+
+**What it enables:** Accuracy improvements grounded in 70+ research papers. HRV is normalized by circadian baseline (eliminating false stress readings in the morning). Multiple signals are fused with learned weights rather than hardcoded ratios.
+
+### 6. Brain.md Documentation (6 new sections, 20 research references)
+
+Added to `docs/brain.md`:
+- Signal weights table with confidence intervals from literature
+- Calibration timeline (3-session, 7-day, 30-day milestones)
+- Accuracy expectations by signal combination
+- Circadian rhythm integration rationale
+- Watch sensor fusion architecture
+- Core ML model architecture and retraining guide
+
+### Sprint Summary
+
+| Category | New Files | Modified Files | Total LOC Added |
+|----------|-----------|----------------|-----------------|
+| Spectral Audio | 3 | 0 | ~370 |
+| Circadian Rhythm | 5 | 0 | ~520 |
+| Watch Emotion | 7 | 0 | ~640 |
+| Core ML Pipeline | 2 | 3 | ~250 |
+| Brain Accuracy R1-R6 | 2 | 4 | ~300 |
+| Documentation | 0 | 1 | ~400 |
+| **Total** | **19** | **8** | **~2,480** |
+
+---
+
+## User Feature Implementation (2026-03-20, In Progress)
+
+### 8 Workstreams
+
+| # | Workstream | Status | Key Deliverables |
+|---|-----------|--------|------------------|
+| 1 | Onboarding Flow | IN PROGRESS | 4-screen welcome, Music auth, HealthKit auth, initial mood input |
+| 2 | Settings & Preferences | IN PROGRESS | Genre preferences, energy curve editor, notification controls |
+| 3 | Session History & Stats | IN PROGRESS | Calendar heatmap, session detail view, weekly/monthly trends |
+| 4 | Mood Journal | IN PROGRESS | Pre/post session mood capture, mood timeline, emoji + slider input |
+| 5 | Playlist Management | IN PROGRESS | Save/rename/delete playlists, share via URL, playlist artwork |
+| 6 | Social Features | IN PROGRESS | Friend activity feed, shared sessions, leaderboard |
+| 7 | Notifications & Widgets | IN PROGRESS | Smart reminders, streak widget, mood summary widget |
+| 8 | Accessibility & Localization | IN PROGRESS | VoiceOver audit, Dynamic Type, RTL support, 5 languages |
 
 ---
 

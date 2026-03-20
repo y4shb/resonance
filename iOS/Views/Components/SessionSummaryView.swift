@@ -21,6 +21,39 @@ struct SessionSummaryData {
     let bestFitSong: (title: String, artist: String)?
     let averageBPM: Double
     let sessionQualityScore: Double  // 0.0 - 1.0
+    /// Post-session resonance score (biometric-music correlation). Nil if not computed.
+    let resonanceScore: ResonanceScoreResult?
+
+    /// Sonic Bookmarks captured during this session.
+    var bookmarks: [SonicBookmarkData]
+
+    /// Convenience initializer preserving backward compatibility for callers
+    /// that do not yet provide a resonance score or bookmarks.
+    init(
+        sessionDuration: TimeInterval,
+        songsPlayed: Int,
+        songsSkipped: Int,
+        skipRate: Double,
+        hrvImproved: Bool,
+        hrvDelta: Double,
+        bestFitSong: (title: String, artist: String)?,
+        averageBPM: Double,
+        sessionQualityScore: Double,
+        resonanceScore: ResonanceScoreResult? = nil,
+        bookmarks: [SonicBookmarkData] = []
+    ) {
+        self.sessionDuration = sessionDuration
+        self.songsPlayed = songsPlayed
+        self.songsSkipped = songsSkipped
+        self.skipRate = skipRate
+        self.hrvImproved = hrvImproved
+        self.hrvDelta = hrvDelta
+        self.bestFitSong = bestFitSong
+        self.averageBPM = averageBPM
+        self.sessionQualityScore = sessionQualityScore
+        self.resonanceScore = resonanceScore
+        self.bookmarks = bookmarks
+    }
 }
 
 // MARK: - Session Summary View
@@ -54,30 +87,35 @@ struct SessionSummaryView: View {
                 .accessibilityLabel("Dismiss summary")
             }
 
+            // Resonance Score (shown when available)
+            if let resonanceScore = summary.resonanceScore {
+                ResonanceScoreView(result: resonanceScore)
+            }
+
             // Stats grid
             LazyVGrid(columns: [
                 GridItem(.flexible()),
                 GridItem(.flexible()),
                 GridItem(.flexible()),
             ], spacing: 12) {
-                StatCell(
+                ResonanceMetricCell(
+                    icon: "clock.fill",
                     value: formattedDuration,
                     label: "Duration",
-                    icon: "clock.fill",
                     color: .blue
                 )
 
-                StatCell(
+                ResonanceMetricCell(
+                    icon: "music.note",
                     value: "\(summary.songsPlayed)",
                     label: "Songs",
-                    icon: "music.note",
                     color: .purple
                 )
 
-                StatCell(
+                ResonanceMetricCell(
+                    icon: "forward.fill",
                     value: "\(Int(summary.skipRate * 100))%",
                     label: "Skip Rate",
-                    icon: "forward.fill",
                     color: summary.skipRate < 0.2 ? .green : .orange
                 )
             }
@@ -119,6 +157,14 @@ struct SessionSummaryView: View {
                 }
             }
 
+            // Bookmarked Moments
+            if !summary.bookmarks.isEmpty {
+                BookmarkTimelineView(
+                    bookmarks: summary.bookmarks,
+                    sessionDuration: summary.sessionDuration
+                )
+            }
+
             // Session quality bar
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
@@ -134,17 +180,14 @@ struct SessionSummaryView: View {
                         .foregroundStyle(qualityColor)
                 }
 
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 3)
-                            .fill(Color(.tertiarySystemFill))
-                        RoundedRectangle(cornerRadius: 3)
-                            .fill(qualityColor)
-                            .frame(width: geo.size.width * min(1, max(0, summary.sessionQualityScore)))
-                    }
-                }
-                .frame(height: 6)
+                ResonanceProgressBar(
+                    progress: summary.sessionQualityScore,
+                    color: qualityColor,
+                    height: 6
+                )
             }
+
+            Divider()
 
             // Feedback section
             if !showingFeedback {
@@ -277,4 +320,24 @@ enum SessionFeedback: String, CaseIterable {
         case .rough: return .red
         }
     }
+}
+
+// MARK: - Preview
+
+#Preview {
+    SessionSummaryView(
+        summary: SessionSummaryData(
+            sessionDuration: 2400,
+            songsPlayed: 12,
+            songsSkipped: 2,
+            skipRate: 0.167,
+            hrvImproved: true,
+            hrvDelta: 3.5,
+            bestFitSong: (title: "Weightless", artist: "Marconi Union"),
+            averageBPM: 95,
+            sessionQualityScore: 0.82
+        ),
+        onDismiss: {}
+    )
+    .padding()
 }

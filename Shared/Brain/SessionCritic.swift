@@ -153,16 +153,16 @@ public struct SessionCritic: Sendable {
     // MARK: - Weights
 
     /// Weight for BPM adherence in the overall score.
-    private let bpmWeight: Double = 0.3
+    private let bpmWeight = 0.3
 
     /// Weight for energy adherence in the overall score.
-    private let energyWeight: Double = 0.3
+    private let energyWeight = 0.3
 
     /// Weight for phase timing adherence.
-    private let phaseTimingWeight: Double = 0.2
+    private let phaseTimingWeight = 0.2
 
     /// Weight for skip rate penalty.
-    private let skipPenaltyWeight: Double = 0.2
+    private let skipPenaltyWeight = 0.2
 
     public init() {}
 

@@ -49,7 +49,7 @@ final class RealTimeGuardAdjuster: ObservableObject {
 
     // MARK: - Tracking State
 
-    private var recentSkipCount: Int = 0
+    private var recentSkipCount = 0
     private var recentSkipWindow: [Date] = []
     private var lastHeartRate: Double?
     private var heartRateBaseline: Double?
@@ -58,11 +58,11 @@ final class RealTimeGuardAdjuster: ObservableObject {
     // MARK: - Constants
 
     /// Number of skips in 5 minutes to trigger familiarity boost
-    private let skipThreshold: Int = 3
+    private let skipThreshold = 3
     /// HR increase above baseline to trigger BPM reduction
-    private let hrRiseThreshold: Double = 15.0
+    private let hrRiseThreshold = 15.0
     /// Maximum number of HR readings to keep in trend
-    private let maxTrendSize: Int = 10
+    private let maxTrendSize = 10
     /// Skip window in seconds (5 minutes)
     private let skipWindowSeconds: TimeInterval = 300
 
@@ -139,7 +139,7 @@ final class RealTimeGuardAdjuster: ObservableObject {
 
     /// Current motion intensity level (0.0 = stationary, 1.0 = vigorous).
     /// Updated from accelerometer data via BiometricSignal.accelerometerMagnitude.
-    private(set) var motionIntensity: Double = 0.0
+    private(set) var motionIntensity = 0.0
 
     /// Records the current motion intensity from accelerometer data.
     /// When motionIntensity > 0.5, biometric credit weights (HRV/HR) should be

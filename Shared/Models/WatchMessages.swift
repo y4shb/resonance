@@ -7,15 +7,50 @@
 
 import Foundation
 
+// MARK: - Bookmark Trigger Source
+
+enum BookmarkTriggerSource: String, Codable, Sendable {
+    case watchDoubleTap = "watch_double_tap"
+    case watchButton = "watch_button"
+    case iphoneShake = "iphone_shake"
+    case iphoneButton = "iphone_button"
+}
+
+// MARK: - Bookmark Trigger Packet (Watch -> Phone)
+
+struct BookmarkTriggerPacket: Codable, Sendable {
+    let id: UUID
+    let timestamp: Date
+    let triggerSource: String
+    let heartRate: Double?
+    let hrv: Double?
+
+    init(
+        id: UUID = UUID(),
+        timestamp: Date = Date(),
+        triggerSource: String,
+        heartRate: Double? = nil,
+        hrv: Double? = nil
+    ) {
+        self.id = id
+        self.timestamp = timestamp
+        self.triggerSource = triggerSource
+        self.heartRate = heartRate
+        self.hrv = hrv
+    }
+}
+
 // MARK: - Top-Level Message Envelope
 
-enum WatchMessage: Codable {
+enum WatchMessage: Codable, Sendable {
     // Watch -> Phone
     case biometricUpdate(BiometricPacket)
     case moodInput(MoodPacket)
     case playbackCommand(PlaybackCommand)
     case crownAdjustment(CrownAdjustment)
     case requestNowPlaying
+    case bookmarkTrigger(BookmarkTriggerPacket)
+    case overnightTemperature(OvernightTemperaturePacket)
 
     // Phone -> Watch
     case nowPlayingUpdate(NowPlayingPacket)
@@ -25,14 +60,14 @@ enum WatchMessage: Codable {
 
 // MARK: - Watch -> Phone
 
-struct PlaybackCommand: Codable {
-    enum Command: String, Codable {
+struct PlaybackCommand: Codable, Sendable {
+    enum Command: String, Codable, Sendable {
         case play, pause, skip, previous
     }
     let command: Command
 }
 
-struct BiometricPacket: Codable {
+struct BiometricPacket: Codable, Sendable {
     let heartRate: Double?
     let hrv: Double?
     let isStationary: Bool
@@ -43,10 +78,32 @@ struct BiometricPacket: Codable {
     /// Workstream 2.2: Used for motion-aware reward gating.
     let accelerometerMagnitude: Double?
 
-    // Backward-compatible decoding: accelerometerMagnitude may be absent in older packets.
+    // MARK: - Emotion Detection Fields (all optional for backward compatibility)
+
+    /// RMS of user acceleration magnitude over the sampling window (g).
+    let movementMagnitude: Double?
+    /// Standard deviation of acceleration magnitude.
+    let movementVariability: Double?
+    /// Shannon entropy of acceleration magnitude (binned).
+    let movementEntropy: Double?
+    /// RMS of gyroscope rotation rate (rad/s).
+    let rotationMagnitude: Double?
+    /// Acceleration peaks per second above threshold.
+    let gestureFrequency: Double?
+    /// Classified emotional state from Watch-side fuzzy classifier.
+    let emotionalState: String?
+    /// Confidence of the emotional state classification (0.0 - 1.0).
+    let emotionConfidence: Double?
+    /// Watch capability tier (full, motion, basic).
+    let capabilityTier: String?
+
+    // Backward-compatible decoding: new fields may be absent in older packets.
     private enum CodingKeys: String, CodingKey {
         case heartRate, hrv, isStationary, isInWorkout, workoutType, timestamp
         case accelerometerMagnitude
+        case movementMagnitude, movementVariability, movementEntropy
+        case rotationMagnitude, gestureFrequency
+        case emotionalState, emotionConfidence, capabilityTier
     }
 
     init(
@@ -56,7 +113,15 @@ struct BiometricPacket: Codable {
         isInWorkout: Bool = false,
         workoutType: String? = nil,
         timestamp: Date = Date(),
-        accelerometerMagnitude: Double? = nil
+        accelerometerMagnitude: Double? = nil,
+        movementMagnitude: Double? = nil,
+        movementVariability: Double? = nil,
+        movementEntropy: Double? = nil,
+        rotationMagnitude: Double? = nil,
+        gestureFrequency: Double? = nil,
+        emotionalState: String? = nil,
+        emotionConfidence: Double? = nil,
+        capabilityTier: String? = nil
     ) {
         self.heartRate = heartRate
         self.hrv = hrv
@@ -65,6 +130,14 @@ struct BiometricPacket: Codable {
         self.workoutType = workoutType
         self.timestamp = timestamp
         self.accelerometerMagnitude = accelerometerMagnitude
+        self.movementMagnitude = movementMagnitude
+        self.movementVariability = movementVariability
+        self.movementEntropy = movementEntropy
+        self.rotationMagnitude = rotationMagnitude
+        self.gestureFrequency = gestureFrequency
+        self.emotionalState = emotionalState
+        self.emotionConfidence = emotionConfidence
+        self.capabilityTier = capabilityTier
     }
 
     init(from decoder: Decoder) throws {
@@ -76,23 +149,46 @@ struct BiometricPacket: Codable {
         workoutType = try c.decodeIfPresent(String.self, forKey: .workoutType)
         timestamp = try c.decode(Date.self, forKey: .timestamp)
         accelerometerMagnitude = try c.decodeIfPresent(Double.self, forKey: .accelerometerMagnitude)
+        movementMagnitude = try c.decodeIfPresent(Double.self, forKey: .movementMagnitude)
+        movementVariability = try c.decodeIfPresent(Double.self, forKey: .movementVariability)
+        movementEntropy = try c.decodeIfPresent(Double.self, forKey: .movementEntropy)
+        rotationMagnitude = try c.decodeIfPresent(Double.self, forKey: .rotationMagnitude)
+        gestureFrequency = try c.decodeIfPresent(Double.self, forKey: .gestureFrequency)
+        emotionalState = try c.decodeIfPresent(String.self, forKey: .emotionalState)
+        emotionConfidence = try c.decodeIfPresent(Double.self, forKey: .emotionConfidence)
+        capabilityTier = try c.decodeIfPresent(String.self, forKey: .capabilityTier)
     }
 }
 
-struct MoodPacket: Codable {
+// MARK: - Overnight Temperature Packet (Watch -> Phone)
+
+struct OvernightTemperaturePacket: Codable, Sendable {
+    /// Deviation from multi-night baseline (Celsius).
+    let deviation: Double
+    /// Multi-night baseline temperature (Celsius).
+    let baseline: Double
+    /// Latest overnight reading (Celsius).
+    let latestReading: Double
+    /// Trend direction: "rising", "falling", or "stable".
+    let trend: String
+    /// When this measurement was taken.
+    let timestamp: Date
+}
+
+struct MoodPacket: Codable, Sendable {
     let moodLevel: Int        // 1-5 scale
     let energyLevel: Int      // 1-5 scale
     let timestamp: Date
 }
 
-struct CrownAdjustment: Codable {
+struct CrownAdjustment: Codable, Sendable {
     let delta: Double         // -1.0 to 1.0
     let adjustmentType: String // "intensity", "energy"
 }
 
 // MARK: - Phone -> Watch
 
-struct NowPlayingPacket: Codable {
+struct NowPlayingPacket: Codable, Sendable {
     let songTitle: String
     let artistName: String
     let artworkData: Data?    // Compressed thumbnail
@@ -102,7 +198,7 @@ struct NowPlayingPacket: Codable {
     let explanation: String?  // Why this song was chosen
 }
 
-struct StatePacket: Codable {
+struct StatePacket: Codable, Sendable {
     let energyLevel: Double   // 0.0 - 1.0
     let calmLevel: Double     // 0.0 - 1.0
     let focusLevel: Double    // 0.0 - 1.0
@@ -111,7 +207,7 @@ struct StatePacket: Codable {
     let timestamp: Date
 }
 
-struct ComplicationData: Codable {
+struct ComplicationData: Codable, Sendable {
     let songTitle: String?
     let artistName: String?
     let stateEmoji: String    // e.g. "🎵", "🏃", "🧘"
@@ -141,7 +237,7 @@ extension WatchMessage {
         case .nowPlayingUpdate: return Self.contextKeyNowPlaying
         case .stateUpdate: return Self.contextKeyState
         case .complicationUpdate: return Self.contextKeyComplication
-        case .biometricUpdate, .moodInput, .playbackCommand, .crownAdjustment, .requestNowPlaying:
+        case .biometricUpdate, .moodInput, .playbackCommand, .crownAdjustment, .requestNowPlaying, .bookmarkTrigger, .overnightTemperature:
             return nil
         }
     }
@@ -192,7 +288,7 @@ extension WatchMessage {
     }
 }
 
-enum WatchMessageError: Error, LocalizedError, Equatable {
+enum WatchMessageError: Error, LocalizedError, Equatable, Sendable {
     case encodingFailed
     case decodingFailed
     case unknownMessageType

@@ -62,7 +62,6 @@ struct ResonanceFocusFilter: SetFocusFilterIntent {
         defaults?.set(maxBPM, forKey: "focusFilter.maxBPM")
         defaults?.set(preferFamiliar, forKey: "focusFilter.preferFamiliar")
         defaults?.set(true, forKey: "focusFilter.isActive")
-        defaults?.synchronize()
 
         logInfo(
             "Focus Filter activated: preset=\(sessionPreset.rawValue), maxBPM=\(maxBPM), familiar=\(preferFamiliar)",
@@ -94,7 +93,6 @@ struct StartResonanceSessionIntent: AppIntent {
         let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier)
         defaults?.set(sessionType.rawValue, forKey: "focusFilter.activePreset")
         defaults?.set(true, forKey: "focusFilter.isActive")
-        defaults?.synchronize()
 
         return .result(dialog: "Starting \(sessionType.rawValue) session in Resonance.")
     }
@@ -113,7 +111,6 @@ struct SkipTrackIntent: AppIntent {
     func perform() async throws -> some IntentResult & ProvidesDialog {
         let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier)
         defaults?.set(true, forKey: "siri.skipRequested")
-        defaults?.synchronize()
         return .result(dialog: "Skipping song in Resonance.")
     }
 }

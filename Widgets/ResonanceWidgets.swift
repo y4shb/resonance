@@ -75,7 +75,7 @@ struct WidgetSetMoodIntent: AppIntent {
 // MARK: - Now Playing Widget
 
 struct NowPlayingWidget: Widget {
-    let kind: String = "NowPlayingWidget"
+    let kind = "NowPlayingWidget"
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: NowPlayingProvider()) { entry in
@@ -278,7 +278,7 @@ struct NowPlayingWidgetView: View {
 // MARK: - State Widget
 
 struct StateWidget: Widget {
-    let kind: String = "StateWidget"
+    let kind = "StateWidget"
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: StateProvider()) { entry in

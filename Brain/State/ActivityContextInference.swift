@@ -60,31 +60,10 @@ extension StateEngine {
             }
         }
 
-        // Priority 4: Time-based defaults
-        return inferContextFromTimeOfDay(isWeekend: isWeekend)
-    }
-
-    /// Time-of-day fallback for activity context inference.
-    private func inferContextFromTimeOfDay(isWeekend: Bool) -> ActivityContext {
+        // Priority 4: Circadian-aware time-based defaults
+        // Uses learned wake/sleep landmarks when available, static fallback otherwise
         let hour = Calendar.current.component(.hour, from: Date())
-
-        if hour >= 22 || hour < 5 {
-            return .preSleep
-        }
-        if hour >= 5 && hour < 7 {
-            return .morning
-        }
-        if hour >= 7 && hour < 9 {
-            return isWeekend ? .morning : .commute
-        }
-        if hour >= 9 && hour < 17 {
-            return isWeekend ? .relaxation : .work
-        }
-        if hour >= 17 && hour < 19 {
-            return isWeekend ? .relaxation : .commute
-        }
-        // 19:00-22:00
-        return .relaxation
+        return circadianManager.circadianActivityContext(forHour: hour, isWeekend: isWeekend)
     }
 }
 

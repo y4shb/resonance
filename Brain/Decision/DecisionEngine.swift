@@ -30,6 +30,9 @@ struct DecisionResult {
 
     /// How many candidates were filtered out.
     let candidatesFiltered: Int
+
+    /// Biometric-adaptive crossfade parameters for the transition into this song.
+    let crossfadeParameters: CrossfadeParameters
 }
 
 // MARK: - Decision Engine
@@ -45,7 +48,7 @@ final class DecisionEngine: ObservableObject {
     @Published private(set) var lastDecision: DecisionResult?
 
     /// Whether a decision is currently being computed.
-    @Published private(set) var isDeciding: Bool = false
+    @Published private(set) var isDeciding = false
 
     // MARK: - Dependencies
 
@@ -56,9 +59,16 @@ final class DecisionEngine: ObservableObject {
     private let explanationGenerator: ExplanationGenerator
     private let effectivenessLearner: EffectivenessLearner
     private let sessionPlanner: SessionPlanner
+    private let biometricCrossfade = BiometricCrossfadeEngine()
 
     /// Real-time guard adjuster for biometric-aware filtering
     var guardAdjuster: RealTimeGuardAdjuster?
+
+    /// Context collector for accessing latest biometric signal. Set externally after init.
+    var contextCollector: ContextCollector?
+
+    /// State engine for resting HR and personal HRV baseline. Set externally after init.
+    var stateEngine: StateEngine?
 
     // MARK: - Session Tracking
 
@@ -80,7 +90,7 @@ final class DecisionEngine: ObservableObject {
     private(set) var currentArc: SessionArc?
 
     /// Number of songs played in the current arc.
-    private(set) var arcSongsPlayed: Int = 0
+    private(set) var arcSongsPlayed = 0
 
     // MARK: - Initialization
 
@@ -121,15 +131,31 @@ final class DecisionEngine: ObservableObject {
 
         let context = persistence.viewContext
 
-        // 1. Fetch candidate songs from the playlist
-        let candidates = fetchCandidateSongs(playlistId: playlistId, in: context)
+        // 1. Fetch candidate songs from the playlist (with optional cross-playlist pool)
+        var candidates = fetchCandidateSongs(playlistId: playlistId, in: context)
 
         guard !candidates.isEmpty else {
             logWarning("DecisionEngine: no candidate songs found in playlist '\(playlistName)'", category: .decisionEngine)
             return nil
         }
 
-        logDebug("DecisionEngine: \(candidates.count) candidate songs loaded", category: .decisionEngine)
+        let primaryCount = candidates.count
+        var crossPlaylistSongIds = Set<UUID>()
+
+        if preferences.allowCrossPlaylistRecommendations {
+            let crossPlaylistCandidates = fetchCrossPlaylistSongs(
+                excludingIds: candidates.compactMap { $0.id },
+                in: context
+            )
+            crossPlaylistSongIds = Set(crossPlaylistCandidates.compactMap { $0.id })
+            candidates.append(contentsOf: crossPlaylistCandidates)
+            logDebug(
+                "DecisionEngine: cross-playlist enabled, added \(crossPlaylistCandidates.count) extra candidates",
+                category: .decisionEngine
+            )
+        }
+
+        logDebug("DecisionEngine: \(candidates.count) candidate songs loaded (\(primaryCount) primary)", category: .decisionEngine)
 
         // Build the decision context
         let candidateIds = candidates.compactMap { $0.id }
@@ -218,6 +244,30 @@ final class DecisionEngine: ObservableObject {
             }
         }
 
+        // 3a. Apply 10% score reduction to cross-playlist candidates
+        if !crossPlaylistSongIds.isEmpty {
+            scores = scores.map { score in
+                guard crossPlaylistSongIds.contains(score.songId) else { return score }
+                return SongScore(
+                    songId: score.songId,
+                    songTitle: score.songTitle,
+                    artistName: score.artistName,
+                    albumName: score.albumName,
+                    bpm: score.bpm,
+                    bpmMatchScore: score.bpmMatchScore,
+                    energyMatchScore: score.energyMatchScore,
+                    familiarityScore: score.familiarityScore,
+                    historicalEffectScore: score.historicalEffectScore,
+                    contextAlignmentScore: score.contextAlignmentScore,
+                    recencyPenalty: score.recencyPenalty,
+                    timeOfDayScore: score.timeOfDayScore,
+                    finalScore: score.finalScore * 0.9,
+                    confidence: score.confidence,
+                    explanationComponents: score.explanationComponents
+                )
+            }.sorted { $0.finalScore > $1.finalScore }
+        }
+
         // 3b. Pass top candidates through EffectivenessLearner for exploration/exploitation
         if !scores.isEmpty {
             let topCount = min(scores.count, 20)
@@ -299,20 +349,71 @@ final class DecisionEngine: ObservableObject {
             selectedScore = scores[0]
         }
 
-        // 5. Generate explanation
-        let explanation = explanationGenerator.generate(
+        // 5. Generate explanation (with cross-playlist attribution if applicable)
+        var explanation = explanationGenerator.generate(
             score: selectedScore,
             state: stateVector,
             isSessionStart: decisionContext.isSessionStart
         )
 
-        // 6. Build result
+        if crossPlaylistSongIds.contains(selectedScore.songId) {
+            let sourcePlaylistName = lookupPlaylistName(for: selectedScore.songId, excluding: playlistId, in: context)
+            let suffix = sourcePlaylistName.map { " (from \($0))" } ?? " (from another playlist)"
+            explanation = SongExplanation(
+                full: explanation.full + suffix,
+                short: explanation.short + suffix,
+                factors: explanation.factors,
+                stateDescription: explanation.stateDescription,
+                needDescription: explanation.needDescription
+            )
+        }
+
+        // 6. Compute biometric-adaptive crossfade parameters
+        let crossfade: CrossfadeParameters
+        if preferences.biometricCrossfadeEnabled {
+            let latestBiometric = contextCollector?.latestBiometric
+            let restingHR = stateEngine?.restingHeartRate
+            let maxHR: Double? = {
+                if let vo2 = stateEngine?.cachedVO2Max, vo2 > 0 {
+                    // Estimate max HR from VO2 Max (Uth et al. formula approximation)
+                    return nil // Fall back to Karvonen default inside engine
+                }
+                return nil
+            }()
+            let hrvBaseline = stateEngine?.personalBaseline.baselineValue
+                ?? PersonalBaseline.populationDefault
+
+            crossfade = biometricCrossfade.computeCrossfadeParameters(
+                biometric: latestBiometric,
+                restingHeartRate: restingHR,
+                maxHeartRate: maxHR,
+                personalHRVBaseline: hrvBaseline,
+                stateVector: stateVector,
+                defaultDuration: preferences.crossfadeDuration
+            )
+            logDebug(
+                "DecisionEngine: crossfade \(crossfade.zone.rawValue) "
+                + "(\(String(format: "%.1f", crossfade.duration))s, "
+                + "conf: \(String(format: "%.2f", crossfade.confidence)))",
+                category: .decisionEngine
+            )
+        } else {
+            crossfade = CrossfadeParameters(
+                duration: preferences.crossfadeDuration,
+                confidence: 0.0,
+                reason: "Biometric crossfade disabled",
+                zone: .unknown
+            )
+        }
+
+        // 7. Build result
         let result = DecisionResult(
             songId: selectedScore.songId,
             score: selectedScore,
             explanation: explanation,
             candidatesConsidered: filterResult.totalCandidates,
-            candidatesFiltered: filterResult.rejected.count
+            candidatesFiltered: filterResult.rejected.count,
+            crossfadeParameters: crossfade
         )
 
         // Update session tracking
@@ -377,6 +478,7 @@ final class DecisionEngine: ObservableObject {
         lastDecision = nil
         currentArc = nil
         arcSongsPlayed = 0
+        biometricCrossfade.reset()
         logInfo("DecisionEngine: session reset", category: .decisionEngine)
     }
 
@@ -408,6 +510,52 @@ final class DecisionEngine: ObservableObject {
             logError("DecisionEngine: failed to fetch candidate songs", error: error, category: .decisionEngine)
             return []
         }
+    }
+
+    /// Fetches songs from other playlists that are not in the primary candidate set.
+    /// Only returns songs with a minimum confidence level to ensure quality cross-playlist picks.
+    private func fetchCrossPlaylistSongs(
+        excludingIds: [UUID],
+        in context: NSManagedObjectContext
+    ) -> [Song] {
+        let request = NSFetchRequest<Song>(entityName: "Song")
+        request.predicate = NSPredicate(format: "NOT (id IN %@) AND confidenceLevel >= 0.3", excludingIds as CVarArg)
+        request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
+        request.fetchLimit = 200
+        request.fetchBatchSize = 50
+
+        do {
+            return try context.fetch(request)
+        } catch {
+            logError("DecisionEngine: failed to fetch cross-playlist songs", error: error, category: .decisionEngine)
+            return []
+        }
+    }
+
+    /// Looks up the name of a playlist that contains the given song, excluding the active playlist.
+    private func lookupPlaylistName(
+        for songId: UUID,
+        excluding activePlaylistId: UUID,
+        in context: NSManagedObjectContext
+    ) -> String? {
+        let request = NSFetchRequest<Song>(entityName: "Song")
+        request.predicate = NSPredicate(format: "id == %@", songId as CVarArg)
+        request.fetchLimit = 1
+        request.relationshipKeyPathsForPrefetching = ["playlists"]
+
+        guard let song = try? context.fetch(request).first,
+              let playlists = song.playlists as? Set<NSManagedObject> else {
+            return nil
+        }
+
+        for playlist in playlists {
+            if let plId = playlist.value(forKey: "id") as? UUID,
+               plId != activePlaylistId,
+               let name = playlist.value(forKey: "name") as? String {
+                return name
+            }
+        }
+        return nil
     }
 
     /// Fetches the last played Song object by its UUID.
@@ -481,7 +629,13 @@ final class DecisionEngine: ObservableObject {
             score: best,
             explanation: explanation,
             candidatesConsidered: candidates.count,
-            candidatesFiltered: 0
+            candidatesFiltered: 0,
+            crossfadeParameters: CrossfadeParameters(
+                duration: context.preferences.crossfadeDuration,
+                confidence: 0.0,
+                reason: "Fallback crossfade (user preference)",
+                zone: .unknown
+            )
         )
 
         recordSelection(songId: best.songId, artistName: best.artistName)

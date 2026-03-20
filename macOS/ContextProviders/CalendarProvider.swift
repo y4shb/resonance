@@ -15,7 +15,7 @@ import Combine
 /// Provides calendar event context from macOS Calendar.
 final class CalendarProvider: ObservableObject {
 
-    @Published private(set) var hasOngoingMeeting: Bool = false
+    @Published private(set) var hasOngoingMeeting = false
     @Published private(set) var minutesUntilNextEvent: Double?
     @Published private(set) var nextEventType: CalendarEventType?
 
@@ -33,9 +33,15 @@ final class CalendarProvider: ObservableObject {
 
     /// Requests calendar access and starts polling.
     func startMonitoring() {
+        stopMonitoring()
         Task {
             do {
-                let granted = try await eventStore.requestFullAccessToEvents()
+                let granted: Bool
+                if #available(macOS 14.0, *) {
+                    granted = try await eventStore.requestFullAccessToEvents()
+                } else {
+                    granted = try await eventStore.requestAccess(to: .event)
+                }
                 await MainActor.run {
                     self.isAuthorized = granted
                     if granted {
@@ -68,7 +74,9 @@ final class CalendarProvider: ObservableObject {
         guard isAuthorized else { return }
 
         let now = Date()
-        let lookAheadEnd = Calendar.current.date(byAdding: .hour, value: 2, to: now)!
+        guard let lookAheadEnd = Calendar.current.date(byAdding: .hour, value: 2, to: now) else {
+            return
+        }
 
         let predicate = eventStore.predicateForEvents(
             withStart: now.addingTimeInterval(-300), // 5 min ago (catch ongoing)

@@ -221,3 +221,23 @@ struct StatPill: View {
         }
     }
 }
+
+// MARK: - Preview
+
+#Preview {
+    let now = Date()
+    let sampleData: [CorrelationDataPoint] = [
+        CorrelationDataPoint(timestamp: now.addingTimeInterval(-3600), value: 120, series: .songBPM),
+        CorrelationDataPoint(timestamp: now.addingTimeInterval(-1800), value: 128, series: .songBPM),
+        CorrelationDataPoint(timestamp: now, value: 110, series: .songBPM),
+        CorrelationDataPoint(timestamp: now.addingTimeInterval(-3600), value: 72, series: .heartRate),
+        CorrelationDataPoint(timestamp: now.addingTimeInterval(-1800), value: 85, series: .heartRate),
+        CorrelationDataPoint(timestamp: now, value: 68, series: .heartRate),
+        CorrelationDataPoint(timestamp: now.addingTimeInterval(-3600), value: 45, series: .hrvTrend),
+        CorrelationDataPoint(timestamp: now.addingTimeInterval(-1800), value: 38, series: .hrvTrend),
+        CorrelationDataPoint(timestamp: now, value: 50, series: .hrvTrend),
+    ]
+    return HealthCorrelationChart(dataPoints: sampleData, sessionDuration: 3600)
+        .frame(height: 300)
+        .padding()
+}

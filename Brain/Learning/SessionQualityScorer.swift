@@ -23,15 +23,15 @@ struct SessionQualityScorer {
     // MARK: - Score Weights
 
     /// Weight for skip rate component
-    static let skipWeight: Double = 0.20
+    static let skipWeight = 0.20
     /// Weight for HRV response component
-    static let hrvWeight: Double = 0.25
+    static let hrvWeight = 0.25
     /// Weight for engagement (listen percentage) component
-    static let engagementWeight: Double = 0.20
+    static let engagementWeight = 0.20
     /// Weight for sleep correlation component
-    static let sleepWeight: Double = 0.15
+    static let sleepWeight = 0.15
     /// Weight for arc adherence component (Workstream 2.5)
-    static let arcWeight: Double = 0.20
+    static let arcWeight = 0.20
 
     // MARK: - Result
 
@@ -132,10 +132,16 @@ struct SessionQualityScorer {
 
     /// Tracks metrics for an in-progress session that hasn't been persisted yet.
     /// Used by LearningStore to provide real-time session quality feedback.
-    final class RunningSession {
-        private(set) var totalSongs: Int = 0
-        private(set) var totalSkips: Int = 0
-        private(set) var totalListenPercentage: Double = 0.0
+    ///
+    /// This is a value type (struct) so that mutations automatically trigger
+    /// `objectWillChange` on the owning `@Published` property in `LearningStore`.
+    /// A previous `final class` implementation silently swallowed mutations
+    /// because `@Published` only fires on reference reassignment, not on
+    /// internal property changes of a reference type (BRAIN HIGH-4).
+    struct RunningSession {
+        private(set) var totalSongs = 0
+        private(set) var totalSkips = 0
+        private(set) var totalListenPercentage = 0.0
         private(set) var startingHRV: Double?
         private(set) var latestHRV: Double?
         private(set) var startTime: Date = Date()
@@ -187,7 +193,7 @@ struct SessionQualityScorer {
         }
 
         /// Record a completed song in this session.
-        func recordSong(wasSkipped: Bool, listenPercentage: Double, currentHRV: Double?) {
+        mutating func recordSong(wasSkipped: Bool, listenPercentage: Double, currentHRV: Double?) {
             totalSongs += 1
             if wasSkipped { totalSkips += 1 }
             totalListenPercentage += listenPercentage
@@ -200,20 +206,20 @@ struct SessionQualityScorer {
 
         /// Records the actual energy level of a song that was just played.
         /// Used by arc adherence scoring (Workstream 2.5).
-        func recordSongEnergy(_ energy: Double) {
+        mutating func recordSongEnergy(_ energy: Double) {
             actualEnergies.append(clamp(energy, 0.0, 1.0))
         }
 
         /// Sets the planned energy arc for this session.
         /// Called when a session intent is set or when the DecisionEngine
         /// pre-computes the next N songs.
-        func setPlannedArc(_ arc: [Double]) {
+        mutating func setPlannedArc(_ arc: [Double]) {
             plannedArc = arc.map { clamp($0, 0.0, 1.0) }
         }
 
         /// Sets the planned arc from a SessionArc (WS-4).
         /// Extracts the energy trajectory and sets it as the planned arc.
-        func setSessionArc(_ sessionArc: SessionArc) {
+        mutating func setSessionArc(_ sessionArc: SessionArc) {
             plannedArc = sessionArc.energyTrajectory.map { $0.energy }
         }
 
@@ -261,7 +267,7 @@ struct SessionQualityScorer {
         }
 
         /// Reset for a new session.
-        func reset() {
+        mutating func reset() {
             totalSongs = 0
             totalSkips = 0
             totalListenPercentage = 0.0

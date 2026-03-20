@@ -56,6 +56,10 @@ public struct StateVector: Codable, Equatable, Sendable {
     /// Data sources that contributed
     public var dataSources: Set<DataSource>
 
+    /// Watch-side emotional state classification, if available.
+    /// Stored as raw String for cross-target compatibility (Widgets target doesn't include EmotionalState).
+    public var emotionalStateRaw: String?
+
     // MARK: - Initialization
 
     public init(
@@ -68,7 +72,8 @@ public struct StateVector: Codable, Equatable, Sendable {
         inferredNeed: MusicNeed = .maintain,
         timestamp: Date = Date(),
         confidence: Double = 0.0,
-        dataSources: Set<DataSource> = []
+        dataSources: Set<DataSource> = [],
+        emotionalStateRaw: String? = nil
     ) {
         self.arousal = arousal
         self.energy = energy
@@ -80,6 +85,7 @@ public struct StateVector: Codable, Equatable, Sendable {
         self.timestamp = timestamp
         self.confidence = confidence
         self.dataSources = dataSources
+        self.emotionalStateRaw = emotionalStateRaw
     }
 
     // MARK: - Factory
@@ -157,6 +163,10 @@ public enum DataSource: String, Codable, CaseIterable, Sendable {
     case manualMoodInput
     case historicalPattern
     case crownInput
+    case circadianProfile
+    case watchMotionDetail
+    case skinTemperature
+    case emotionClassification
 
     public var displayName: String {
         switch self {
@@ -169,6 +179,10 @@ public enum DataSource: String, Codable, CaseIterable, Sendable {
         case .manualMoodInput: return "Manual Input"
         case .historicalPattern: return "Historical Pattern"
         case .crownInput: return "Crown Input"
+        case .circadianProfile: return "Circadian Profile"
+        case .watchMotionDetail: return "Watch Motion Detail"
+        case .skinTemperature: return "Skin Temperature"
+        case .emotionClassification: return "Emotion Classification"
         }
     }
 }

@@ -31,6 +31,9 @@ protocol WatchConnectivityManagerProtocol: AnyObject {
     var moodInputs: AnyPublisher<MoodPacket, Never> { get }
     var playbackCommands: AnyPublisher<PlaybackCommand, Never> { get }
     var crownAdjustments: AnyPublisher<CrownAdjustment, Never> { get }
+    var bookmarkTriggers: AnyPublisher<BookmarkTriggerPacket, Never> { get }
+    var overnightTemperatureUpdates: AnyPublisher<OvernightTemperaturePacket, Never> { get }
+    var nowPlayingRequests: AnyPublisher<Void, Never> { get }
 
     // Application Context (persistent)
     func updateApplicationContext(_ context: [String: Any]) throws
@@ -66,6 +69,8 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WatchConnectiv
     private let playbackCommandSubject = PassthroughSubject<PlaybackCommand, Never>()
     private let crownAdjustmentSubject = PassthroughSubject<CrownAdjustment, Never>()
     private let nowPlayingRequestSubject = PassthroughSubject<Void, Never>()
+    private let bookmarkTriggerSubject = PassthroughSubject<BookmarkTriggerPacket, Never>()
+    private let overnightTemperatureSubject = PassthroughSubject<OvernightTemperaturePacket, Never>()
 
     var biometricUpdates: AnyPublisher<BiometricPacket, Never> {
         biometricSubject.eraseToAnyPublisher()
@@ -85,6 +90,14 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WatchConnectiv
 
     var nowPlayingRequests: AnyPublisher<Void, Never> {
         nowPlayingRequestSubject.eraseToAnyPublisher()
+    }
+
+    var bookmarkTriggers: AnyPublisher<BookmarkTriggerPacket, Never> {
+        bookmarkTriggerSubject.eraseToAnyPublisher()
+    }
+
+    var overnightTemperatureUpdates: AnyPublisher<OvernightTemperaturePacket, Never> {
+        overnightTemperatureSubject.eraseToAnyPublisher()
     }
 
     // MARK: - Private Properties
@@ -332,6 +345,18 @@ final class WatchConnectivityManager: NSObject, ObservableObject, WatchConnectiv
         case .requestNowPlaying:
             logInfo("Watch requested current NowPlaying state", category: .watchConnectivity)
             nowPlayingRequestSubject.send(())
+
+        case .bookmarkTrigger(let packet):
+            logInfo("Received bookmark trigger from Watch: \(packet.triggerSource)", category: .watchConnectivity)
+            bookmarkTriggerSubject.send(packet)
+
+        case .overnightTemperature(let packet):
+            logInfo(
+                "Received overnight temperature from Watch: "
+                + "deviation=\(String(format: "%+.2f", packet.deviation))C, trend=\(packet.trend)",
+                category: .watchConnectivity
+            )
+            overnightTemperatureSubject.send(packet)
 
         case .nowPlayingUpdate, .stateUpdate, .complicationUpdate:
             // These are phone -> watch messages; should not be received on iOS

@@ -34,6 +34,15 @@ struct AudioFeaturePredictionInput {
 
     /// Album title (for album-level coherence)
     let albumTitle: String
+
+    /// Number of genre tags associated with this song
+    let genreCount: Int
+
+    /// Track number on the album (1-based)
+    let trackNumber: Int
+
+    /// Whether the track has an explicit content rating
+    let isExplicit: Bool
 }
 
 // MARK: - Prediction Output
@@ -108,6 +117,9 @@ final class AudioFeaturePredictor {
                 "genre": MLFeatureValue(string: input.genre),
                 "duration": MLFeatureValue(double: input.durationSeconds),
                 "year": MLFeatureValue(double: Double(input.releaseYear ?? 2020)),
+                "genreCount": MLFeatureValue(double: Double(input.genreCount)),
+                "trackNumber": MLFeatureValue(double: Double(input.trackNumber)),
+                "isExplicit": MLFeatureValue(double: input.isExplicit ? 1.0 : 0.0),
             ])
 
             let prediction = try model.prediction(from: featureProvider)
@@ -132,13 +144,14 @@ final class AudioFeaturePredictor {
 
     // MARK: - Enhanced Heuristics (Fallback)
 
-    /// Enhanced genre heuristics that also consider duration and era.
+    /// Enhanced genre heuristics that also consider duration, era, track position, and explicitness.
     private func predictWithEnhancedHeuristics(input: AudioFeaturePredictionInput) -> AudioFeaturePrediction {
         let genreFeatures = genreLookup(input.genre)
 
         // Duration-based adjustments
         var bpm = genreFeatures.bpm
         var energy = genreFeatures.energy
+        var valence = genreFeatures.valence
 
         // Shorter tracks tend to be more energetic (singles vs album tracks)
         if input.durationSeconds < 180 {
@@ -160,10 +173,21 @@ final class AudioFeaturePredictor {
             }
         }
 
+        // Track number adjustments: opening tracks (1-2) tend to be higher energy singles
+        if input.trackNumber >= 1 && input.trackNumber <= 2 {
+            energy = min(1.0, energy + 0.04)
+        }
+
+        // Explicit tracks tend toward slightly higher energy and edgier valence
+        if input.isExplicit {
+            energy = min(1.0, energy + 0.03)
+            valence = max(0.0, valence - 0.03)
+        }
+
         return AudioFeaturePrediction(
             bpm: bpm,
             energy: energy,
-            valence: genreFeatures.valence,
+            valence: valence,
             instrumentalness: genreFeatures.instrumentalness,
             confidence: 0.45  // Slightly better than raw genre lookup (0.4)
         )

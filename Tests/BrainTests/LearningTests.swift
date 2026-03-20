@@ -142,7 +142,7 @@ final class SessionQualityScorerTests: XCTestCase {
     }
 
     func test_runningSession_tracksMetrics() {
-        let session = SessionQualityScorer.RunningSession()
+        var session = SessionQualityScorer.RunningSession()
         session.recordSong(wasSkipped: false, listenPercentage: 0.9, currentHRV: 50.0)
         session.recordSong(wasSkipped: true, listenPercentage: 0.1, currentHRV: 55.0)
         session.recordSong(wasSkipped: false, listenPercentage: 0.8, currentHRV: 52.0)
