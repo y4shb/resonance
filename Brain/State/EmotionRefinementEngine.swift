@@ -149,13 +149,12 @@ internal final class EmotionRefinementEngine {
         }
 
         // Stress prior: rising trend suggests elevated stress
-        let trend = TemperatureTrend(rawValue: packet.trend) ?? .stable
-        switch trend {
-        case .rising:
+        switch packet.trend {
+        case "rising":
             temperatureStressPrior = StressPriors.risingStress
-        case .falling:
+        case "falling":
             temperatureStressPrior = StressPriors.fallingRelief
-        case .stable:
+        default:
             temperatureStressPrior = 0.0
         }
 

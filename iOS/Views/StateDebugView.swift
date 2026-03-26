@@ -113,6 +113,10 @@ struct StateDebugView: View {
         case .manualMoodInput: return "hand.tap"
         case .historicalPattern: return "chart.line.uptrend.xyaxis"
         case .crownInput: return "digitalcrown.horizontal.arrow.counterclockwise"
+        case .circadianProfile: return "moon.stars"
+        case .watchMotionDetail: return "applewatch.radiowaves.left.and.right"
+        case .skinTemperature: return "thermometer.medium"
+        case .emotionClassification: return "brain.head.profile"
         }
     }
 }

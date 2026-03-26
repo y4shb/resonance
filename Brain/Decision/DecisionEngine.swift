@@ -205,8 +205,14 @@ final class DecisionEngine: ObservableObject {
             )
         }
 
-        // Initialize session arc on first song or context change (WS-4)
-        if currentArc == nil || decisionContext.isSessionStart {
+        // Initialize session arc on first song or context change (WS-4).
+        // D1 fix: When a mood trajectory is active (from MoodTabView),
+        // use planTrajectoryArc so the session arc follows the user's
+        // intended mood journey rather than the default context-based plan.
+        if let trajectory = stateEngine?.moodTrajectory {
+            currentArc = sessionPlanner.planTrajectoryArc(trajectory: trajectory)
+            arcSongsPlayed = 0
+        } else if currentArc == nil || decisionContext.isSessionStart {
             currentArc = sessionPlanner.planSession(
                 currentState: stateVector, targetContext: stateVector.context, estimatedDuration: 30)
             arcSongsPlayed = 0

@@ -308,11 +308,14 @@ public struct SessionPlanner: Sendable {
         let targetBPM = estimateBPMFromEnergy(trajectory.targetEnergy)
 
         // Phase 1: Match -- meet the user where they are
+        let matchBPMLow = clamp(currentBPM - 5, 50, 200)
+        let matchBPMHigh = clamp(currentBPM + 5, 50, 200)
+        let matchEnergyLow = clamp(trajectory.currentEnergy - 0.05, 0, 1)
+        let matchEnergyHigh = clamp(trajectory.currentEnergy + 0.05, 0, 1)
         let matchPhase = ArcPhase(
             phase: .match,
-            targetBPMRange: clamp(currentBPM - 5, 50, 200)...clamp(currentBPM + 5, 50, 200),
-            targetEnergyRange: clamp(trajectory.currentEnergy - 0.05, 0, 1)
-                ...clamp(trajectory.currentEnergy + 0.05, 0, 1),
+            targetBPMRange: matchBPMLow...matchBPMHigh,
+            targetEnergyRange: matchEnergyLow...matchEnergyHigh,
             songCount: trajectory.gapMagnitude > 0.3 ? 2 : 1
         )
 
@@ -333,31 +336,39 @@ public struct SessionPlanner: Sendable {
             return (targetBPM - currentBPM) / Double(shiftSongCount)
         }()
 
+        let shiftBPMLow = clamp(min(currentBPM, targetBPM) - 5, 50, 200)
+        let shiftBPMHigh = clamp(max(midBPM, targetBPM) + 5, 50, 200)
+        let shiftEnergyLow = clamp(min(trajectory.currentEnergy, trajectory.targetEnergy), 0, 1)
+        let shiftEnergyHigh = clamp(max(midEnergy, trajectory.targetEnergy), 0, 1)
         let shiftPhase = ArcPhase(
             phase: .shift,
-            targetBPMRange: clamp(min(currentBPM, targetBPM) - 5, 50, 200)
-                ...clamp(max(midBPM, targetBPM) + 5, 50, 200),
-            targetEnergyRange: clamp(min(trajectory.currentEnergy, trajectory.targetEnergy), 0, 1)
-                ...clamp(max(midEnergy, trajectory.targetEnergy), 0, 1),
+            targetBPMRange: shiftBPMLow...shiftBPMHigh,
+            targetEnergyRange: shiftEnergyLow...shiftEnergyHigh,
             songCount: shiftSongCount,
             bpmDeltaPerSong: bpmDelta
         )
 
         // Phase 3: Arrive -- land on the target
+        let arriveBPMLow = clamp(targetBPM - 5, 50, 200)
+        let arriveBPMHigh = clamp(targetBPM + 5, 50, 200)
+        let arriveEnergyLow = clamp(trajectory.targetEnergy - 0.05, 0, 1)
+        let arriveEnergyHigh = clamp(trajectory.targetEnergy + 0.05, 0, 1)
         let arrivePhase = ArcPhase(
             phase: .arrive,
-            targetBPMRange: clamp(targetBPM - 5, 50, 200)...clamp(targetBPM + 5, 50, 200),
-            targetEnergyRange: clamp(trajectory.targetEnergy - 0.05, 0, 1)
-                ...clamp(trajectory.targetEnergy + 0.05, 0, 1),
+            targetBPMRange: arriveBPMLow...arriveBPMHigh,
+            targetEnergyRange: arriveEnergyLow...arriveEnergyHigh,
             songCount: 1
         )
 
         // Phase 4: Sustain -- hold at target
+        let sustainBPMLow = clamp(targetBPM - 10, 50, 200)
+        let sustainBPMHigh = clamp(targetBPM + 10, 50, 200)
+        let sustainEnergyLow = clamp(trajectory.targetEnergy - 0.1, 0, 1)
+        let sustainEnergyHigh = clamp(trajectory.targetEnergy + 0.1, 0, 1)
         let sustainPhase = ArcPhase(
             phase: .sustain,
-            targetBPMRange: clamp(targetBPM - 10, 50, 200)...clamp(targetBPM + 10, 50, 200),
-            targetEnergyRange: clamp(trajectory.targetEnergy - 0.1, 0, 1)
-                ...clamp(trajectory.targetEnergy + 0.1, 0, 1),
+            targetBPMRange: sustainBPMLow...sustainBPMHigh,
+            targetEnergyRange: sustainEnergyLow...sustainEnergyHigh,
             songCount: 4
         )
 

@@ -3,23 +3,31 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 63;
 	objects = {
 
 /* Begin PBXBuildFile section */
+		014006B0173A88F8298E21E8 /* OvernightTemperatureSensor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F176AA70C080735B2D904E9D /* OvernightTemperatureSensor.swift */; };
 		0157D1CC9BBA2B61E3086C6A /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5486784FF7066093E97EB3E0 /* Constants.swift */; };
 		0248D52CFC2DB705C1DA6BF5 /* UIImage+DominantColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 601843871163110F8FA6B0CB /* UIImage+DominantColor.swift */; };
 		0263AB879269734DFD657732 /* EffectivenessLearner.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9E801664F3E7327A481347F /* EffectivenessLearner.swift */; };
 		043C64226683F133E4FFDBCF /* PlaylistRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0150D2F0A1081187000AF6F7 /* PlaylistRepository.swift */; };
 		04CECD87AC32A5302CDD4EBE /* MultiComponentReward.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6C9B248B4AA784A3624EBA2 /* MultiComponentReward.swift */; };
+		04DD0FE078F1423DD24AE8BD /* EmotionFeatureExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41359B9A4F8CDD815FAE8A17 /* EmotionFeatureExtractor.swift */; };
 		05B5F5D0C7497AE4CDD09C21 /* SongScorerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5F18D092F401A4FE98DFE1F /* SongScorerTests.swift */; };
+		069DE26D84B17C4CA707AC1E /* MoodTrajectory.swift in Sources */ = {isa = PBXBuildFile; fileRef = B68EEFD0C6440840F06AC119 /* MoodTrajectory.swift */; };
+		0729E4C02AA1639B7445F4C9 /* MoodDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DF93E4EBB848AE1DDA5A370 /* MoodDetailView.swift */; };
 		07F45BE4CAD115B40DFE93CD /* WidgetDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54179EE7727B64E8823AC417 /* WidgetDataStore.swift */; };
 		07F814E1C3C86447AE90072C /* BatchInsertHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E469CB566095B8F9C40C4BB /* BatchInsertHelper.swift */; };
 		0A77029DC8AC685A4B698163 /* ResonanceScoreHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F5F4FF8FBACDD540865B995 /* ResonanceScoreHistory.swift */; };
+		0C7421D94A337B35C1661807 /* EmotionMotionSensor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42C54413CF78D1AF38F1D3E6 /* EmotionMotionSensor.swift */; };
+		0CB1F9093AFB3FADCC63DB3C /* LibraryAnalysisEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18F7C829AE4505B87282C226 /* LibraryAnalysisEngine.swift */; };
 		0DBD17308E2D7CC8A1F6C24B /* ContextSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7CEBC645377CAEEE4177E11 /* ContextSignal.swift */; };
 		0E0007883637141D6DE75F8E /* RealtimeBPMVerifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1EFB6E8EF22EFD71638C099 /* RealtimeBPMVerifier.swift */; };
+		0E9F906A01B87A0554C9BF5C /* SpectralAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95299650048A593D8B6BE34F /* SpectralAnalyzer.swift */; };
 		0F687A5A3C76135575ABF3A6 /* DataPipelineIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 437BEF5FB3370999F2998AF0 /* DataPipelineIntegrationTests.swift */; };
 		100FFD8AF8D36FCB8FC89069 /* WorkoutSessionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B92AE62B1153F58DD7457EC /* WorkoutSessionManager.swift */; };
+		10318F6F2F6DA6B900DA8B8E /* NowPlayingCloudKitSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10318F6E2F6DA6B900DA8B8E /* NowPlayingCloudKitSync.swift */; };
 		10962499327021055EC510D9 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5486784FF7066093E97EB3E0 /* Constants.swift */; };
 		10F8D6C96C0586CA8135D664 /* ResonanceWatchComplications.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 548B64C3FCA444DFB6C866F0 /* ResonanceWatchComplications.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		117B1F774879DD675DC906D6 /* AudioRouteService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73A25CA1AE07DEE76529CC4F /* AudioRouteService.swift */; };
@@ -29,6 +37,7 @@
 		174E5C9B60C516716C46C08B /* Logging.swift in Sources */ = {isa = PBXBuildFile; fileRef = B691E2026B8610C50C4AAACB /* Logging.swift */; };
 		17AE8E63922D4B9BEEF53479 /* SkipPenaltyCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D4C7A3BFA492FD3B57677E7 /* SkipPenaltyCalculator.swift */; };
 		18E469D28FD7F4E275E37AB6 /* WatchMessages.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6540C50B867AE3A9DC75F79 /* WatchMessages.swift */; };
+		19343F04E7AFEAF0F1090DA7 /* FFTProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1049C615E5793B712AD31CB /* FFTProcessor.swift */; };
 		19B2606A8A3AF0E20C8EA301 /* OnboardingContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EC3935BE134DD6556CE07BC /* OnboardingContainerView.swift */; };
 		19C29EAAE98CB26037A4CBD0 /* ActivityContext+Emoji.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23C3650D47C23549563D5DB6 /* ActivityContext+Emoji.swift */; };
 		1A6931397146A077C3181773 /* LiveActivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A5676A71087BD1F2DDF3A6C /* LiveActivityManager.swift */; };
@@ -41,6 +50,7 @@
 		23A0B6FA52559D49B7409080 /* SongScore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28FDD4C9EF07A4A8BB08634A /* SongScore.swift */; };
 		23C08DB06D89BEB5F7515607 /* StateVector.swift in Sources */ = {isa = PBXBuildFile; fileRef = F241DEEB8268A1779CC2935D /* StateVector.swift */; };
 		2429B0EAAE7D88EB87089AD0 /* ActivityContext+Emoji.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23C3650D47C23549563D5DB6 /* ActivityContext+Emoji.swift */; };
+		24692ED29CBBA77982E65F01 /* EmotionCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 763689D009EA4A4E1533D574 /* EmotionCategory.swift */; };
 		25B14D89A11A896AFF4139B6 /* ExplanationGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A8149FFCF6706C172E042B1 /* ExplanationGenerator.swift */; };
 		26854498D8B06CA44D203C0A /* FocusModeProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED42428B577ED3BC4AEA80A6 /* FocusModeProvider.swift */; };
 		297EFED2B93BF6502FDE9E93 /* NowPlayingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19BA53DF712E3E2C0F0282D1 /* NowPlayingView.swift */; };
@@ -50,9 +60,11 @@
 		2F0601AF672C423DB03E6A29 /* SensorCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9F6C93D86E21EE17EB88B59 /* SensorCoordinator.swift */; };
 		2FE732B56756A518D4C271B3 /* ContextSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7CEBC645377CAEEE4177E11 /* ContextSignal.swift */; };
 		36A3452A1F7716A809ABB71F /* UIImage+DominantColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 601843871163110F8FA6B0CB /* UIImage+DominantColor.swift */; };
+		37BFABBC174C2C7E261DF323 /* DataAnalysisView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0D975254D502C64414D5139 /* DataAnalysisView.swift */; };
 		39805E2F82E4BF1BCEDDA132 /* TimeInterval+Formatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3CBB8CB2176ED52682C780C /* TimeInterval+Formatting.swift */; };
 		39EEAA73E67FDAD04E51A8DA /* ComplicationWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 194814068C7656B22718E136 /* ComplicationWidgets.swift */; };
 		3A02193619849DD294CEB98F /* ResonanceScoreCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F0B2723EAB6D96248E629DC /* ResonanceScoreCalculator.swift */; };
+		3A0BECA81318C8E18AEDD928 /* MusicNeedInference.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2129CDD20B89A2B48BCC377 /* MusicNeedInference.swift */; };
 		3B2C991FFF5E1D57FB350129 /* Logging.swift in Sources */ = {isa = PBXBuildFile; fileRef = B691E2026B8610C50C4AAACB /* Logging.swift */; };
 		3B515791B418449660F92B8B /* Resonance.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = B01A0531B60ACDDE4F19AE8C /* Resonance.xcdatamodeld */; };
 		3C755B307D4CEC85CD81C19B /* HistoricalEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F64218857437CB272555C20 /* HistoricalEngine.swift */; };
@@ -65,6 +77,7 @@
 		424796DF70DC6F8505183392 /* ColorTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 924588583D996D8AF1B75FEC /* ColorTheme.swift */; };
 		437470EBA4F9521BC271E084 /* LearningFormulaHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A34F6D318FDDB3649D7F6DF /* LearningFormulaHelper.swift */; };
 		4378CA04318AAC40CA25A39B /* StateVector.swift in Sources */ = {isa = PBXBuildFile; fileRef = F241DEEB8268A1779CC2935D /* StateVector.swift */; };
+		45F0308586B3DCEED6AF2880 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = F606172CE8BD49C3F27E2470 /* PrivacyInfo.xcprivacy */; };
 		4618DA4CC7DB5A210E22C895 /* StateEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A125697A71C7A42ED71514C /* StateEngine.swift */; };
 		47FA61E43B901A2A3F927D77 /* WaveformView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9B294E9643F8826A75382E1 /* WaveformView.swift */; };
 		482B4C0DE66CE4EA69827A1B /* ResonanceScoreHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F5F4FF8FBACDD540865B995 /* ResonanceScoreHistory.swift */; };
@@ -72,10 +85,12 @@
 		4ACB271C357EA0D7BDD8E321 /* MoodForecastViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D12E1B46B1BD722CDF76B7A /* MoodForecastViewModel.swift */; };
 		4BE06E4F36540825D6A82756 /* GuardFiltersTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48EE0D68589F955D9E9894D1 /* GuardFiltersTests.swift */; };
 		4CEAFD9CF29C0D5608707AE5 /* WorkoutBPMAdvisor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DC16519672F53632C0F2ADC /* WorkoutBPMAdvisor.swift */; };
+		4E3C3D342A8037A607861D4E /* EmotionalState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 299B18C1BA6012A238B327C9 /* EmotionalState.swift */; };
 		4E446F663EE7E7B58A2A34C4 /* StateEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3363A3BC2B8AE16B46465C6E /* StateEngineTests.swift */; };
 		4EFB2B45A0F96C2FF7C8AA60 /* OnboardingPageViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED6E2902E4841A0245D79D08 /* OnboardingPageViews.swift */; };
 		509A8BA3F5977B5945D8564D /* MoodArcView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F88915D48B69A946185666D /* MoodArcView.swift */; };
 		52A4FD530D1979F3662AD12B /* MusicKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC8908CCD706784EBE056C6F /* MusicKitService.swift */; };
+		52E7A7680991764C918EF310 /* MoodTrajectory.swift in Sources */ = {isa = PBXBuildFile; fileRef = B68EEFD0C6440840F06AC119 /* MoodTrajectory.swift */; };
 		531537A422B383A2CD6017EC /* FocusModeIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4777E7508A9C4823D7A9B090 /* FocusModeIntents.swift */; };
 		540EB69B2DBCD97632E86347 /* UIImage+DominantColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 601843871163110F8FA6B0CB /* UIImage+DominantColor.swift */; };
 		57BBDB2385262D47A79272DF /* MoodForecastEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB9D48CC12179B50D9BC0DB7 /* MoodForecastEngine.swift */; };
@@ -84,8 +99,11 @@
 		58B53EE50C1EFBC5CAAD4E1C /* RealTimeGuardAdjuster.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAF9C9176C6C2C2470592674 /* RealTimeGuardAdjuster.swift */; };
 		5A62F7EDB130926B3D7F5597 /* ResonanceWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = FF0F6F738D50081E6C82D4C5 /* ResonanceWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		5B2D4AE1EBB266304513622C /* StateVectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B43E463EFD0084E0EF98F34C /* StateVectorTests.swift */; };
+		609759560C1A72A86ACE6484 /* CircadianProfileManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5384C549EBB1532507E8AC7D /* CircadianProfileManager.swift */; };
 		60A1793DF8A4CEE520AD0B15 /* CalendarProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = C544207FC95CC2B20E97F24C /* CalendarProvider.swift */; };
 		6176259D620562210A66A397 /* SongScorer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C4A8DD7AF8AAC3EF630793E /* SongScorer.swift */; };
+		6180FF670224F4E9C56B64CA /* MoodTrajectory.swift in Sources */ = {isa = PBXBuildFile; fileRef = B68EEFD0C6440840F06AC119 /* MoodTrajectory.swift */; };
+		629BDDB2B4501572B8CFA83F /* MoodPlaylist.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14EF627B323A5E1BA73C3805 /* MoodPlaylist.swift */; };
 		63752DA799DE29CF66D81F2D /* BookmarkManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1D086F2075BBCC89D5FA785 /* BookmarkManager.swift */; };
 		6453A2B3CAA627BF88C08848 /* ResponseCreditCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A80DA985F6241BB42937B35C /* ResponseCreditCalculator.swift */; };
 		653F995A47A5EC7E672B2312 /* DecisionContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = A936029DE841B8A646575612 /* DecisionContext.swift */; };
@@ -96,7 +114,9 @@
 		6A89C006415919AFD582586B /* TransitionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CCADAC7FB009C002BC36EFC /* TransitionController.swift */; };
 		6AA79F8C7AAAF398B1AAB4D1 /* WatchMessages.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6540C50B867AE3A9DC75F79 /* WatchMessages.swift */; };
 		6AF434331AED1DA74AB9C0A9 /* PlaylistImpactCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B54255AF72500CA0A6E288F6 /* PlaylistImpactCalculator.swift */; };
+		6D511364E1250B75706F443D /* EmotionalState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 299B18C1BA6012A238B327C9 /* EmotionalState.swift */; };
 		6D56259E9484654B5C2A8DDA /* MovingWindowNormalizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39F3A2A9323F31266E9D1C6B /* MovingWindowNormalizer.swift */; };
+		715C67A9BDEC22AB88DA3539 /* SleepMoodBaseline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5986C32A1FFE65478CE903BD /* SleepMoodBaseline.swift */; };
 		7199CA108BBD57280A8180D9 /* TimeInterval+Formatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3CBB8CB2176ED52682C780C /* TimeInterval+Formatting.swift */; };
 		74C9AE559891068C4C1AAC1B /* TimeInterval+Formatting.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3CBB8CB2176ED52682C780C /* TimeInterval+Formatting.swift */; };
 		76F4A6D0D7E4D54AC67E76C0 /* ActiveAppProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23ACA67DDB92602CCF5082D9 /* ActiveAppProvider.swift */; };
@@ -107,34 +127,48 @@
 		7E7A5743C4091115650A4219 /* SongEffectHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7950BC1C06A11CB12EC9F865 /* SongEffectHelper.swift */; };
 		7EE4684CDC4DC856CBBF17CF /* ContextCollector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87F7D222E37C93A1497688F6 /* ContextCollector.swift */; };
 		7F94A4ED83BAACCD3E3E9BAF /* ConversationalExplanation.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFFA9C009DD5F2F061713965 /* ConversationalExplanation.swift */; };
+		7FE7C0813041A5A3EB852D94 /* EmotionRefinementEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64ACBF43F52BA364532F19F8 /* EmotionRefinementEngine.swift */; };
 		810765D75ADACA153DD65110 /* PlaylistBrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 158614189CEBBF0AD2AE00E9 /* PlaylistBrowserView.swift */; };
 		82F498D4AECB861CA5443F92 /* WorkoutDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 688C3FEB7CF667361B387CEB /* WorkoutDetector.swift */; };
 		83083C47BFB262E8B124C727 /* LearningStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDBD9DD195E4B3A219B3A730 /* LearningStore.swift */; };
+		8359CFABC2D4B75510EBFBE7 /* MoodPlaylist.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14EF627B323A5E1BA73C3805 /* MoodPlaylist.swift */; };
 		852EAF04DB38CEAB42C80A01 /* ResonanceWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = FED89198337B9AFF544E3999 /* ResonanceWatchApp.swift */; };
+		8614BBF74D98FC5F69551614 /* WatchCapabilityDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83FD771B1016FEF52367EC97 /* WatchCapabilityDetector.swift */; };
 		8661E02DCACDE6E4410DA79A /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5486784FF7066093E97EB3E0 /* Constants.swift */; };
 		86E8AFA5574E773C951086F3 /* PermissionStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C26B0D3D56436353E4737893 /* PermissionStatusView.swift */; };
 		8719EB024B5C9D57165B84C6 /* BookmarkTimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFD8D3DB7ADD64878F059C86 /* BookmarkTimelineView.swift */; };
 		8799C5CD675791093661A410 /* ResonanceMacApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98BE1008A5D5C16CBB084E94 /* ResonanceMacApp.swift */; };
 		89EE392686C101E239E75A2A /* SongFeatures.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBF58E4EFDE766336AB717B7 /* SongFeatures.swift */; };
 		8A1B3E24BF03C6A9C15B209E /* ResonanceScoreView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D57DE1C188F07BF058F5FF7F /* ResonanceScoreView.swift */; };
+		8A61F7DB3E30C2A58CD618E2 /* MelFilterbank.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C5277A3788AB5E2AA30A26E /* MelFilterbank.swift */; };
 		8AD26BF523AB372A5B47F887 /* ContextSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7CEBC645377CAEEE4177E11 /* ContextSignal.swift */; };
+		8D85FD1BCD474F1DEC7495E3 /* EmotionCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 763689D009EA4A4E1533D574 /* EmotionCategory.swift */; };
 		8F300FC8BD2239DA69694F1A /* SongScore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28FDD4C9EF07A4A8BB08634A /* SongScore.swift */; };
+		8FD90FE0E1FD6F9DE519154F /* CircadianProfileTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FB8C5CF152E1319C6C639F0 /* CircadianProfileTypes.swift */; };
 		90A17294625E6F17B5DDC513 /* StateEngineTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B084756C300BD79AE7FB140 /* StateEngineTypes.swift */; };
 		90D570E24C009AA72B3B849A /* SongScore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28FDD4C9EF07A4A8BB08634A /* SongScore.swift */; };
+		91E87837703DC4E9890EFBAD /* CircadianEnergyModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = E049C35ECF4898F0900B11FB /* CircadianEnergyModifier.swift */; };
+		93DF58421883BD1A3B19A96D /* MoodTrajectory.swift in Sources */ = {isa = PBXBuildFile; fileRef = B68EEFD0C6440840F06AC119 /* MoodTrajectory.swift */; };
 		93F6283B05AED31F0C824EC9 /* WatchConnectivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BACB2808ABB266CD884890CC /* WatchConnectivityManager.swift */; };
 		940D52E5C8B5B049036C3B3A /* SongScore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28FDD4C9EF07A4A8BB08634A /* SongScore.swift */; };
 		949241CB93F7BCA405DB8EFA /* WatchMessages.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6540C50B867AE3A9DC75F79 /* WatchMessages.swift */; };
+		9730A22109C3038773EB8DDB /* MoodPlaylist.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14EF627B323A5E1BA73C3805 /* MoodPlaylist.swift */; };
+		9B6F86F63DC99A9D2A5A4F59 /* AudioRouteControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BA66590F1A31AFDB9311676 /* AudioRouteControls.swift */; };
 		9FD2A04EFB89940C8F287F75 /* HealthKitService+NewSignals.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3010A7F2C19F076030CCFE3A /* HealthKitService+NewSignals.swift */; };
 		A16F9811CC03A331D5A6F9BC /* WatchMessages.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6540C50B867AE3A9DC75F79 /* WatchMessages.swift */; };
 		A4C39655C199204D63950FCD /* PhoneConnectivityService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 774E6162E40AD4FFB45A7B86 /* PhoneConnectivityService.swift */; };
 		A52F0491B427B4ECCD346738 /* DecisionContextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82D2D39111132BB07D961808 /* DecisionContextTests.swift */; };
 		A6940570512D73480A36D5D2 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5486784FF7066093E97EB3E0 /* Constants.swift */; };
 		A7247D65C358851844443F4A /* UserPreferencesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE4098E44B7AC73B63AAFA1A /* UserPreferencesTests.swift */; };
+		A7B26F80600204FC328CEB29 /* LibraryAnalysisView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45EDFFD899A4EC01398458F3 /* LibraryAnalysisView.swift */; };
 		A805F382D6543CD73055C3E1 /* UserPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAE93DA52394CFC35E670B7B /* UserPreferences.swift */; };
 		AAEAA7E5D24306B84CA3D6C2 /* SessionPlannerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A104DCB9A78EF053EB571700 /* SessionPlannerTests.swift */; };
+		AB031B2C00D244B9FB5E57AD /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 46BBEBE3DEC25FC7AAFBC22E /* PrivacyInfo.xcprivacy */; };
 		AB283CE399ADB59CC6A4442D /* HeartPulseRing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 103163A31D313F54107F8D37 /* HeartPulseRing.swift */; };
 		AC1630D80C58C1CE36DCB582 /* StatusItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B770AB438979BBDC1644702 /* StatusItemView.swift */; };
 		AC2F0E644DCD085685F654E8 /* HeartRateSensor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84790847771FAB5E992479CD /* HeartRateSensor.swift */; };
+		AE3362E453CBBAE7DF5813A6 /* MoodChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C4C24F8B8E33D5ED1A4B3A7 /* MoodChartView.swift */; };
+		AE704D77801037D54FE481D7 /* PlaylistDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CA80BC3D26240206BB768A5 /* PlaylistDetailView.swift */; };
 		AF2A82AF2ED4046FD2A9F0A1 /* SongFeatures.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBF58E4EFDE766336AB717B7 /* SongFeatures.swift */; };
 		AF30FC5FA0601C733F137344 /* ResonanceScoreTrendView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 684FB13D62792F0EAC4461A3 /* ResonanceScoreTrendView.swift */; };
 		AF5DEACF0B04762182F23808 /* FocusModeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3152ABAAE3CE3DA53D99C647 /* FocusModeService.swift */; };
@@ -144,9 +178,12 @@
 		B666197A2E8D0F25E2E519F9 /* SongFeatures.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBF58E4EFDE766336AB717B7 /* SongFeatures.swift */; };
 		B6B4652034486C0AA6DB0BA8 /* ShakeDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 208643B0C05A100753FCCC49 /* ShakeDetector.swift */; };
 		B7B661AE605FCA6E0C6873DD /* WidgetDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54179EE7727B64E8823AC417 /* WidgetDataStore.swift */; };
+		B7CA74E8938D212D9280648E /* EmotionalState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 299B18C1BA6012A238B327C9 /* EmotionalState.swift */; };
+		B9216089277EEE1AC45FB350 /* CircadianContextInference.swift in Sources */ = {isa = PBXBuildFile; fileRef = D92C2FB76BF9F44977EC1F03 /* CircadianContextInference.swift */; };
 		BA968E310632896AA9A77CAD /* MenuBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23FB0034847F0A18B4949C23 /* MenuBarController.swift */; };
 		BDDA20F06496272698649A32 /* PopoverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2E9A8AAD3FA362E3020F326 /* PopoverView.swift */; };
 		BDE08F2D2B5B9DAC6D48C3AB /* SessionIntentPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6F10B525ED2209D4B56BC4 /* SessionIntentPicker.swift */; };
+		BE55D7DBC0C8DF671CAA561F /* MoodPlaylist.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14EF627B323A5E1BA73C3805 /* MoodPlaylist.swift */; };
 		BF569BA37C3D639014BAEC8D /* BiometricCrossfadeEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07A44CC4B07FAFBCFEC7EB8D /* BiometricCrossfadeEngine.swift */; };
 		C03EA5716A0FBB54F27ED72D /* StateVector.swift in Sources */ = {isa = PBXBuildFile; fileRef = F241DEEB8268A1779CC2935D /* StateVector.swift */; };
 		C0599B9A466C9DDB3B9132F5 /* ResonanceScoreHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F5F4FF8FBACDD540865B995 /* ResonanceScoreHistory.swift */; };
@@ -154,35 +191,48 @@
 		C40DD5752B1106FFC6ACAB93 /* SongScoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41D0912BAFF9AA34648AD389 /* SongScoreTests.swift */; };
 		C541AD1A3D4D0CDA66E153E8 /* MotionSensor.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA5A5ED8847FD4CF2E77B93D /* MotionSensor.swift */; };
 		CAAE446FB88AD2E734CFE928 /* SongImpactCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF0E0853A48B416EC1F11444 /* SongImpactCalculator.swift */; };
+		CB322A5030C4A41A0EFD3EF1 /* DJTuningView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2729448973CFF70FD16E5E56 /* DJTuningView.swift */; };
 		CBDCA92D05EF0491FDF120D3 /* StateVector.swift in Sources */ = {isa = PBXBuildFile; fileRef = F241DEEB8268A1779CC2935D /* StateVector.swift */; };
+		CE247012A9F54B15AC64B7C2 /* LandingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 514EF067B0883CF53A53834C /* LandingView.swift */; };
 		CF628DFC609B46ADC4E31C23 /* DecisionContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = A936029DE841B8A646575612 /* DecisionContext.swift */; };
 		CFA7A52C130FA82C3C220B18 /* FeatureNormalizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CE69467BD2BFA90DE718D51 /* FeatureNormalizer.swift */; };
 		D00E25D11F28867B7C661713 /* SessionPlanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = BECBC800F55637AE7CF8C216 /* SessionPlanner.swift */; };
 		D1F50FB9682267F3DE2A5FB0 /* DecisionContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = A936029DE841B8A646575612 /* DecisionContext.swift */; };
+		D3525B3626CCF79C1C5E94EF /* CircadianProfileTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FB8C5CF152E1319C6C639F0 /* CircadianProfileTypes.swift */; };
+		D48B9143658649E7FD1F15CC /* EmotionalState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 299B18C1BA6012A238B327C9 /* EmotionalState.swift */; };
 		D4E28AC4938AAAF13A21BBFF /* SessionCritic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C498C30ED99353EDC688025 /* SessionCritic.swift */; };
 		D5BC48667B1332669E1DCE8F /* DecisionContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = A936029DE841B8A646575612 /* DecisionContext.swift */; };
+		D6CFF7B321A99F9E9C0A103B /* WatchEmotionClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = F94D3204A316757FF9FB86E1 /* WatchEmotionClassifier.swift */; };
 		D7110C568F734E203FF39EB3 /* DecisionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CA9A6EF743006F439C370FF /* DecisionEngine.swift */; };
 		D7449218F0B24E02F1ED1125 /* MoodInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 649D1B31F8BF440005D87934 /* MoodInputView.swift */; };
 		D901A23E2985BC09E1D3B39D /* UserPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAE93DA52394CFC35E670B7B /* UserPreferences.swift */; };
 		D959C548879F241CF164A344 /* VocalDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6EB0C3988B209A612CEABBB /* VocalDetector.swift */; };
 		DA8DFC66743AB594BE2F48E5 /* ComplicationDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D217803861D913D63D0A3DA /* ComplicationDataStore.swift */; };
 		DAD8FA89D3944F38EE3B6A2C /* UserPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAE93DA52394CFC35E670B7B /* UserPreferences.swift */; };
+		DBA80B0990E4871BFE65DA88 /* CircadianProfileTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FB8C5CF152E1319C6C639F0 /* CircadianProfileTypes.swift */; };
 		DBED586D26030AC590C13929 /* CrownHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10388F99A99032487ED990D3 /* CrownHandler.swift */; };
 		DC24926A7C818B1C123D80EB /* Logging.swift in Sources */ = {isa = PBXBuildFile; fileRef = B691E2026B8610C50C4AAACB /* Logging.swift */; };
 		DC7D73FA0B01C9E345ACE1F6 /* ImpactScore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4751CBBFAF73127C753739A /* ImpactScore.swift */; };
+		DF8A6A5B92B376F54D0542DC /* EmotionCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 763689D009EA4A4E1533D574 /* EmotionCategory.swift */; };
 		E3134A9D5DCB55D0714A7B6F /* NowPlayingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2BC9E4F9417498870D43389 /* NowPlayingViewModel.swift */; };
 		E6CB4CB859DD7A0BDB95ABCF /* ResonanceWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67292D04BAE4DBA97DB2C4F0 /* ResonanceWidgets.swift */; };
 		E7195009A20BAD5C3BDD50AD /* SessionQualityScorer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8408383041679F7AFD01CBEF /* SessionQualityScorer.swift */; };
 		E7436BF1C09F2FA019126B8D /* SkeletonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B77BC09EF1A8FF5B1A97D238 /* SkeletonView.swift */; };
 		E7637A8FC24899BC33CDC059 /* SongFeatures.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBF58E4EFDE766336AB717B7 /* SongFeatures.swift */; };
+		E7F01D0B888CCAD76FB64A02 /* MoodPlaylistRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5C6D6B85FF5100F07F6CD0C /* MoodPlaylistRow.swift */; };
+		E937F6FC6FDB32F8A53054B1 /* EmotionCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 763689D009EA4A4E1533D574 /* EmotionCategory.swift */; };
 		EB2D9445A520D720D8802A67 /* MoodForecastView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CFC73F9C67D1E73F0643374 /* MoodForecastView.swift */; };
 		EBE12EFEAF301398BB39B4DB /* WidgetDataStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B9C7C515E9AE082357E843B /* WidgetDataStoreTests.swift */; };
 		ECBF347BCB01EC86294F7CB4 /* EventLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0DF9CDAF1AE34160F02BA9D /* EventLogger.swift */; };
 		EF38A152612BB749620E106C /* HealthCorrelationChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CC3B0BBD8906B99B3C31A46 /* HealthCorrelationChart.swift */; };
+		F054E31A7E8CF2AA6A676F70 /* ResonanceComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = D613BB6FBCFC3735CD501224 /* ResonanceComponents.swift */; };
 		F0947431CF6EFE4BDBF2EBD1 /* StateCalculationHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = B88CB25B8FD040B66FE107B1 /* StateCalculationHelpers.swift */; };
+		F0E996C9D293361FB950DCD2 /* CircadianProfileTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FB8C5CF152E1319C6C639F0 /* CircadianProfileTypes.swift */; };
 		F11019181932DA92B5FAFA33 /* WatchNowPlayingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B05A80F9F5095BE122C6507B /* WatchNowPlayingView.swift */; };
 		F4BF2662DEED25F354F0A9C9 /* ComplicationDataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D217803861D913D63D0A3DA /* ComplicationDataStore.swift */; };
+		F4FF2507D267C3517E2F551D /* MoodTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FDA8AC702DE3000A063C125 /* MoodTabView.swift */; };
 		F55B4FEFF27B21F4B2A391A4 /* WatchMessages.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6540C50B867AE3A9DC75F79 /* WatchMessages.swift */; };
+		F971D5F007AC203EF304AB51 /* HealthKitService+Circadian.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7DD40D2B7B87928BCA2D9C7 /* HealthKitService+Circadian.swift */; };
 		F9C2FA963AE39DDA110BFBF8 /* AudioFeaturePredictor.swift in Sources */ = {isa = PBXBuildFile; fileRef = C56CF4E4D93E7D450CC7A62B /* AudioFeaturePredictor.swift */; };
 		FDAD514CCA716CCA1882256E /* ExplanationGeneratorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B0525F25E51CC9E525A9092 /* ExplanationGeneratorTests.swift */; };
 /* End PBXBuildFile section */
@@ -242,17 +292,21 @@
 		0511ACB32B3F8873342A62EE /* SessionReconstructor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionReconstructor.swift; sourceTree = "<group>"; };
 		07A44CC4B07FAFBCFEC7EB8D /* BiometricCrossfadeEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricCrossfadeEngine.swift; sourceTree = "<group>"; };
 		0B9C7C515E9AE082357E843B /* WidgetDataStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetDataStoreTests.swift; sourceTree = "<group>"; };
+		0C5277A3788AB5E2AA30A26E /* MelFilterbank.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MelFilterbank.swift; sourceTree = "<group>"; };
 		0CCADAC7FB009C002BC36EFC /* TransitionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransitionController.swift; sourceTree = "<group>"; };
 		0F88915D48B69A946185666D /* MoodArcView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoodArcView.swift; sourceTree = "<group>"; };
 		0FC374A3EF2291D96F3E00E3 /* WatchMoodInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchMoodInputView.swift; sourceTree = "<group>"; };
 		103163A31D313F54107F8D37 /* HeartPulseRing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeartPulseRing.swift; sourceTree = "<group>"; };
+		10318F6E2F6DA6B900DA8B8E /* NowPlayingCloudKitSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NowPlayingCloudKitSync.swift; sourceTree = "<group>"; };
 		10388F99A99032487ED990D3 /* CrownHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrownHandler.swift; sourceTree = "<group>"; };
 		128432788F979AF346AAEE3B /* MiniPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MiniPlayerView.swift; sourceTree = "<group>"; };
 		12AC43D4575C4592D760B59A /* SharedSongScorer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedSongScorer.swift; sourceTree = "<group>"; };
+		14EF627B323A5E1BA73C3805 /* MoodPlaylist.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoodPlaylist.swift; sourceTree = "<group>"; };
 		14F133A4295DD3EE3E69BB58 /* SessionSummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionSummaryView.swift; sourceTree = "<group>"; };
 		153419B24BAC81173E193384 /* PlaylistViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistViewModel.swift; sourceTree = "<group>"; };
 		158614189CEBBF0AD2AE00E9 /* PlaylistBrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistBrowserView.swift; sourceTree = "<group>"; };
 		18CAC26F64159A54A872AEC7 /* GuardFilters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuardFilters.swift; sourceTree = "<group>"; };
+		18F7C829AE4505B87282C226 /* LibraryAnalysisEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryAnalysisEngine.swift; sourceTree = "<group>"; };
 		194814068C7656B22718E136 /* ComplicationWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComplicationWidgets.swift; sourceTree = "<group>"; };
 		19BA53DF712E3E2C0F0282D1 /* NowPlayingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NowPlayingView.swift; sourceTree = "<group>"; };
 		1B084756C300BD79AE7FB140 /* StateEngineTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StateEngineTypes.swift; sourceTree = "<group>"; };
@@ -265,11 +319,15 @@
 		23C3650D47C23549563D5DB6 /* ActivityContext+Emoji.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ActivityContext+Emoji.swift"; sourceTree = "<group>"; };
 		23FB0034847F0A18B4949C23 /* MenuBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarController.swift; sourceTree = "<group>"; };
 		2482AFE319C5939E80F05713 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		2729448973CFF70FD16E5E56 /* DJTuningView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DJTuningView.swift; sourceTree = "<group>"; };
 		28FDD4C9EF07A4A8BB08634A /* SongScore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SongScore.swift; sourceTree = "<group>"; };
+		299B18C1BA6012A238B327C9 /* EmotionalState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmotionalState.swift; sourceTree = "<group>"; };
 		2A125697A71C7A42ED71514C /* StateEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StateEngine.swift; sourceTree = "<group>"; };
+		2BA66590F1A31AFDB9311676 /* AudioRouteControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioRouteControls.swift; sourceTree = "<group>"; };
 		2C4A8DD7AF8AAC3EF630793E /* SongScorer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SongScorer.swift; sourceTree = "<group>"; };
 		2CA9A6EF743006F439C370FF /* DecisionEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecisionEngine.swift; sourceTree = "<group>"; };
 		2EB4CA4C4E2F34CD33370492 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		2FB8C5CF152E1319C6C639F0 /* CircadianProfileTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CircadianProfileTypes.swift; sourceTree = "<group>"; };
 		3010A7F2C19F076030CCFE3A /* HealthKitService+NewSignals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HealthKitService+NewSignals.swift"; sourceTree = "<group>"; };
 		3152ABAAE3CE3DA53D99C647 /* FocusModeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusModeService.swift; sourceTree = "<group>"; };
 		3363A3BC2B8AE16B46465C6E /* StateEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StateEngineTests.swift; sourceTree = "<group>"; };
@@ -280,22 +338,33 @@
 		3CC3B0BBD8906B99B3C31A46 /* HealthCorrelationChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthCorrelationChart.swift; sourceTree = "<group>"; };
 		3D4C7A3BFA492FD3B57677E7 /* SkipPenaltyCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkipPenaltyCalculator.swift; sourceTree = "<group>"; };
 		3DC16519672F53632C0F2ADC /* WorkoutBPMAdvisor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutBPMAdvisor.swift; sourceTree = "<group>"; };
+		3DF93E4EBB848AE1DDA5A370 /* MoodDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoodDetailView.swift; sourceTree = "<group>"; };
 		3E469CB566095B8F9C40C4BB /* BatchInsertHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatchInsertHelper.swift; sourceTree = "<group>"; };
+		41359B9A4F8CDD815FAE8A17 /* EmotionFeatureExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmotionFeatureExtractor.swift; sourceTree = "<group>"; };
 		41D0912BAFF9AA34648AD389 /* SongScoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SongScoreTests.swift; sourceTree = "<group>"; };
+		42C54413CF78D1AF38F1D3E6 /* EmotionMotionSensor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmotionMotionSensor.swift; sourceTree = "<group>"; };
 		437BEF5FB3370999F2998AF0 /* DataPipelineIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataPipelineIntegrationTests.swift; sourceTree = "<group>"; };
+		45EDFFD899A4EC01398458F3 /* LibraryAnalysisView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryAnalysisView.swift; sourceTree = "<group>"; };
+		46BBEBE3DEC25FC7AAFBC22E /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		4777E7508A9C4823D7A9B090 /* FocusModeIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusModeIntents.swift; sourceTree = "<group>"; };
 		48EE0D68589F955D9E9894D1 /* GuardFiltersTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuardFiltersTests.swift; sourceTree = "<group>"; };
 		4B3004AF8E3B77BE7F4AABF2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		4F3AEA018A5D9EFF732FB19D /* SharedStateEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedStateEngine.swift; sourceTree = "<group>"; };
+		514EF067B0883CF53A53834C /* LandingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LandingView.swift; sourceTree = "<group>"; };
+		5384C549EBB1532507E8AC7D /* CircadianProfileManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CircadianProfileManager.swift; sourceTree = "<group>"; };
 		54179EE7727B64E8823AC417 /* WidgetDataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetDataStore.swift; sourceTree = "<group>"; };
 		5486784FF7066093E97EB3E0 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		548B64C3FCA444DFB6C866F0 /* ResonanceWatchComplications.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ResonanceWatchComplications.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		5986C32A1FFE65478CE903BD /* SleepMoodBaseline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepMoodBaseline.swift; sourceTree = "<group>"; };
 		5A34F6D318FDDB3649D7F6DF /* LearningFormulaHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LearningFormulaHelper.swift; sourceTree = "<group>"; };
 		5B770AB438979BBDC1644702 /* StatusItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusItemView.swift; sourceTree = "<group>"; };
 		5B92AE62B1153F58DD7457EC /* WorkoutSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutSessionManager.swift; sourceTree = "<group>"; };
 		5C498C30ED99353EDC688025 /* SessionCritic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionCritic.swift; sourceTree = "<group>"; };
+		5C4C24F8B8E33D5ED1A4B3A7 /* MoodChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoodChartView.swift; sourceTree = "<group>"; };
+		5CA80BC3D26240206BB768A5 /* PlaylistDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistDetailView.swift; sourceTree = "<group>"; };
 		601843871163110F8FA6B0CB /* UIImage+DominantColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIImage+DominantColor.swift"; sourceTree = "<group>"; };
 		649D1B31F8BF440005D87934 /* MoodInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoodInputView.swift; sourceTree = "<group>"; };
+		64ACBF43F52BA364532F19F8 /* EmotionRefinementEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmotionRefinementEngine.swift; sourceTree = "<group>"; };
 		67292D04BAE4DBA97DB2C4F0 /* ResonanceWidgets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResonanceWidgets.swift; sourceTree = "<group>"; };
 		684FB13D62792F0EAC4461A3 /* ResonanceScoreTrendView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResonanceScoreTrendView.swift; sourceTree = "<group>"; };
 		688C3FEB7CF667361B387CEB /* WorkoutDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutDetector.swift; sourceTree = "<group>"; };
@@ -304,14 +373,17 @@
 		71C27282C268D98C8607EC57 /* ContextBroadcaster.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextBroadcaster.swift; sourceTree = "<group>"; };
 		73A25CA1AE07DEE76529CC4F /* AudioRouteService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioRouteService.swift; sourceTree = "<group>"; };
 		75A886960867A5C1BD8D1CBC /* AudioAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioAnalyzer.swift; sourceTree = "<group>"; };
+		763689D009EA4A4E1533D574 /* EmotionCategory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmotionCategory.swift; sourceTree = "<group>"; };
 		774E6162E40AD4FFB45A7B86 /* PhoneConnectivityService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneConnectivityService.swift; sourceTree = "<group>"; };
 		7950BC1C06A11CB12EC9F865 /* SongEffectHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SongEffectHelper.swift; sourceTree = "<group>"; };
 		7CFC73F9C67D1E73F0643374 /* MoodForecastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoodForecastView.swift; sourceTree = "<group>"; };
 		7D12E1B46B1BD722CDF76B7A /* MoodForecastViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoodForecastViewModel.swift; sourceTree = "<group>"; };
 		7D6F10B525ED2209D4B56BC4 /* SessionIntentPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionIntentPicker.swift; sourceTree = "<group>"; };
 		7E0B826229674100DEE2F127 /* ResonanceWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ResonanceWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		7FDA8AC702DE3000A063C125 /* MoodTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoodTabView.swift; sourceTree = "<group>"; };
 		7FF638D1478E3FB11FE0DACE /* PersistenceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceController.swift; sourceTree = "<group>"; };
 		82D2D39111132BB07D961808 /* DecisionContextTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecisionContextTests.swift; sourceTree = "<group>"; };
+		83FD771B1016FEF52367EC97 /* WatchCapabilityDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchCapabilityDetector.swift; sourceTree = "<group>"; };
 		8408383041679F7AFD01CBEF /* SessionQualityScorer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionQualityScorer.swift; sourceTree = "<group>"; };
 		84790847771FAB5E992479CD /* HeartRateSensor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeartRateSensor.swift; sourceTree = "<group>"; };
 		872196410405005EB0142CD1 /* ResonanceMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ResonanceMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -319,6 +391,7 @@
 		8CE69467BD2BFA90DE718D51 /* FeatureNormalizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureNormalizer.swift; sourceTree = "<group>"; };
 		924588583D996D8AF1B75FEC /* ColorTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorTheme.swift; sourceTree = "<group>"; };
 		92E55BD5EC567C154FE649B6 /* FeatureExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureExtractor.swift; sourceTree = "<group>"; };
+		95299650048A593D8B6BE34F /* SpectralAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpectralAnalyzer.swift; sourceTree = "<group>"; };
 		96F7C57FD900652BFC22268F /* DominantColorExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DominantColorExtractor.swift; sourceTree = "<group>"; };
 		98BE1008A5D5C16CBB084E94 /* ResonanceMacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResonanceMacApp.swift; sourceTree = "<group>"; };
 		9A4B6AD1B74AD273DE6F8E96 /* AmbientGlowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AmbientGlowView.swift; sourceTree = "<group>"; };
@@ -326,12 +399,14 @@
 		9EC3935BE134DD6556CE07BC /* OnboardingContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingContainerView.swift; sourceTree = "<group>"; };
 		9F64218857437CB272555C20 /* HistoricalEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoricalEngine.swift; sourceTree = "<group>"; };
 		A008E26078DD1138835E98D9 /* Resonance.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Resonance.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1049C615E5793B712AD31CB /* FFTProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FFTProcessor.swift; sourceTree = "<group>"; };
 		A104DCB9A78EF053EB571700 /* SessionPlannerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionPlannerTests.swift; sourceTree = "<group>"; };
 		A1ED57DAEA3956431D6AF49C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		A248E4B7944A77BA978883E7 /* WatchMessagesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchMessagesTests.swift; sourceTree = "<group>"; };
 		A2E9A8AAD3FA362E3020F326 /* PopoverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PopoverView.swift; sourceTree = "<group>"; };
 		A3CBB8CB2176ED52682C780C /* TimeInterval+Formatting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TimeInterval+Formatting.swift"; sourceTree = "<group>"; };
 		A6F6047E05519D26A1DF6A20 /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
+		A7DD40D2B7B87928BCA2D9C7 /* HealthKitService+Circadian.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HealthKitService+Circadian.swift"; sourceTree = "<group>"; };
 		A80DA985F6241BB42937B35C /* ResponseCreditCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResponseCreditCalculator.swift; sourceTree = "<group>"; };
 		A936029DE841B8A646575612 /* DecisionContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecisionContext.swift; sourceTree = "<group>"; };
 		AF653DB511987E2381F04F20 /* HealthKitTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitTypes.swift; sourceTree = "<group>"; };
@@ -342,6 +417,7 @@
 		B2BC9E4F9417498870D43389 /* NowPlayingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NowPlayingViewModel.swift; sourceTree = "<group>"; };
 		B43E463EFD0084E0EF98F34C /* StateVectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StateVectorTests.swift; sourceTree = "<group>"; };
 		B54255AF72500CA0A6E288F6 /* PlaylistImpactCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistImpactCalculator.swift; sourceTree = "<group>"; };
+		B68EEFD0C6440840F06AC119 /* MoodTrajectory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoodTrajectory.swift; sourceTree = "<group>"; };
 		B691E2026B8610C50C4AAACB /* Logging.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logging.swift; sourceTree = "<group>"; };
 		B77BC09EF1A8FF5B1A97D238 /* SkeletonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkeletonView.swift; sourceTree = "<group>"; };
 		B7CEBC645377CAEEE4177E11 /* ContextSignal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextSignal.swift; sourceTree = "<group>"; };
@@ -353,6 +429,7 @@
 		BECBC800F55637AE7CF8C216 /* SessionPlanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionPlanner.swift; sourceTree = "<group>"; };
 		BF0E0853A48B416EC1F11444 /* SongImpactCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SongImpactCalculator.swift; sourceTree = "<group>"; };
 		BFDBBA3C8BC97BE5B2198FC1 /* LearningTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LearningTests.swift; sourceTree = "<group>"; };
+		C0D975254D502C64414D5139 /* DataAnalysisView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataAnalysisView.swift; sourceTree = "<group>"; };
 		C1D086F2075BBCC89D5FA785 /* BookmarkManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookmarkManager.swift; sourceTree = "<group>"; };
 		C1EFB6E8EF22EFD71638C099 /* RealtimeBPMVerifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealtimeBPMVerifier.swift; sourceTree = "<group>"; };
 		C26B0D3D56436353E4737893 /* PermissionStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionStatusView.swift; sourceTree = "<group>"; };
@@ -363,13 +440,17 @@
 		CB9D48CC12179B50D9BC0DB7 /* MoodForecastEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoodForecastEngine.swift; sourceTree = "<group>"; };
 		CDBD41A77B0E761822F1FE2E /* HealthKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitService.swift; sourceTree = "<group>"; };
 		CE4098E44B7AC73B63AAFA1A /* UserPreferencesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserPreferencesTests.swift; sourceTree = "<group>"; };
+		D2129CDD20B89A2B48BCC377 /* MusicNeedInference.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MusicNeedInference.swift; sourceTree = "<group>"; };
 		D4144C1BB3E53929C9308043 /* PersonalBaseline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonalBaseline.swift; sourceTree = "<group>"; };
 		D57DE1C188F07BF058F5FF7F /* ResonanceScoreView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResonanceScoreView.swift; sourceTree = "<group>"; };
+		D613BB6FBCFC3735CD501224 /* ResonanceComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResonanceComponents.swift; sourceTree = "<group>"; };
+		D92C2FB76BF9F44977EC1F03 /* CircadianContextInference.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CircadianContextInference.swift; sourceTree = "<group>"; };
 		D9B294E9643F8826A75382E1 /* WaveformView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaveformView.swift; sourceTree = "<group>"; };
 		D9E801664F3E7327A481347F /* EffectivenessLearner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EffectivenessLearner.swift; sourceTree = "<group>"; };
 		DAF9C9176C6C2C2470592674 /* RealTimeGuardAdjuster.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealTimeGuardAdjuster.swift; sourceTree = "<group>"; };
 		DCA0CD7FC6BF9C5855A1C224 /* StateDebugView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StateDebugView.swift; sourceTree = "<group>"; };
 		DD727E37279665387968B8FE /* SensorConfidenceScorer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SensorConfidenceScorer.swift; sourceTree = "<group>"; };
+		E049C35ECF4898F0900B11FB /* CircadianEnergyModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CircadianEnergyModifier.swift; sourceTree = "<group>"; };
 		E4751CBBFAF73127C753739A /* ImpactScore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImpactScore.swift; sourceTree = "<group>"; };
 		E5F18D092F401A4FE98DFE1F /* SongScorerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SongScorerTests.swift; sourceTree = "<group>"; };
 		E6540C50B867AE3A9DC75F79 /* WatchMessages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchMessages.swift; sourceTree = "<group>"; };
@@ -380,8 +461,12 @@
 		ED42428B577ED3BC4AEA80A6 /* FocusModeProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusModeProvider.swift; sourceTree = "<group>"; };
 		ED6E2902E4841A0245D79D08 /* OnboardingPageViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingPageViews.swift; sourceTree = "<group>"; };
 		EDBD9DD195E4B3A219B3A730 /* LearningStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LearningStore.swift; sourceTree = "<group>"; };
+		F176AA70C080735B2D904E9D /* OvernightTemperatureSensor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OvernightTemperatureSensor.swift; sourceTree = "<group>"; };
 		F241DEEB8268A1779CC2935D /* StateVector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StateVector.swift; sourceTree = "<group>"; };
+		F5C6D6B85FF5100F07F6CD0C /* MoodPlaylistRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoodPlaylistRow.swift; sourceTree = "<group>"; };
+		F606172CE8BD49C3F27E2470 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		F642DCAE16222D2052169A59 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		F94D3204A316757FF9FB86E1 /* WatchEmotionClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchEmotionClassifier.swift; sourceTree = "<group>"; };
 		FED89198337B9AFF544E3999 /* ResonanceWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResonanceWatchApp.swift; sourceTree = "<group>"; };
 		FF0F6F738D50081E6C82D4C5 /* ResonanceWidgets.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = ResonanceWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		FFFA9C009DD5F2F061713965 /* ConversationalExplanation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationalExplanation.swift; sourceTree = "<group>"; };
@@ -517,6 +602,7 @@
 				3152ABAAE3CE3DA53D99C647 /* FocusModeService.swift */,
 				B1EB5435C9B8B57335F732D5 /* HealthKitQueryBuilder.swift */,
 				CDBD41A77B0E761822F1FE2E /* HealthKitService.swift */,
+				A7DD40D2B7B87928BCA2D9C7 /* HealthKitService+Circadian.swift */,
 				3010A7F2C19F076030CCFE3A /* HealthKitService+NewSignals.swift */,
 				AF653DB511987E2381F04F20 /* HealthKitTypes.swift */,
 				EC8908CCD706784EBE056C6F /* MusicKitService.swift */,
@@ -528,8 +614,13 @@
 		5DFA0A7774438F344B950583 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				2FB8C5CF152E1319C6C639F0 /* CircadianProfileTypes.swift */,
 				B7CEBC645377CAEEE4177E11 /* ContextSignal.swift */,
 				A936029DE841B8A646575612 /* DecisionContext.swift */,
+				299B18C1BA6012A238B327C9 /* EmotionalState.swift */,
+				763689D009EA4A4E1533D574 /* EmotionCategory.swift */,
+				14EF627B323A5E1BA73C3805 /* MoodPlaylist.swift */,
+				B68EEFD0C6440840F06AC119 /* MoodTrajectory.swift */,
 				6F5F4FF8FBACDD540865B995 /* ResonanceScoreHistory.swift */,
 				BBF58E4EFDE766336AB717B7 /* SongFeatures.swift */,
 				28FDD4C9EF07A4A8BB08634A /* SongScore.swift */,
@@ -575,7 +666,13 @@
 			isa = PBXGroup;
 			children = (
 				1B8BCE5ED7C4E2AAFB6E29DC /* ActivityContextInference.swift */,
+				D92C2FB76BF9F44977EC1F03 /* CircadianContextInference.swift */,
+				E049C35ECF4898F0900B11FB /* CircadianEnergyModifier.swift */,
+				5384C549EBB1532507E8AC7D /* CircadianProfileManager.swift */,
+				64ACBF43F52BA364532F19F8 /* EmotionRefinementEngine.swift */,
+				D2129CDD20B89A2B48BCC377 /* MusicNeedInference.swift */,
 				D4144C1BB3E53929C9308043 /* PersonalBaseline.swift */,
+				5986C32A1FFE65478CE903BD /* SleepMoodBaseline.swift */,
 				B88CB25B8FD040B66FE107B1 /* StateCalculationHelpers.swift */,
 				2A125697A71C7A42ED71514C /* StateEngine.swift */,
 				1B084756C300BD79AE7FB140 /* StateEngineTypes.swift */,
@@ -657,13 +754,17 @@
 			isa = PBXGroup;
 			children = (
 				9A4B6AD1B74AD273DE6F8E96 /* AmbientGlowView.swift */,
+				2BA66590F1A31AFDB9311676 /* AudioRouteControls.swift */,
 				AFD8D3DB7ADD64878F059C86 /* BookmarkTimelineView.swift */,
 				3CC3B0BBD8906B99B3C31A46 /* HealthCorrelationChart.swift */,
 				103163A31D313F54107F8D37 /* HeartPulseRing.swift */,
 				128432788F979AF346AAEE3B /* MiniPlayerView.swift */,
 				0F88915D48B69A946185666D /* MoodArcView.swift */,
+				5C4C24F8B8E33D5ED1A4B3A7 /* MoodChartView.swift */,
 				7CFC73F9C67D1E73F0643374 /* MoodForecastView.swift */,
+				F5C6D6B85FF5100F07F6CD0C /* MoodPlaylistRow.swift */,
 				C26B0D3D56436353E4737893 /* PermissionStatusView.swift */,
+				D613BB6FBCFC3735CD501224 /* ResonanceComponents.swift */,
 				684FB13D62792F0EAC4461A3 /* ResonanceScoreTrendView.swift */,
 				D57DE1C188F07BF058F5FF7F /* ResonanceScoreView.swift */,
 				14F133A4295DD3EE3E69BB58 /* SessionSummaryView.swift */,
@@ -688,6 +789,7 @@
 				6D6DF78E6A2F755F0C6F5D73 /* Services */,
 				428B1148219D96A991E85168 /* Views */,
 				A1ED57DAEA3956431D6AF49C /* Info.plist */,
+				F606172CE8BD49C3F27E2470 /* PrivacyInfo.xcprivacy */,
 				FED89198337B9AFF544E3999 /* ResonanceWatchApp.swift */,
 			);
 			path = Watch;
@@ -758,9 +860,14 @@
 		D4BA42D552161DF009859158 /* Sensors */ = {
 			isa = PBXGroup;
 			children = (
+				41359B9A4F8CDD815FAE8A17 /* EmotionFeatureExtractor.swift */,
+				42C54413CF78D1AF38F1D3E6 /* EmotionMotionSensor.swift */,
 				84790847771FAB5E992479CD /* HeartRateSensor.swift */,
 				CA5A5ED8847FD4CF2E77B93D /* MotionSensor.swift */,
+				F176AA70C080735B2D904E9D /* OvernightTemperatureSensor.swift */,
 				E9F6C93D86E21EE17EB88B59 /* SensorCoordinator.swift */,
+				83FD771B1016FEF52367EC97 /* WatchCapabilityDetector.swift */,
+				F94D3204A316757FF9FB86E1 /* WatchEmotionClassifier.swift */,
 				688C3FEB7CF667361B387CEB /* WorkoutDetector.swift */,
 				5B92AE62B1153F58DD7457EC /* WorkoutSessionManager.swift */,
 			);
@@ -774,8 +881,11 @@
 				C56CF4E4D93E7D450CC7A62B /* AudioFeaturePredictor.swift */,
 				92E55BD5EC567C154FE649B6 /* FeatureExtractor.swift */,
 				8CE69467BD2BFA90DE718D51 /* FeatureNormalizer.swift */,
+				A1049C615E5793B712AD31CB /* FFTProcessor.swift */,
+				0C5277A3788AB5E2AA30A26E /* MelFilterbank.swift */,
 				CB9D48CC12179B50D9BC0DB7 /* MoodForecastEngine.swift */,
 				C1EFB6E8EF22EFD71638C099 /* RealtimeBPMVerifier.swift */,
+				95299650048A593D8B6BE34F /* SpectralAnalyzer.swift */,
 				E6EB0C3988B209A612CEABBB /* VocalDetector.swift */,
 			);
 			path = Features;
@@ -813,10 +923,17 @@
 			children = (
 				A433284F0FAE14F8A7810A28 /* Components */,
 				62CBE524AA318EB2FEC7115C /* Onboarding */,
+				C0D975254D502C64414D5139 /* DataAnalysisView.swift */,
+				2729448973CFF70FD16E5E56 /* DJTuningView.swift */,
+				514EF067B0883CF53A53834C /* LandingView.swift */,
+				45EDFFD899A4EC01398458F3 /* LibraryAnalysisView.swift */,
 				A6F6047E05519D26A1DF6A20 /* MainView.swift */,
+				3DF93E4EBB848AE1DDA5A370 /* MoodDetailView.swift */,
 				649D1B31F8BF440005D87934 /* MoodInputView.swift */,
+				7FDA8AC702DE3000A063C125 /* MoodTabView.swift */,
 				19BA53DF712E3E2C0F0282D1 /* NowPlayingView.swift */,
 				158614189CEBBF0AD2AE00E9 /* PlaylistBrowserView.swift */,
+				5CA80BC3D26240206BB768A5 /* PlaylistDetailView.swift */,
 				7D6F10B525ED2209D4B56BC4 /* SessionIntentPicker.swift */,
 				B892372A1F6A5E1CD575155A /* SettingsView.swift */,
 				DCA0CD7FC6BF9C5855A1C224 /* StateDebugView.swift */,
@@ -847,6 +964,7 @@
 				2D7F4D724A754E9B93429320 /* ViewModels */,
 				D95BDAB2310EBFEB432B37D5 /* Views */,
 				4B3004AF8E3B77BE7F4AABF2 /* Info.plist */,
+				46BBEBE3DEC25FC7AAFBC22E /* PrivacyInfo.xcprivacy */,
 				1D5307B2A9BD3DD16C6187A7 /* ResonanceApp.swift */,
 			);
 			path = iOS;
@@ -855,7 +973,9 @@
 		F482826BDCB42868FB24921C /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				10318F6E2F6DA6B900DA8B8E /* NowPlayingCloudKitSync.swift */,
 				4777E7508A9C4823D7A9B090 /* FocusModeIntents.swift */,
+				18F7C829AE4505B87282C226 /* LibraryAnalysisEngine.swift */,
 				3A5676A71087BD1F2DDF3A6C /* LiveActivityManager.swift */,
 				BACB2808ABB266CD884890CC /* WatchConnectivityManager.swift */,
 			);
@@ -870,6 +990,7 @@
 			buildConfigurationList = 46738630589726F85648007C /* Build configuration list for PBXNativeTarget "Resonance" */;
 			buildPhases = (
 				884B4B7D1A23A13160D01E9F /* Sources */,
+				D917FCADC11AA6BE8BC7C865 /* Resources */,
 				250B58582F85B3558F9B7D2B /* Embed Foundation Extensions */,
 			);
 			buildRules = (
@@ -906,6 +1027,7 @@
 			buildConfigurationList = 095CAE8D3A0DC14CFE5FE8EB /* Build configuration list for PBXNativeTarget "ResonanceWatch" */;
 			buildPhases = (
 				83F0FE1D519F09946C1633EF /* Sources */,
+				7828F113F22F4D01BCCC8A92 /* Resources */,
 				C83CB4D127C35B7C620F9AD5 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
@@ -1017,7 +1139,6 @@
 			);
 			mainGroup = 767D7001CBEA7CB689D0DD7D;
 			minimizedProjectReferenceProxies = 1;
-			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -1030,6 +1151,25 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		7828F113F22F4D01BCCC8A92 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				45F0308586B3DCEED6AF2880 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D917FCADC11AA6BE8BC7C865 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AB031B2C00D244B9FB5E57AD /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		42A0BD195DDAC798DADD25D1 /* Sources */ = {
@@ -1056,9 +1196,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D3525B3626CCF79C1C5E94EF /* CircadianProfileTypes.swift in Sources */,
 				A6940570512D73480A36D5D2 /* Constants.swift in Sources */,
 				8AD26BF523AB372A5B47F887 /* ContextSignal.swift in Sources */,
 				653F995A47A5EC7E672B2312 /* DecisionContext.swift in Sources */,
+				DF8A6A5B92B376F54D0542DC /* EmotionCategory.swift in Sources */,
+				4E3C3D342A8037A607861D4E /* EmotionalState.swift in Sources */,
+				9730A22109C3038773EB8DDB /* MoodPlaylist.swift in Sources */,
+				93DF58421883BD1A3B19A96D /* MoodTrajectory.swift in Sources */,
 				482B4C0DE66CE4EA69827A1B /* ResonanceScoreHistory.swift in Sources */,
 				E6CB4CB859DD7A0BDB95ABCF /* ResonanceWidgets.swift in Sources */,
 				89EE392686C101E239E75A2A /* SongFeatures.swift in Sources */,
@@ -1077,13 +1222,18 @@
 				76F4A6D0D7E4D54AC67E76C0 /* ActiveAppProvider.swift in Sources */,
 				19C29EAAE98CB26037A4CBD0 /* ActivityContext+Emoji.swift in Sources */,
 				60A1793DF8A4CEE520AD0B15 /* CalendarProvider.swift in Sources */,
+				8FD90FE0E1FD6F9DE519154F /* CircadianProfileTypes.swift in Sources */,
 				10962499327021055EC510D9 /* Constants.swift in Sources */,
 				20041EE803C89F10ABBBFD24 /* ContextBroadcaster.swift in Sources */,
 				2FE732B56756A518D4C271B3 /* ContextSignal.swift in Sources */,
 				CF628DFC609B46ADC4E31C23 /* DecisionContext.swift in Sources */,
+				8D85FD1BCD474F1DEC7495E3 /* EmotionCategory.swift in Sources */,
+				D48B9143658649E7FD1F15CC /* EmotionalState.swift in Sources */,
 				26854498D8B06CA44D203C0A /* FocusModeProvider.swift in Sources */,
 				174E5C9B60C516716C46C08B /* Logging.swift in Sources */,
 				BA968E310632896AA9A77CAD /* MenuBarController.swift in Sources */,
+				BE55D7DBC0C8DF671CAA561F /* MoodPlaylist.swift in Sources */,
+				6180FF670224F4E9C56B64CA /* MoodTrajectory.swift in Sources */,
 				BDDA20F06496272698649A32 /* PopoverView.swift in Sources */,
 				8799C5CD675791093661A410 /* ResonanceMacApp.swift in Sources */,
 				3D05918647F1FF6F312B069A /* ResonanceScoreHistory.swift in Sources */,
@@ -1103,14 +1253,22 @@
 			buildActionMask = 2147483647;
 			files = (
 				12BD3A20A1C259CD7FE49C00 /* ActivityContext+Emoji.swift in Sources */,
+				F0E996C9D293361FB950DCD2 /* CircadianProfileTypes.swift in Sources */,
 				DA8DFC66743AB594BE2F48E5 /* ComplicationDataStore.swift in Sources */,
 				8661E02DCACDE6E4410DA79A /* Constants.swift in Sources */,
 				1C79194718E7864541DCE25C /* ContextSignal.swift in Sources */,
 				DBED586D26030AC590C13929 /* CrownHandler.swift in Sources */,
 				D1F50FB9682267F3DE2A5FB0 /* DecisionContext.swift in Sources */,
+				24692ED29CBBA77982E65F01 /* EmotionCategory.swift in Sources */,
+				04DD0FE078F1423DD24AE8BD /* EmotionFeatureExtractor.swift in Sources */,
+				0C7421D94A337B35C1661807 /* EmotionMotionSensor.swift in Sources */,
+				B7CA74E8938D212D9280648E /* EmotionalState.swift in Sources */,
 				AC2F0E644DCD085685F654E8 /* HeartRateSensor.swift in Sources */,
 				DC24926A7C818B1C123D80EB /* Logging.swift in Sources */,
+				8359CFABC2D4B75510EBFBE7 /* MoodPlaylist.swift in Sources */,
+				52E7A7680991764C918EF310 /* MoodTrajectory.swift in Sources */,
 				C541AD1A3D4D0CDA66E153E8 /* MotionSensor.swift in Sources */,
+				014006B0173A88F8298E21E8 /* OvernightTemperatureSensor.swift in Sources */,
 				A4C39655C199204D63950FCD /* PhoneConnectivityService.swift in Sources */,
 				C0599B9A466C9DDB3B9132F5 /* ResonanceScoreHistory.swift in Sources */,
 				852EAF04DB38CEAB42C80A01 /* ResonanceWatchApp.swift in Sources */,
@@ -1121,6 +1279,8 @@
 				7199CA108BBD57280A8180D9 /* TimeInterval+Formatting.swift in Sources */,
 				540EB69B2DBCD97632E86347 /* UIImage+DominantColor.swift in Sources */,
 				DAD8FA89D3944F38EE3B6A2C /* UserPreferences.swift in Sources */,
+				8614BBF74D98FC5F69551614 /* WatchCapabilityDetector.swift in Sources */,
+				D6CFF7B321A99F9E9C0A103B /* WatchEmotionClassifier.swift in Sources */,
 				A16F9811CC03A331D5A6F9BC /* WatchMessages.swift in Sources */,
 				C3490FB249567D71CF1FAF70 /* WatchMoodInputView.swift in Sources */,
 				F11019181932DA92B5FAFA33 /* WatchNowPlayingView.swift in Sources */,
@@ -1138,22 +1298,33 @@
 				3FA46E078627496DF5F4C3D8 /* AmbientGlowView.swift in Sources */,
 				78FE8F58556222B5CB3B912A /* AudioAnalyzer.swift in Sources */,
 				F9C2FA963AE39DDA110BFBF8 /* AudioFeaturePredictor.swift in Sources */,
+				9B6F86F63DC99A9D2A5A4F59 /* AudioRouteControls.swift in Sources */,
 				117B1F774879DD675DC906D6 /* AudioRouteService.swift in Sources */,
 				07F814E1C3C86447AE90072C /* BatchInsertHelper.swift in Sources */,
 				BF569BA37C3D639014BAEC8D /* BiometricCrossfadeEngine.swift in Sources */,
 				63752DA799DE29CF66D81F2D /* BookmarkManager.swift in Sources */,
 				8719EB024B5C9D57165B84C6 /* BookmarkTimelineView.swift in Sources */,
+				B9216089277EEE1AC45FB350 /* CircadianContextInference.swift in Sources */,
+				91E87837703DC4E9890EFBAD /* CircadianEnergyModifier.swift in Sources */,
+				609759560C1A72A86ACE6484 /* CircadianProfileManager.swift in Sources */,
+				DBA80B0990E4871BFE65DA88 /* CircadianProfileTypes.swift in Sources */,
 				424796DF70DC6F8505183392 /* ColorTheme.swift in Sources */,
 				0157D1CC9BBA2B61E3086C6A /* Constants.swift in Sources */,
 				7EE4684CDC4DC856CBBF17CF /* ContextCollector.swift in Sources */,
 				0DBD17308E2D7CC8A1F6C24B /* ContextSignal.swift in Sources */,
 				7F94A4ED83BAACCD3E3E9BAF /* ConversationalExplanation.swift in Sources */,
+				CB322A5030C4A41A0EFD3EF1 /* DJTuningView.swift in Sources */,
+				37BFABBC174C2C7E261DF323 /* DataAnalysisView.swift in Sources */,
 				D5BC48667B1332669E1DCE8F /* DecisionContext.swift in Sources */,
 				D7110C568F734E203FF39EB3 /* DecisionEngine.swift in Sources */,
 				3CA58D93B6DAD8E419851A74 /* DominantColorExtractor.swift in Sources */,
 				0263AB879269734DFD657732 /* EffectivenessLearner.swift in Sources */,
+				E937F6FC6FDB32F8A53054B1 /* EmotionCategory.swift in Sources */,
+				7FE7C0813041A5A3EB852D94 /* EmotionRefinementEngine.swift in Sources */,
+				6D511364E1250B75706F443D /* EmotionalState.swift in Sources */,
 				ECBF347BCB01EC86294F7CB4 /* EventLogger.swift in Sources */,
 				25B14D89A11A896AFF4139B6 /* ExplanationGenerator.swift in Sources */,
+				19343F04E7AFEAF0F1090DA7 /* FFTProcessor.swift in Sources */,
 				6A60FB7F6483348F1CFA9BC6 /* FeatureExtractor.swift in Sources */,
 				CFA7A52C130FA82C3C220B18 /* FeatureNormalizer.swift in Sources */,
 				531537A422B383A2CD6017EC /* FocusModeIntents.swift in Sources */,
@@ -1161,26 +1332,38 @@
 				65E235FAD376CD52FF753A8A /* GuardFilters.swift in Sources */,
 				EF38A152612BB749620E106C /* HealthCorrelationChart.swift in Sources */,
 				B251EED86E6EB53EB8238AF5 /* HealthKitQueryBuilder.swift in Sources */,
+				F971D5F007AC203EF304AB51 /* HealthKitService+Circadian.swift in Sources */,
 				9FD2A04EFB89940C8F287F75 /* HealthKitService+NewSignals.swift in Sources */,
 				2DB9E0C77374397CD59288E5 /* HealthKitService.swift in Sources */,
 				3F39DFB5EAF4C1741E76A156 /* HealthKitTypes.swift in Sources */,
 				AB283CE399ADB59CC6A4442D /* HeartPulseRing.swift in Sources */,
 				3C755B307D4CEC85CD81C19B /* HistoricalEngine.swift in Sources */,
 				DC7D73FA0B01C9E345ACE1F6 /* ImpactScore.swift in Sources */,
+				CE247012A9F54B15AC64B7C2 /* LandingView.swift in Sources */,
 				437470EBA4F9521BC271E084 /* LearningFormulaHelper.swift in Sources */,
 				83083C47BFB262E8B124C727 /* LearningStore.swift in Sources */,
+				0CB1F9093AFB3FADCC63DB3C /* LibraryAnalysisEngine.swift in Sources */,
+				A7B26F80600204FC328CEB29 /* LibraryAnalysisView.swift in Sources */,
 				1A6931397146A077C3181773 /* LiveActivityManager.swift in Sources */,
 				3B2C991FFF5E1D57FB350129 /* Logging.swift in Sources */,
 				7CC417F5D8B6EC0E440F301E /* MainView.swift in Sources */,
+				8A61F7DB3E30C2A58CD618E2 /* MelFilterbank.swift in Sources */,
 				42015377CB9E772CE831C071 /* MiniPlayerView.swift in Sources */,
 				509A8BA3F5977B5945D8564D /* MoodArcView.swift in Sources */,
+				AE3362E453CBBAE7DF5813A6 /* MoodChartView.swift in Sources */,
+				0729E4C02AA1639B7445F4C9 /* MoodDetailView.swift in Sources */,
 				57BBDB2385262D47A79272DF /* MoodForecastEngine.swift in Sources */,
 				EB2D9445A520D720D8802A67 /* MoodForecastView.swift in Sources */,
 				4ACB271C357EA0D7BDD8E321 /* MoodForecastViewModel.swift in Sources */,
 				D7449218F0B24E02F1ED1125 /* MoodInputView.swift in Sources */,
+				629BDDB2B4501572B8CFA83F /* MoodPlaylist.swift in Sources */,
+				E7F01D0B888CCAD76FB64A02 /* MoodPlaylistRow.swift in Sources */,
+				F4FF2507D267C3517E2F551D /* MoodTabView.swift in Sources */,
+				069DE26D84B17C4CA707AC1E /* MoodTrajectory.swift in Sources */,
 				6D56259E9484654B5C2A8DDA /* MovingWindowNormalizer.swift in Sources */,
 				04CECD87AC32A5302CDD4EBE /* MultiComponentReward.swift in Sources */,
 				52A4FD530D1979F3662AD12B /* MusicKitService.swift in Sources */,
+				3A0BECA81318C8E18AEDD928 /* MusicNeedInference.swift in Sources */,
 				297EFED2B93BF6502FDE9E93 /* NowPlayingView.swift in Sources */,
 				E3134A9D5DCB55D0714A7B6F /* NowPlayingViewModel.swift in Sources */,
 				19B2606A8A3AF0E20C8EA301 /* OnboardingContainerView.swift in Sources */,
@@ -1189,6 +1372,7 @@
 				784362FB61D03A62C8E23D83 /* PersistenceController.swift in Sources */,
 				66ED5CE52F529C754FE91083 /* PersonalBaseline.swift in Sources */,
 				810765D75ADACA153DD65110 /* PlaylistBrowserView.swift in Sources */,
+				AE704D77801037D54FE481D7 /* PlaylistDetailView.swift in Sources */,
 				6AF434331AED1DA74AB9C0A9 /* PlaylistImpactCalculator.swift in Sources */,
 				043C64226683F133E4FFDBCF /* PlaylistRepository.swift in Sources */,
 				B1D0D322EEA945CD362B33DB /* PlaylistViewModel.swift in Sources */,
@@ -1196,6 +1380,7 @@
 				0E0007883637141D6DE75F8E /* RealtimeBPMVerifier.swift in Sources */,
 				3B515791B418449660F92B8B /* Resonance.xcdatamodeld in Sources */,
 				67389D3F9FA11CB656E8A5AD /* ResonanceApp.swift in Sources */,
+				F054E31A7E8CF2AA6A676F70 /* ResonanceComponents.swift in Sources */,
 				3A02193619849DD294CEB98F /* ResonanceScoreCalculator.swift in Sources */,
 				0A77029DC8AC685A4B698163 /* ResonanceScoreHistory.swift in Sources */,
 				AF30FC5FA0601C733F137344 /* ResonanceScoreTrendView.swift in Sources */,
@@ -1215,15 +1400,18 @@
 				1E6D3CB0B526968A3FAF1D33 /* SharedStateEngine.swift in Sources */,
 				E7436BF1C09F2FA019126B8D /* SkeletonView.swift in Sources */,
 				17AE8E63922D4B9BEEF53479 /* SkipPenaltyCalculator.swift in Sources */,
+				715C67A9BDEC22AB88DA3539 /* SleepMoodBaseline.swift in Sources */,
 				7E7A5743C4091115650A4219 /* SongEffectHelper.swift in Sources */,
 				E7637A8FC24899BC33CDC059 /* SongFeatures.swift in Sources */,
 				CAAE446FB88AD2E734CFE928 /* SongImpactCalculator.swift in Sources */,
 				4A14B1A3FD2828BFF498DEE1 /* SongRepository.swift in Sources */,
 				8F300FC8BD2239DA69694F1A /* SongScore.swift in Sources */,
 				6176259D620562210A66A397 /* SongScorer.swift in Sources */,
+				0E9F906A01B87A0554C9BF5C /* SpectralAnalyzer.swift in Sources */,
 				F0947431CF6EFE4BDBF2EBD1 /* StateCalculationHelpers.swift in Sources */,
 				23213B785858D8BBA8CD9DF2 /* StateDebugView.swift in Sources */,
 				4618DA4CC7DB5A210E22C895 /* StateEngine.swift in Sources */,
+				10318F6F2F6DA6B900DA8B8E /* NowPlayingCloudKitSync.swift in Sources */,
 				90A17294625E6F17B5DDC513 /* StateEngineTypes.swift in Sources */,
 				CBDCA92D05EF0491FDF120D3 /* StateVector.swift in Sources */,
 				74C9AE559891068C4C1AAC1B /* TimeInterval+Formatting.swift in Sources */,
@@ -1278,7 +1466,10 @@
 				CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION = YES;
 				CODE_SIGN_ENTITLEMENTS = Watch/Entitlements/ResonanceWatch.entitlements;
 				INFOPLIST_FILE = Watch/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.y4sh.resonance.ios.watchkitapp;
 				SDKROOT = watchos;
 				SKIP_INSTALL = NO;
@@ -1295,7 +1486,10 @@
 				CODE_SIGN_ENTITLEMENTS = macOS/Entitlements/ResonanceMac.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
 				INFOPLIST_FILE = macOS/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.y4sh.resonance.macos;
 				SDKROOT = macosx;
@@ -1326,7 +1520,11 @@
 				CODE_SIGN_ENTITLEMENTS = Widgets/ResonanceWidgets.entitlements;
 				INFOPLIST_FILE = Widgets/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.y4sh.resonance.ios.widgets;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
@@ -1339,7 +1537,11 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = Watch/Entitlements/ResonanceWatch.entitlements;
 				INFOPLIST_FILE = Watch/Complications/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.y4sh.resonance.ios.watchkitapp.complications;
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
@@ -1426,7 +1628,10 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				INFOPLIST_FILE = iOS/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.y4sh.resonance.ios;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -1440,7 +1645,10 @@
 				CODE_SIGN_ENTITLEMENTS = macOS/Entitlements/ResonanceMac.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
 				INFOPLIST_FILE = macOS/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.y4sh.resonance.macos;
 				SDKROOT = macosx;
@@ -1520,7 +1728,10 @@
 				CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION = YES;
 				CODE_SIGN_ENTITLEMENTS = Watch/Entitlements/ResonanceWatch.entitlements;
 				INFOPLIST_FILE = Watch/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.y4sh.resonance.ios.watchkitapp;
 				SDKROOT = watchos;
 				SKIP_INSTALL = NO;
@@ -1535,7 +1746,11 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = Watch/Entitlements/ResonanceWatch.entitlements;
 				INFOPLIST_FILE = Watch/Complications/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.y4sh.resonance.ios.watchkitapp.complications;
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
@@ -1552,7 +1767,10 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				INFOPLIST_FILE = iOS/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.y4sh.resonance.ios;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -1583,7 +1801,11 @@
 				CODE_SIGN_ENTITLEMENTS = Widgets/ResonanceWidgets.entitlements;
 				INFOPLIST_FILE = Widgets/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.y4sh.resonance.ios.widgets;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;

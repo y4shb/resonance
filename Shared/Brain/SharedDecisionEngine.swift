@@ -239,15 +239,22 @@ public final class SharedDecisionEngine: @unchecked Sendable {
 
     /// Starts a new session arc based on the current context.
     /// Called automatically on session start or when no arc exists.
+    /// D1 fix: When a mood trajectory is present in the context, uses
+    /// `planTrajectoryArc` for guided mood journeys.
     public func startSessionArc(
         context: DecisionContext,
         estimatedDuration: TimeInterval = 30
     ) {
-        let arc = sessionPlanner.planSession(
-            currentState: context.stateVector,
-            targetContext: context.stateVector.context,
-            estimatedDuration: estimatedDuration
-        )
+        let arc: SessionArc
+        if let trajectory = context.moodTrajectory {
+            arc = sessionPlanner.planTrajectoryArc(trajectory: trajectory)
+        } else {
+            arc = sessionPlanner.planSession(
+                currentState: context.stateVector,
+                targetContext: context.stateVector.context,
+                estimatedDuration: estimatedDuration
+            )
+        }
         lock.withLock {
             _currentArc = arc
             _arcSongsPlayed = 0
@@ -261,15 +268,23 @@ public final class SharedDecisionEngine: @unchecked Sendable {
     }
 
     /// Internal version called while holding `lock`.
+    /// D1 fix: When a mood trajectory is present in the context, uses
+    /// `planTrajectoryArc` so the session follows the user's intended
+    /// mood journey rather than the default context-based plan.
     private func _startSessionArc(
         context: DecisionContext,
         estimatedDuration: TimeInterval = 30
     ) {
-        let arc = sessionPlanner.planSession(
-            currentState: context.stateVector,
-            targetContext: context.stateVector.context,
-            estimatedDuration: estimatedDuration
-        )
+        let arc: SessionArc
+        if let trajectory = context.moodTrajectory {
+            arc = sessionPlanner.planTrajectoryArc(trajectory: trajectory)
+        } else {
+            arc = sessionPlanner.planSession(
+                currentState: context.stateVector,
+                targetContext: context.stateVector.context,
+                estimatedDuration: estimatedDuration
+            )
+        }
         _currentArc = arc
         _arcSongsPlayed = 0
 

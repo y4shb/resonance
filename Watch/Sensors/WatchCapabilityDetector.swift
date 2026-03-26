@@ -67,23 +67,18 @@ final class WatchCapabilityDetector {
 
     /// Whether wrist temperature data is available (Series 8+, Ultra).
     ///
-    /// Detection strategy (FIX 1):
+    /// Detection strategy:
     ///   1. Requires watchOS 9.0+ (temperature API not available earlier).
-    ///   2. Queries HealthKit for any wrist-temperature samples recorded in the
-    ///      last 30 days. A non-empty result proves the sensor hardware exists.
-    ///   3. Falls back to `false` on older watchOS or when no samples are found,
-    ///      because `authorizationStatus` alone cannot distinguish "no sensor"
-    ///      from "permission not yet requested".
+    ///   2. Runs a trial HKSampleQuery to verify the hardware supports the
+    ///      wrist temperature type. On devices without the sensor, HealthKit
+    ///      returns an error. On devices with the sensor, it completes without
+    ///      error even if no data has been recorded yet.
+    ///   3. This correctly distinguishes "no sensor hardware" from "haven't
+    ///      asked permission" which `authorizationStatus` alone cannot do.
     var isTemperatureAvailable: Bool {
         guard HKHealthStore.isHealthDataAvailable() else { return false }
         guard #available(watchOS 9.0, *) else { return false }
-
-        let systemVersion = WKInterfaceDevice.current().systemVersion
-        guard systemVersion.compare("9.0", options: .numeric) != .orderedAscending else {
-            return false
-        }
-
-        return hasRecentTemperatureSamples()
+        return hasTemperatureHardwareSupport()
     }
 
     // MARK: - Private
@@ -101,57 +96,67 @@ final class WatchCapabilityDetector {
         }
     }
 
-    /// Queries HealthKit for wrist-temperature samples within the last 30 days.
-    /// Returns `true` only when at least one sample exists, which proves the
-    /// hardware sensor is present and has recorded data.
+    /// Verifies temperature hardware support via a trial HealthKit sample query.
+    ///
+    /// On devices **without** the wrist temperature sensor, HealthKit returns
+    /// an error (e.g. `HKError.errorInvalidArgument`) because the type is not
+    /// recognized by the hardware. On devices **with** the sensor, the query
+    /// completes without error -- even if no samples have been recorded yet
+    /// (e.g. the user has never worn the watch to sleep).
+    ///
+    /// This correctly distinguishes "no sensor hardware" from "haven't asked
+    /// permission" or "no data recorded yet", which `authorizationStatus`
+    /// alone cannot do (it returns `.notDetermined` for both cases).
     @available(watchOS 9.0, *)
-    private func hasRecentTemperatureSamples() -> Bool {
+    private func hasTemperatureHardwareSupport() -> Bool {
         let store = HKHealthStore()
         let tempType = HKQuantityType(.appleSleepingWristTemperature)
 
         let authStatus = store.authorizationStatus(for: tempType)
-        if authStatus == .sharingDenied {
-            // User explicitly denied; we cannot query. Assume no capability
-            // rather than returning a false positive.
-            return false
+        if authStatus == .sharingAuthorized {
+            // User already granted access -- hardware definitely exists.
+            return true
         }
+        if authStatus == .sharingDenied {
+            // User denied, but denial implies the type was recognized by the
+            // system. Hardware exists; we just cannot access the data.
+            // Return true so the tier reflects actual hardware capability.
+            return true
+        }
+
+        // authStatus == .notDetermined: ambiguous. Run a trial query to
+        // determine if the hardware supports this sample type.
+        let semaphore = DispatchSemaphore(value: 0)
+        var hardwareSupported = false
 
         let now = Date()
-        guard let thirtyDaysAgo = Calendar.current.date(byAdding: .day, value: -30, to: now) else {
-            return false
-        }
-
         let predicate = HKQuery.predicateForSamples(
-            withStart: thirtyDaysAgo,
+            withStart: now.addingTimeInterval(-86400),
             end: now,
             options: .strictStartDate
         )
-
-        let semaphore = DispatchSemaphore(value: 0)
-        var foundSamples = false
 
         let query = HKSampleQuery(
             sampleType: tempType,
             predicate: predicate,
             limit: 1,
             sortDescriptors: nil
-        ) { _, results, error in
-            if let error {
-                logWarning(
-                    "Temperature sample query failed: \(error.localizedDescription)",
-                    category: .healthKit
-                )
-            }
-            if let results, !results.isEmpty {
-                foundSamples = true
-            }
+        ) { _, _, error in
+            // No error means the type is recognized by hardware.
+            // An error (e.g. HKError.errorInvalidArgument) means the
+            // hardware does not support this sample type.
+            hardwareSupported = (error == nil)
             semaphore.signal()
         }
 
         store.execute(query)
-        _ = semaphore.wait(timeout: .now() + 5)
+        let result = semaphore.wait(timeout: .now() + 3)
+        if result == .timedOut {
+            store.stop(query)
+            return false
+        }
 
-        return foundSamples
+        return hardwareSupported
     }
 
     private init() {}

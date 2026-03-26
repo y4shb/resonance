@@ -2,19 +2,35 @@
 //  FeatureExtractor.swift
 //  Resonance
 //
-//  Extracts and estimates audio features for songs using genre-based heuristics.
-//  Since MusicKit does not expose BPM/energy/valence, this uses genre-to-feature
-//  mapping tables to produce reasonable estimates.
+//  Extracts and estimates audio features for songs. Uses a tiered approach:
+//  1. On-device audio analysis via AudioAnalyzer (highest confidence, 0.85)
+//  2. ML prediction via AudioFeaturePredictor (confidence 0.65)
+//  3. Enhanced heuristics (confidence 0.45)
+//  4. Genre-based lookup tables (baseline, confidence 0.4)
+//
+//  When a local audio file is available (downloaded Apple Music tracks),
+//  AudioAnalyzer performs real spectral analysis including BPM estimation,
+//  energy, valence, and spectral features (centroid, rolloff, flux, MFCCs).
 //
 
 import CoreData
 import Foundation
 
-/// Extracts and estimates audio features for songs using genre-based heuristics.
-/// Since MusicKit does not expose BPM/energy/valence, this uses genre-to-feature mapping tables.
+#if os(iOS)
+import MediaPlayer
+#endif
+
+/// Extracts and estimates audio features for songs using a tiered approach
+/// that blends on-device audio analysis, ML predictions, and genre heuristics.
 final class FeatureExtractor {
 
     private let persistence: PersistenceController
+
+    #if os(iOS)
+    /// Lazy audio analyzer for on-device spectral analysis.
+    /// Created once and reused across songs to avoid repeated FFT setup.
+    private lazy var audioAnalyzer = AudioAnalyzer()
+    #endif
 
     init(persistence: PersistenceController = .shared) {
         self.persistence = persistence
@@ -24,6 +40,10 @@ final class FeatureExtractor {
 
     /// Extracts features for a batch of songs that need analysis.
     /// Fetches songs with bpm == 0 or confidenceLevel < 0.3, extracts features, saves.
+    ///
+    /// On iOS, attempts on-device audio analysis via `AudioAnalyzer` for songs
+    /// that have a locally downloaded audio file (via `MPMediaQuery`). Falls back
+    /// to genre heuristics and ML predictions when no local file is available.
     func extractFeaturesForPendingSongs(limit: Int = 50) async {
         let songRepository = SongRepository(persistence: persistence)
         let pendingSongs = songRepository.fetchSongsNeedingFeatures(limit: limit)
@@ -37,11 +57,47 @@ final class FeatureExtractor {
 
         let objectIDs = pendingSongs.map { $0.objectID }
 
+        #if os(iOS)
+        // Pre-resolve local audio URLs in bulk before entering the background context.
+        // MPMediaQuery must be called on a thread with media library access,
+        // so we resolve URLs here, outside the Core Data block.
+        // We match by title + artist since MusicKit catalog IDs differ from
+        // MPMediaItem persistent IDs.
+        let songKeys: [(objectID: NSManagedObjectID, title: String, artist: String)] = pendingSongs.map {
+            ($0.objectID, $0.title ?? "", $0.artistName ?? "")
+        }
+        let audioURLsByKey = resolveLocalAudioURLs(for: songKeys.map { ($0.title, $0.artist) })
+        #endif
+
+        #if os(iOS)
+        // Run audio analysis outside the Core Data block since it is async.
+        // Collect results keyed by index for songs that have local audio files.
+        var audioResults: [Int: AudioAnalysisResult] = [:]
+        for (index, _) in objectIDs.enumerated() {
+            let info = songKeys[index]
+            let lookupKey = Self.mediaLookupKey(title: info.title, artist: info.artist)
+            guard let url = audioURLsByKey[lookupKey] else { continue }
+            do {
+                let result = try await audioAnalyzer.analyze(url: url)
+                if result.confidence > 0 {
+                    audioResults[index] = result
+                }
+            } catch {
+                logDebug(
+                    "Audio analysis failed for '\(info.title)': \(error.localizedDescription), " +
+                    "falling back to heuristics",
+                    category: .background
+                )
+            }
+        }
+        #endif
+
         do {
-            try await persistence.performBackgroundTask { context in
+            try await persistence.performBackgroundTask { [weak self] context in
+                guard let self = self else { return }
                 var processedCount = 0
 
-                for objectID in objectIDs {
+                for (index, objectID) in objectIDs.enumerated() {
                     do {
                         guard let song = try context.existingObject(with: objectID) as? Song else {
                             logWarning(
@@ -51,6 +107,16 @@ final class FeatureExtractor {
                             continue
                         }
 
+                        #if os(iOS)
+                        // Apply pre-computed audio analysis results if available
+                        if let audioResult = audioResults[index] {
+                            self.applyAudioAnalysisResult(audioResult, to: song)
+                            processedCount += 1
+                            continue
+                        }
+                        #endif
+
+                        // Fall back to genre/ML heuristics
                         self.extractFeatures(for: song, in: context)
                         processedCount += 1
                     } catch {
@@ -310,4 +376,113 @@ final class FeatureExtractor {
     private func estimateHasVocals(instrumentalness: Double) -> Bool {
         return instrumentalness < 0.5
     }
+
+    // MARK: - On-Device Audio Analysis (iOS)
+
+    #if os(iOS)
+
+    /// Creates a normalized lookup key from title and artist for matching
+    /// MusicKit songs against MPMediaItems.
+    private static func mediaLookupKey(title: String, artist: String) -> String {
+        return "\(title.lowercased())|\(artist.lowercased())"
+    }
+
+    /// Resolves local audio file URLs for a batch of songs using MPMediaQuery.
+    ///
+    /// Matches songs by title + artist name since MusicKit catalog IDs and
+    /// MPMediaItem persistent IDs use different identifier systems.
+    /// Songs that are not downloaded locally (streaming-only) will not have
+    /// an `assetURL` and are excluded from the result dictionary.
+    ///
+    /// - Parameter songs: Array of (title, artist) tuples to look up.
+    /// - Returns: A dictionary mapping normalized lookup keys to local file URLs.
+    private func resolveLocalAudioURLs(for songs: [(title: String, artist: String)]) -> [String: URL] {
+        var result: [String: URL] = [:]
+
+        guard !songs.isEmpty else { return result }
+
+        let query = MPMediaQuery.songs()
+        guard let items = query.items else { return result }
+
+        // Build a lookup set of normalized keys for fast matching
+        let keysToFind = Set(songs.map { Self.mediaLookupKey(title: $0.title, artist: $0.artist) })
+
+        for item in items {
+            let itemKey = Self.mediaLookupKey(
+                title: item.title ?? "",
+                artist: item.artist ?? ""
+            )
+            guard keysToFind.contains(itemKey),
+                  let url = item.assetURL else {
+                continue
+            }
+            // First match wins; avoids duplicates from compilations
+            if result[itemKey] == nil {
+                result[itemKey] = url
+            }
+        }
+
+        return result
+    }
+
+    /// Applies a pre-computed `AudioAnalysisResult` to a Song entity.
+    ///
+    /// The analysis result includes BPM, energy, valence, instrumentalness, and
+    /// acoustic density -- all derived from actual audio signal processing rather
+    /// than genre tables. Also computes derived scores (calm, focus, activation).
+    ///
+    /// - Parameters:
+    ///   - result: The audio analysis result from `AudioAnalyzer`.
+    ///   - song: The Core Data Song entity to update.
+    private func applyAudioAnalysisResult(_ result: AudioAnalysisResult, to song: Song) {
+        song.bpm = result.bpm
+        song.energyEstimate = result.energy
+        song.valence = result.valence
+        song.instrumentalness = result.instrumentalness
+        song.acousticDensity = result.acousticDensity
+        song.confidenceLevel = result.confidence
+
+        let hasVocals = result.hasVocals
+
+        // Derived scores (same formulas as the heuristic path)
+        let bpmNormalized = min(max((result.bpm - 60.0) / 120.0, 0.0), 1.0)
+        song.calmScore = (1.0 - result.energy) * 0.5
+            + (1.0 - bpmNormalized) * 0.3
+            + result.instrumentalness * 0.2
+        let vocalPenalty = hasVocals ? 0.15 : 0.0
+        song.focusScore = max(0.0,
+            result.instrumentalness * 0.4
+            + (1.0 - result.energy) * 0.3
+            + (1.0 - result.acousticDensity) * 0.3
+            - vocalPenalty
+        )
+        song.activationScore = result.energy * 0.5
+            + bpmNormalized * 0.3
+            + result.valence * 0.2
+
+        // Store spectral features if available
+        if let centroid = result.spectralCentroid {
+            song.setValue(centroid, forKey: "spectralCentroid")
+        }
+        if let rolloff = result.spectralRolloff {
+            song.setValue(rolloff, forKey: "spectralRolloff")
+        }
+        if let flux = result.spectralFlux {
+            song.setValue(flux, forKey: "spectralFlux")
+        }
+        if let mfccs = result.mfccs {
+            song.setValue(mfccs as NSArray, forKey: "mfccs")
+        }
+
+        logDebug(
+            "Audio-analyzed '\(song.title ?? "unknown")' — " +
+            "bpm: \(result.bpm), energy: \(result.energy), " +
+            "valence: \(result.valence), hasVocals: \(hasVocals), " +
+            "confidence: \(result.confidence)" +
+            (result.spectralCentroid.map { ", centroid: \($0)Hz" } ?? ""),
+            category: .background
+        )
+    }
+
+    #endif
 }

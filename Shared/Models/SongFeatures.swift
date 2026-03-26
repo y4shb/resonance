@@ -44,6 +44,20 @@ public struct SongFeatures: Codable, Sendable, Equatable {
     /// Release year
     public var releaseYear: Int?
 
+    // MARK: - Spectral Features
+
+    /// Spectral centroid in Hz (brightness). Nil if not audio-analyzed.
+    public var spectralCentroid: Double?
+
+    /// Spectral rolloff in Hz (85th percentile energy). Nil if not audio-analyzed.
+    public var spectralRolloff: Double?
+
+    /// Spectral flux (rate of spectral change). Nil if not audio-analyzed.
+    public var spectralFlux: Double?
+
+    /// MFCC coefficients 1-12 (timbre descriptor). Nil if not audio-analyzed.
+    public var mfccs: [Float]?
+
     // MARK: - Feature Quality
 
     /// Whether features were extracted from audio analysis
@@ -67,6 +81,10 @@ public struct SongFeatures: Codable, Sendable, Equatable {
         primaryGenre: String? = nil,
         genres: [String] = [],
         releaseYear: Int? = nil,
+        spectralCentroid: Double? = nil,
+        spectralRolloff: Double? = nil,
+        spectralFlux: Double? = nil,
+        mfccs: [Float]? = nil,
         isAnalyzed: Bool = false,
         confidence: Double = 0,
         lastUpdated: Date = Date()
@@ -80,6 +98,10 @@ public struct SongFeatures: Codable, Sendable, Equatable {
         self.primaryGenre = primaryGenre
         self.genres = genres
         self.releaseYear = releaseYear
+        self.spectralCentroid = spectralCentroid
+        self.spectralRolloff = spectralRolloff
+        self.spectralFlux = spectralFlux
+        self.mfccs = mfccs
         self.isAnalyzed = isAnalyzed
         self.confidence = confidence
         self.lastUpdated = lastUpdated
@@ -89,6 +111,32 @@ public struct SongFeatures: Codable, Sendable, Equatable {
 
     public static var unknown: SongFeatures {
         SongFeatures()
+    }
+
+    /// Creates a `SongFeatures` from a Core Data `Song` managed object using KVC.
+    ///
+    /// Reads standard properties directly and spectral properties via
+    /// `value(forKey:)` so the model compiles even when the Core Data schema
+    /// has not yet added the spectral attributes.
+    public static func from(song: NSObject) -> SongFeatures {
+        SongFeatures(
+            bpm: (song.value(forKey: "bpm") as? Double) ?? 0,
+            energy: (song.value(forKey: "energyEstimate") as? Double) ?? 0.5,
+            acousticDensity: (song.value(forKey: "acousticDensity") as? Double) ?? 0.5,
+            valence: (song.value(forKey: "valence") as? Double) ?? 0.5,
+            instrumentalness: (song.value(forKey: "instrumentalness") as? Double) ?? 0.5,
+            durationSeconds: (song.value(forKey: "durationSeconds") as? Double) ?? 0,
+            primaryGenre: (song.value(forKey: "primaryGenre") as? String),
+            genres: (song.value(forKey: "genreNames") as? [String]) ?? [],
+            releaseYear: (song.value(forKey: "releaseYear") as? Int),
+            spectralCentroid: song.value(forKey: "spectralCentroid") as? Double,
+            spectralRolloff: song.value(forKey: "spectralRolloff") as? Double,
+            spectralFlux: song.value(forKey: "spectralFlux") as? Double,
+            mfccs: song.value(forKey: "mfccs") as? [Float],
+            isAnalyzed: (song.value(forKey: "isAnalyzed") as? Bool) ?? false,
+            confidence: (song.value(forKey: "confidenceLevel") as? Double) ?? 0,
+            lastUpdated: (song.value(forKey: "featuresUpdatedAt") as? Date) ?? Date()
+        )
     }
 }
 

@@ -56,7 +56,8 @@ final class StateEngine: ObservableObject {
     var restingHeartRate: Double?
 
     /// Last time we fetched resting HR.
-    private var lastRestingHRFetch: Date?
+    /// Internal access for HealthKit refresh helpers in MusicNeedInference.swift.
+    var lastRestingHRFetch: Date?
 
     /// Current crown-based energy adjustment (-0.5 to 0.5)
     var crownEnergyAdjustment = 0.0
@@ -66,12 +67,15 @@ final class StateEngine: ObservableObject {
     /// Cached VO2 Max for HR zone normalization (Workstream 3.1).
     var cachedVO2Max: Double?
     /// Last time we fetched VO2 Max.
-    private var lastVO2MaxFetch: Date?
+    /// Internal access for HealthKit refresh helpers in MusicNeedInference.swift.
+    var lastVO2MaxFetch: Date?
 
     /// Whether an irregular heart rhythm was recently detected (Workstream 3.8).
-    private var hasRecentIrregularRhythm = false
+    /// Internal access for HealthKit refresh helpers in MusicNeedInference.swift.
+    var hasRecentIrregularRhythm = false
     /// Last time we checked for irregular rhythm events.
-    private var lastIrregularRhythmCheck: Date?
+    /// Internal access for HealthKit refresh helpers in MusicNeedInference.swift.
+    var lastIrregularRhythmCheck: Date?
 
     // MARK: - R3: HR Acceleration Tracking (Appelhans & Luecken 2006)
     /// Rolling HR buffer for acceleration: ~4 samples (2 min at 30s intervals).
@@ -396,7 +400,7 @@ final class StateEngine: ObservableObject {
         )
         valence = emotionRefinementEngine.refineValence(
             baseValence: valence,
-            emotionalStateRaw: refinedEmotion?.rawValue,
+            emotionalState: refinedEmotion,
             confidence: watchEmotionConfidence
         )
 
@@ -477,7 +481,7 @@ final class StateEngine: ObservableObject {
             timestamp: Date(),
             confidence: confidence,
             dataSources: dataSources,
-            emotionalState: refinedEmotion
+            emotionalStateRaw: refinedEmotion?.rawValue
         )
 
         state.inferredNeed = inferMusicNeed(state: state)

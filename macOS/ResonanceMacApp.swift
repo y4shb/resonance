@@ -57,6 +57,13 @@ struct ResonanceMacApp: App {
                 .onReceive(contextBroadcaster.$lastSyncDate.compactMap { $0 }) { date in
                     menuBarController.lastSyncTime = date
                 }
+                .onReceive(contextBroadcaster.$latestNowPlaying) { packet in
+                    if let packet = packet {
+                        menuBarController.updateNowPlaying(packet)
+                    } else {
+                        menuBarController.clearNowPlaying()
+                    }
+                }
         }
         .menuBarExtraStyle(.window)
 

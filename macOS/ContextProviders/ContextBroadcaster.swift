@@ -4,6 +4,7 @@
 //
 //  Aggregates signals from FocusModeProvider, ActiveAppProvider, and CalendarProvider
 //  into a MacOSContextSignal. Broadcasts to iPhone via CloudKit.
+//  Also polls CloudKit for iPhone now playing state.
 //
 
 #if os(macOS)
@@ -13,6 +14,7 @@ import Combine
 import CloudKit
 
 /// Aggregates macOS context signals and syncs to iPhone via CloudKit.
+/// Also polls for iPhone now playing state from CloudKit.
 final class ContextBroadcaster: ObservableObject {
 
     // MARK: - Dependencies
@@ -27,16 +29,28 @@ final class ContextBroadcaster: ObservableObject {
     @Published private(set) var lastSyncDate: Date?
     @Published private(set) var isSyncing = false
 
+    /// Latest now playing info fetched from CloudKit (published by iPhone).
+    @Published private(set) var latestNowPlaying: NowPlayingPacket?
+
     private var broadcastTimer: Timer?
+    private var nowPlayingPollTask: Task<Void, Never>?
     private var cancellables = Set<AnyCancellable>()
     private var lastFailedSignal: MacOSContextSignal?
     private var isRunning = false
     private var activeSaveCount = 0
     private var activeRetryTask: Task<Void, Never>?
 
-    // CloudKit
-    private lazy var container = CKContainer(identifier: AppConstants.cloudKitContainerIdentifier)
+    // CloudKit -- lazy to avoid crash if entitlements are misconfigured
+    private lazy var container: CKContainer? = {
+        let id = AppConstants.cloudKitContainerIdentifier
+        guard !id.isEmpty else {
+            logWarning("ContextBroadcaster: CloudKit container identifier is empty", category: .macOSContext)
+            return nil
+        }
+        return CKContainer(identifier: id)
+    }()
     private let recordType = "MacOSContext"
+    private let nowPlayingRecordType = "iPhoneNowPlaying"
 
     // MARK: - Initialization
 
@@ -54,11 +68,12 @@ final class ContextBroadcaster: ObservableObject {
     deinit {
         broadcastTimer?.invalidate()
         activeRetryTask?.cancel()
+        nowPlayingPollTask?.cancel()
     }
 
     // MARK: - Lifecycle
 
-    /// Starts all providers and periodic broadcasting.
+    /// Starts all providers, periodic context broadcasting, and now playing polling.
     func startBroadcasting() {
         guard !isRunning else {
             logDebug("ContextBroadcaster already running", category: .general)
@@ -70,7 +85,7 @@ final class ContextBroadcaster: ObservableObject {
         activeAppProvider.startMonitoring()
         calendarProvider.startMonitoring()
 
-        // Broadcast every 60 seconds
+        // Broadcast context every 60 seconds
         broadcastTimer?.invalidate()
         broadcastTimer = Timer.scheduledTimer(
             withTimeInterval: 60,
@@ -84,6 +99,9 @@ final class ContextBroadcaster: ObservableObject {
             self?.broadcastContext()
         }
 
+        // Start polling for iPhone now playing state
+        startNowPlayingPolling()
+
         logInfo("ContextBroadcaster started broadcasting", category: .general)
     }
 
@@ -93,6 +111,8 @@ final class ContextBroadcaster: ObservableObject {
         broadcastTimer = nil
         activeRetryTask?.cancel()
         activeRetryTask = nil
+        nowPlayingPollTask?.cancel()
+        nowPlayingPollTask = nil
         focusModeProvider.stopMonitoring()
         activeAppProvider.stopMonitoring()
         calendarProvider.stopMonitoring()
@@ -194,6 +214,10 @@ final class ContextBroadcaster: ObservableObject {
         record["nextEventType"] = signal.nextEventType?.rawValue as NSString?
         record["inferredWorkState"] = signal.inferredWorkState.rawValue as NSString
 
+        guard let container = container else {
+            logWarning("ContextBroadcaster: CloudKit container not available, skipping save", category: .macOSContext)
+            return
+        }
         let database = container.privateCloudDatabase
         database.save(record) { [weak self] _, error in
             DispatchQueue.main.async {
@@ -226,6 +250,107 @@ final class ContextBroadcaster: ObservableObject {
                 }
             }
         }
+    }
+
+    // MARK: - Now Playing CloudKit Polling
+
+    /// Polls CloudKit for iPhone now playing state every 15 seconds.
+    private func startNowPlayingPolling() {
+        nowPlayingPollTask?.cancel()
+
+        // Initial fetch
+        fetchNowPlaying()
+
+        nowPlayingPollTask = Task { [weak self] in
+            while !Task.isCancelled {
+                do {
+                    try await Task.sleep(nanoseconds: 15_000_000_000) // 15 seconds
+                } catch {
+                    break // Task was cancelled
+                }
+                await MainActor.run {
+                    self?.fetchNowPlaying()
+                }
+            }
+        }
+    }
+
+    /// Fetches the latest now playing record from CloudKit (published by the iPhone app).
+    private func fetchNowPlaying() {
+        guard let container = container else { return }
+
+        let database = container.privateCloudDatabase
+        let recordID = CKRecord.ID(recordName: "currentNowPlaying")
+
+        database.fetch(withRecordID: recordID) { [weak self] record, error in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+
+                if let error = error {
+                    // CKError.unknownItem means no record exists (nothing playing)
+                    let ckError = error as? CKError
+                    if ckError?.code == .unknownItem {
+                        self.latestNowPlaying = nil
+                    } else {
+                        logDebug(
+                            "ContextBroadcaster: now playing fetch failed: \(error.localizedDescription)",
+                            category: .network
+                        )
+                    }
+                    return
+                }
+
+                guard let record = record else {
+                    self.latestNowPlaying = nil
+                    return
+                }
+
+                self.processNowPlayingRecord(record)
+            }
+        }
+    }
+
+    /// Converts a CloudKit record into a NowPlayingPacket.
+    private func processNowPlayingRecord(_ record: CKRecord) {
+        let songTitle = (record["songTitle"] as? String) ?? "Unknown"
+        let artistName = (record["artistName"] as? String) ?? "Unknown"
+        let isPlaying = (record["isPlaying"] as? NSNumber)?.boolValue ?? false
+        let progress = (record["progress"] as? NSNumber)?.doubleValue ?? 0
+        let duration = (record["duration"] as? NSNumber)?.doubleValue ?? 0
+        let explanation = record["explanation"] as? String
+
+        // Check staleness: if the record is older than 5 minutes, treat as stale
+        if let timestamp = record["timestamp"] as? Date,
+           Date().timeIntervalSince(timestamp) > 300 {
+            latestNowPlaying = nil
+            logDebug("ContextBroadcaster: now playing record is stale, clearing", category: .network)
+            return
+        }
+
+        // Load artwork from CKAsset if available
+        var artworkData: Data?
+        if let asset = record["artwork"] as? CKAsset,
+           let fileURL = asset.fileURL {
+            artworkData = try? Data(contentsOf: fileURL)
+        }
+
+        let packet = NowPlayingPacket(
+            songTitle: songTitle,
+            artistName: artistName,
+            artworkData: artworkData,
+            isPlaying: isPlaying,
+            progress: progress,
+            duration: duration,
+            explanation: explanation
+        )
+
+        latestNowPlaying = packet
+        lastSyncDate = Date()
+
+        logDebug(
+            "ContextBroadcaster: now playing received: \(songTitle) by \(artistName)",
+            category: .network
+        )
     }
 }
 

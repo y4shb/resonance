@@ -151,7 +151,7 @@ public final class MusicKitService: MusicKitServiceProtocol {
 
     /// Provides read/write access to the player's shuffle mode.
     public var shuffleMode: MusicPlayer.ShuffleMode {
-        get { player.state.shuffleMode }
+        get { player.state.shuffleMode ?? .off }
         set { player.state.shuffleMode = newValue }
     }
 

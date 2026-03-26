@@ -32,7 +32,6 @@ struct MotionFeatures: Sendable {
 
 // MARK: - EmotionMotionSensor
 
-@MainActor
 final class EmotionMotionSensor: ObservableObject {
 
     // MARK: - Published Properties

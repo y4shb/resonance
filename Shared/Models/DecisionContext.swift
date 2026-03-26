@@ -37,6 +37,11 @@ public struct DecisionContext: Sendable {
     /// Whether this is the first song of a session
     public let isSessionStart: Bool
 
+    /// Active mood trajectory for guided mood journeys (D1).
+    /// When set, the decision engine uses `planTrajectoryArc` instead of
+    /// the default context-based session arc.
+    public let moodTrajectory: MoodTrajectory?
+
     // MARK: - Initialization
 
     public init(
@@ -48,7 +53,8 @@ public struct DecisionContext: Sendable {
         currentTime: Date = Date(),
         currentSessionSongIds: [UUID] = [],
         preferences: UserPreferences = UserPreferences(),
-        isSessionStart: Bool = false
+        isSessionStart: Bool = false,
+        moodTrajectory: MoodTrajectory? = nil
     ) {
         self.stateVector = stateVector
         self.activePlaylistId = activePlaylistId
@@ -59,6 +65,7 @@ public struct DecisionContext: Sendable {
         self.currentSessionSongIds = currentSessionSongIds
         self.preferences = preferences
         self.isSessionStart = isSessionStart
+        self.moodTrajectory = moodTrajectory
     }
 }
 

@@ -46,46 +46,87 @@ It does this by:
 
 ```
 Brain/
- ├── State/
- │   └── StateEngine.swift              # Real-time state estimation (→ moved to Shared/Brain/)
- ├── Decision/
- │   ├── DecisionEngine.swift           # Orchestrates the selection pipeline (→ moved to Shared/Brain/)
- │   ├── SongScorer.swift               # Multi-factor song scoring (→ moved to Shared/Brain/)
- │   ├── GuardFilters.swift             # Hard pre-scoring filters
- │   ├── TransitionController.swift     # Smooth song-to-song transitions
- │   └── ExplanationGenerator.swift     # Human-readable explanations
- ├── Historical/
- │   ├── HistoricalEngine.swift         # Backfill pipeline orchestrator
- │   ├── SessionReconstructor.swift     # Groups events into sessions
- │   ├── SongImpactCalculator.swift     # Per-song EMA effect scoring
- │   ├── PlaylistImpactCalculator.swift # Playlist-level aggregation
- │   └── ImpactScore.swift             # Per-event impact calculation
- ├── Learning/
- │   ├── LearningStore.swift            # Real-time learning from playback
- │   ├── RealTimeGuardAdjuster.swift    # Dynamic guard adjustments
- │   ├── ResponseCreditCalculator.swift # Biometric response credits
- │   ├── SessionQualityScorer.swift     # Session quality scoring
- │   ├── SkipPenaltyCalculator.swift    # Skip penalty calculation
- │   ├── BiometricCrossfade.swift       # HR-zone-based crossfade durations (WS-2.2)
- │   ├── ResonanceScoreCalculator.swift # Post-session resonance score computation
- │   └── MultiComponentReward.swift     # Multi-component reward signal for learning
- ├── Features/
- │   ├── FeatureExtractor.swift         # Genre-based feature estimation
- │   ├── FeatureNormalizer.swift        # Value normalization utilities
- │   ├── AudioAnalyzer.swift            # Real-time audio analysis (BPM, energy, spectral)
- │   ├── RealtimeBPMVerifier.swift      # Verifies BPM estimates against live audio
- │   ├── VocalDetector.swift            # FFT-based vocal/instrumental detection
- │   └── MoodForecastEngine.swift       # Multi-horizon mood trajectory prediction
+ ├── State/                                    # 11 files, 2,269 LOC
+ │   ├── StateEngine.swift                     # Real-time state estimation (490 LOC)
+ │   ├── StateEngineTypes.swift                # State engine type definitions
+ │   ├── StateCalculationHelpers.swift         # State computation utilities
+ │   ├── MusicNeedInference.swift              # Music need inference from state vector
+ │   ├── PersonalBaseline.swift                # Personal HRV baseline with adaptive tracking
+ │   ├── SleepMoodBaseline.swift               # Sleep-based morning mood baseline
+ │   ├── ActivityContextInference.swift        # Activity context from biometric signals
+ │   ├── CircadianContextInference.swift       # Activity context from time + motion + location
+ │   ├── CircadianEnergyModifier.swift         # Song scoring weight adjustment by circadian phase
+ │   ├── CircadianProfileManager.swift         # Per-user circadian energy profile (366 LOC)
+ │   └── EmotionRefinementEngine.swift         # Bayesian emotion refinement (261 LOC)
+ │
+ ├── Decision/                                 # 8 files, 2,376 LOC
+ │   ├── DecisionEngine.swift                  # Orchestrates the selection pipeline (654 LOC)
+ │   ├── SongScorer.swift                      # Multi-factor song scoring (489 LOC)
+ │   ├── GuardFilters.swift                    # Hard pre-scoring filters (recency, safety, driving)
+ │   ├── TransitionController.swift            # Smooth song-to-song transitions
+ │   ├── ExplanationGenerator.swift            # Human-readable explanations
+ │   ├── ConversationalExplanation.swift       # Foundation Models prompt for LLM explanations
+ │   ├── BiometricCrossfadeEngine.swift        # HR-zone-based crossfade duration adaptation
+ │   └── WorkoutBPMAdvisor.swift               # Workout-type-specific BPM recommendations
+ │
+ ├── Historical/                               # 5 files, 1,290 LOC
+ │   ├── HistoricalEngine.swift                # Backfill pipeline orchestrator
+ │   ├── SessionReconstructor.swift            # Groups events into sessions (621 LOC)
+ │   ├── SongImpactCalculator.swift            # Per-song EMA effect scoring
+ │   ├── PlaylistImpactCalculator.swift        # Playlist-level aggregation
+ │   └── ImpactScore.swift                     # Per-event impact calculation
+ │
+ ├── Learning/                                 # 11 files, 2,663 LOC
+ │   ├── EffectivenessLearner.swift            # Thompson Sampling + UCB contextual bandit (417 LOC)
+ │   ├── LearningStore.swift                   # Real-time learning from playback (355 LOC)
+ │   ├── LearningFormulaHelper.swift           # Centralized EMA formulas
+ │   ├── RealTimeGuardAdjuster.swift           # Dynamic guard adjustments
+ │   ├── ResponseCreditCalculator.swift        # Biometric response credits
+ │   ├── SessionQualityScorer.swift            # Session quality scoring (289 LOC)
+ │   ├── SkipPenaltyCalculator.swift           # Skip penalty calculation
+ │   ├── ResonanceScoreCalculator.swift        # Post-session resonance score computation
+ │   ├── MultiComponentReward.swift            # Multi-component reward with cold-start transition
+ │   ├── MovingWindowNormalizer.swift           # Moving-window biometric normalization
+ │   └── SensorConfidenceScorer.swift          # Sensor data quality scoring and rejection
+ │
+ ├── Features/                                 # 10 files, 2,829 LOC
+ │   ├── AudioAnalyzer.swift                   # AVAudioEngine + Accelerate FFT (434 LOC)
+ │   ├── AudioFeaturePredictor.swift           # Core ML model wrapper (253 LOC)
+ │   ├── FFTProcessor.swift                    # Accelerate vDSP FFT with Hann windowing
+ │   ├── MelFilterbank.swift                   # 40-band mel-scale filterbank
+ │   ├── SpectralAnalyzer.swift                # FFT + Mel orchestrator (412 LOC)
+ │   ├── FeatureExtractor.swift                # Genre-based feature estimation (313 LOC)
+ │   ├── FeatureNormalizer.swift               # Value normalization utilities
+ │   ├── RealtimeBPMVerifier.swift             # Spectral flux onset BPM detection (412 LOC)
+ │   ├── VocalDetector.swift                   # FFT formant vocal/instrumental detection
+ │   └── MoodForecastEngine.swift              # Multi-horizon mood trajectory prediction (409 LOC)
+ │
  └── Shared/
-     └── SongEffectHelper.swift         # Core Data helpers for SongEffect
+     └── SongEffectHelper.swift                # Core Data helpers for SongEffect
 
-Shared/Brain/
- ├── SharedDecisionEngine.swift         # DecisionEngine (cross-target visible)
- ├── SharedStateEngine.swift            # StateEngine (cross-target visible)
- ├── SharedSongScorer.swift             # SongScorer (cross-target visible)
- ├── SessionPlanner.swift               # Session arc planning (WS-4)
- └── SessionCritic.swift                # Post-session analysis
+Shared/Brain/                                  # 5 files, 2,224 LOC
+ ├── SharedDecisionEngine.swift                # DecisionEngine (cross-target visible, 485 LOC)
+ ├── SharedStateEngine.swift                   # StateEngine (cross-target visible, 488 LOC)
+ ├── SharedSongScorer.swift                    # SongScorer (cross-target visible, 484 LOC)
+ ├── SessionPlanner.swift                      # Session arc planning (417 LOC)
+ └── SessionCritic.swift                       # Post-session analysis (350 LOC)
+
+Watch/Sensors/                                 # 10 files, 1,959 LOC
+ ├── EmotionMotionSensor.swift                 # 50Hz accelerometer + gyroscope streaming
+ ├── EmotionFeatureExtractor.swift             # Jerk magnitude, wrist orientation, entropy
+ ├── WatchEmotionClassifier.swift              # Rule-based + ML-ready emotion classifier
+ ├── EmotionRefinementEngine → Brain/State/    # (Bayesian refinement in Brain/State/)
+ ├── OvernightTemperatureSensor.swift          # Wrist temperature delta reading
+ ├── HeartRateSensor.swift                     # Heart rate sampling from HealthKit
+ ├── MotionSensor.swift                        # Core Motion sensor management
+ ├── SensorCoordinator.swift                   # Sensor lifecycle coordination (294 LOC)
+ ├── WatchCapabilityDetector.swift             # Watch hardware capability detection
+ ├── WorkoutDetector.swift                     # Workout type detection
+ └── WorkoutSessionManager.swift               # HKWorkoutSession for high-frequency HR
 ```
+
+**Brain Subsystem Total:** 46 files across Brain/ + Shared/Brain/, ~11,427 LOC
+**Watch Sensor Subsystem:** 10 files, 1,959 LOC
 
 ### 1.3 Shared Brain Components
 
@@ -1948,6 +1989,43 @@ The following peer-reviewed publications informed the biometric-mood correlation
 *End of Brain Technical Documentation*
 
 *This document covers the implementation as of March 2026, with research-validated enhancements added March 2026.*
-*Source: 28 Swift files across 6 Brain subdirectories + 5 Shared/Brain files, plus Constants.swift, plan.md, and product.md.*
-*March 2026 update: Added 9 new Swift files (AudioAnalyzer, RealtimeBPMVerifier, VocalDetector, MoodForecastEngine, BiometricCrossfade, ResonanceScoreCalculator, MultiComponentReward, SessionPlanner, SessionCritic), moved 3 core files to Shared/Brain, documented 5 novel features, 5 SongScorer enhancements, and 4 bug fixes.*
-*March 2026 research update: Added 4 new State subsystem sections (2.11-2.14), enhanced Section 2.5 valence formula, enhanced Section 3.2.13 iso-principle with dual-mode entrainment, added biometric signal confidence weights (10.8), expanded emotion detection research (13.9), and added 20 peer-reviewed references.*
+
+**File Counts (final as of 2026-03-20):**
+
+| Directory | Files | LOC |
+|-----------|-------|-----|
+| Brain/Features/ | 10 | 2,829 |
+| Brain/State/ | 11 | 2,269 |
+| Brain/Decision/ | 8 | 2,376 |
+| Brain/Learning/ | 11 | 2,663 |
+| Brain/Historical/ | 5 | 1,290 |
+| Brain/Shared/ | 1 | 131 |
+| Shared/Brain/ | 5 | 2,224 |
+| Watch/Sensors/ | 10 | 1,959 |
+| **Brain Total** | **61** | **15,741** |
+
+**Document Sections (14 main, 100+ subsections):**
+1. Architecture Overview (1.1-1.6)
+2. State Subsystem (2.1-2.14, including sprint additions: 2.11 Movement Pattern, 2.12 Sleep Baseline, 2.13 Circadian HRV Correction, 2.14 Response Validation)
+3. Decision Subsystem (3.1-3.2, including 3.2.13 iso-principle with dual-mode entrainment)
+4. Historical Subsystem (4.1-4.4)
+5. Learning Subsystem (5.1-5.5)
+6. Feature Subsystem (6.1-6.2)
+7. Novel Features (7.1-7.5: Biometric Crossfade, Resonance Score, Heart Tempo, Mood Forecast, Sonic Bookmark)
+8. Shared Infrastructure (8.1-8.3)
+9. Data Flow Diagrams (9.1-9.3)
+10. Constants and Tuning Parameters (10.1-10.8, including 10.8 biometric signal confidence weights)
+11. Design Choices and Rationale (11.1-11.5)
+12. On-Device AI and ML (12.1-12.4)
+13. Possible Enhancements (13.1-13.9, including 13.6 Waveform PARTIALLY IMPLEMENTED, 13.8 Playlist Generation IMPLEMENTED, 13.9 Emotion Detection research)
+14. Research References (20 peer-reviewed papers)
+
+**Change Log:**
+
+*March 2026 initial update:* Added 9 new Swift files (AudioAnalyzer, RealtimeBPMVerifier, VocalDetector, MoodForecastEngine, BiometricCrossfade, ResonanceScoreCalculator, MultiComponentReward, SessionPlanner, SessionCritic), moved 3 core files to Shared/Brain, documented 5 novel features, 5 SongScorer enhancements, and 4 bug fixes.
+
+*March 2026 research update:* Added 4 new State subsystem sections (2.11-2.14), enhanced Section 2.5 valence formula, enhanced Section 3.2.13 iso-principle with dual-mode entrainment, added biometric signal confidence weights (10.8), expanded emotion detection research (13.9), and added 20 peer-reviewed references from 70+ papers surveyed.
+
+*March 2026 sprint update (FINAL):* Added spectral audio analysis (3 files: FFTProcessor, MelFilterbank, SpectralAnalyzer), circadian rhythm personalization (5 files: CircadianProfileManager, EnergyModifier, ContextInference, CircadianTypes, HRVNormalizer), watch emotion detection (7 sensor files: EmotionMotionSensor, FeatureExtractor, EmotionClassifier, OvernightTempMonitor, RefinementEngine, EmotionTypes, SensorConstants), Core ML song model pipeline (2 scripts + AudioFeaturePredictor), 6 brain accuracy improvements (R1: HRV circadian normalization, R2: multi-signal valence fusion, R3: HR acceleration feature, R4: entrainment mode detection, R5: adaptive per-user signal weights, R6: sleep baseline calibration), all 24 brain wiring connections verified, 2 disconnections fixed (EffectivenessLearner pipeline, PersonalBaseline integration). Final project count: ~167 Swift files, ~45,820 LOC across all targets.
+
+*Last updated: 2026-03-20.*

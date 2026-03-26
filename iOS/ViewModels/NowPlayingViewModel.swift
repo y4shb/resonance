@@ -207,10 +207,8 @@ final class NowPlayingViewModel {
     /// Cached artwork data for Watch transfer (avoids re-fetching on play/pause).
     private var cachedWatchArtworkData: Data?
 
-    /// Builds a NowPlayingPacket from current state and sends it to Watch.
+    /// Builds a NowPlayingPacket from current state and sends it to Watch and CloudKit.
     private func sendNowPlayingToWatch() {
-        guard let manager = watchConnectivityManager else { return }
-
         let artwork = currentSong.artwork
         let songTitle = currentSong.title
         let artistName = currentSong.artistName
@@ -240,18 +238,24 @@ final class NowPlayingViewModel {
                 explanation: explanation
             )
 
-            manager.sendNowPlaying(packet)
+            // Send to Watch (if manager is connected)
+            if let manager = watchConnectivityManager {
+                manager.sendNowPlaying(packet)
 
-            // Also send complication data for watch face updates
-            let complicationData = ComplicationData(
-                songTitle: songTitle,
-                artistName: artistName,
-                stateEmoji: emoji,
-                heartRate: nil,
-                isPlaying: playing,
-                timestamp: Date()
-            )
-            manager.updateComplication(complicationData)
+                // Also send complication data for watch face updates
+                let complicationData = ComplicationData(
+                    songTitle: songTitle,
+                    artistName: artistName,
+                    stateEmoji: emoji,
+                    heartRate: nil,
+                    isPlaying: playing,
+                    timestamp: Date()
+                )
+                manager.updateComplication(complicationData)
+            }
+
+            // Sync to CloudKit for macOS companion
+            NowPlayingCloudKitSync.shared.syncNowPlaying(packet)
         }
     }
 
@@ -611,7 +615,7 @@ final class NowPlayingViewModel {
             // Sync explanation to Watch
             sendNowPlayingToWatch()
 
-            self.logInfo(
+            Resonance.logInfo(
                 "AI selected: '\(result.score.songTitle)' — \(result.explanation.short)",
                 category: .decisionEngine
             )

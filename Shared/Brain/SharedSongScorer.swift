@@ -158,9 +158,17 @@ public struct SharedSongScorer: Sendable {
         }
 
         // Use graduated confidence from the feature extraction pipeline:
-        // 0.4 genre-only / 0.45 enhanced heuristic / 0.65 ML / 0.85 audio-analyzed.
+        // 0.4 genre-only / 0.45 enhanced heuristic / 0.65 ML / 0.75 spectral / 0.85 audio-analyzed.
+        // When spectral features are present, boost ML-level confidence (0.65) to 0.75
+        // since spectral analysis provides richer signal than ML alone.
         // Falls back to the binary check only when confidence was never set.
-        let confidence = features.confidence > 0.0 ? features.confidence : (features.isAnalyzed ? 0.8 : 0.4)
+        let hasSpectralFeatures = features.spectralCentroid != nil
+            || features.spectralFlux != nil
+            || features.mfccs != nil
+        var confidence = features.confidence > 0.0 ? features.confidence : (features.isAnalyzed ? 0.8 : 0.4)
+        if hasSpectralFeatures && confidence >= 0.6 && confidence < 0.8 {
+            confidence = max(confidence, 0.75)
+        }
 
         return SongScore(
             songId: songId,
@@ -350,6 +358,10 @@ public struct SharedSongScorer: Sendable {
         case .relaxation:
             if features.energy < 0.5 { score += 0.2 }
             if features.valence > 0.5 { score += 0.15 }
+            // Spectral flux: spectrally stable music (low flux) is more calming
+            if let flux = features.spectralFlux, flux > 0, flux < 0.1 {
+                score += 0.05
+            }
             score = min(1.0, score)
         case .commute:
             if features.energy >= 0.4 && features.energy <= 0.7 { score += 0.2 }
@@ -380,6 +392,8 @@ public struct SharedSongScorer: Sendable {
     // MARK: - Focus Context Scoring (6.2)
 
     /// Deep work scoring: penalizes vocals, prefers moderate energy (0.3-0.5), stable dynamics.
+    /// When spectral centroid is available and low (<3000 Hz), adds a small bonus because
+    /// darker/warmer timbres are less distracting during focus work.
     private func calculateFocusContextScore(features: SongFeatures) -> Double {
         var score = 0.5
         let hasVocals = features.instrumentalness < 0.5
@@ -392,6 +406,10 @@ public struct SharedSongScorer: Sendable {
         if features.acousticDensity >= 0.3 && features.acousticDensity <= 0.6 { score += 0.15 }
         else if features.acousticDensity > 0.8 { score -= 0.1 }
         if features.bpm >= 80 && features.bpm <= 110 { score += 0.1 }
+        // Spectral centroid: darker/warmer sounds (low centroid) suit focus
+        if let centroid = features.spectralCentroid, centroid > 0, centroid < 3000 {
+            score += 0.05
+        }
         return max(0.0, min(1.0, score))
     }
 
@@ -423,6 +441,10 @@ public struct SharedSongScorer: Sendable {
         if features.bpm > 0 && features.bpm <= 80 { score += 0.15 }
         else if features.bpm > 100 { score -= 0.2 }
         if features.valence >= 0.4 && features.valence <= 0.7 { score += 0.1 }
+        // Spectral flux: spectrally stable music (low flux) is more calming
+        if let flux = features.spectralFlux, flux > 0, flux < 0.1 {
+            score += 0.05
+        }
         return max(0.0, min(1.0, score))
     }
 

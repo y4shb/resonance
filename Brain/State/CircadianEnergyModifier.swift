@@ -79,17 +79,17 @@ extension CircadianProfileManager {
     /// When confidence is 0.0 (no data), returns the static modifier exactly.
     /// When confidence is 1.0 (21+ days of full data), returns the learned modifier.
     ///
-    /// Thread-safe: acquires the lock exactly once to snapshot the profile,
-    /// then performs all computation on the captured value.
+    /// Thread-safe: captures the profile via the thread-safe `currentProfile`
+    /// accessor in a single call, then performs all computation on the snapshot.
+    /// This avoids the TOCTOU race where the profile could change between
+    /// reading confidence and computing the learned modifier.
     ///
     /// - Parameter hour: Hour of day (0-23).
     /// - Returns: Blended energy modifier in the range -0.2...+0.2.
     func blendedEnergyModifier(forHour hour: Int) -> Double {
-        lock.lock()
-        let snapshot = _currentProfile
-        lock.unlock()
-
-        guard let profile = snapshot, profile.isMature else {
+        // Single lock acquisition via the thread-safe currentProfile accessor.
+        // All subsequent computation uses this snapshot only.
+        guard let profile = currentProfile, profile.isMature else {
             return Self.staticEnergyModifier(forHour: hour)
         }
 

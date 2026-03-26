@@ -4628,18 +4628,84 @@ Based on comprehensive security audit, competitive analysis, and technology rese
 
 ## 13.5 Tier 4: Future Horizon (6 items) — SHELVED (Do Not Implement Unless Explicitly Requested)
 
-| # | Item | Category | Effort |
-|---|------|----------|--------|
-| 1 | PL-4: visionOS companion | Platform | High |
-| 2 | PL-6: CarPlay integration | Platform | High |
-| 3 | ML-4: Circadian rhythm personalization | AI/ML | Medium |
-| 4 | NF-10: Sleep correlation dashboard | Feature | Medium |
-| 5 | AE-4: CKSyncEngine migration | Engineering | Medium |
-| 6 | TS-3: XCUITest suite | Testing | High |
+| # | Item | Category | Effort | Notes |
+|---|------|----------|--------|-------|
+| 1 | PL-4: visionOS companion | Platform | High | |
+| 2 | PL-6: CarPlay integration | Platform | High | CarPlay detection implemented in Brain; UI deferred |
+| 3 | ML-4: Circadian rhythm personalization | AI/ML | Medium | **IMPLEMENTED** -- moved to active in March 2026 sprint |
+| 4 | NF-10: Sleep correlation dashboard | Feature | Medium | Sleep baseline integration done; dashboard UI deferred |
+| 5 | AE-4: CKSyncEngine migration | Engineering | Medium | |
+| 6 | TS-3: XCUITest suite | Testing | High | |
+
+> **Note (2026-03-20):** Item 3 (ML-4: Circadian rhythm personalization) was pulled forward from Tier 4 and fully implemented during the March 2026 brain enhancement sprint. See `Brain/State/CircadianProfileManager.swift`, `CircadianEnergyModifier.swift`, `CircadianContextInference.swift`, and `Shared/Services/HealthKitService+Circadian.swift`.
+
+---
+
+## 14. Post-Plan Implementation Summary (2026-03-20)
+
+The following work was completed after the original plan was finalized, extending the project well beyond the MVP scope defined in milestones M1-M8.
+
+### 14.1 Brain Enhancement Sprint (15 enhancements across 6 workstreams)
+
+| Workstream | Enhancements | Status |
+|------------|-------------|--------|
+| WS1 - Core Algorithm | Wire EffectivenessLearner, personal HRV baseline, unify formulas, fix double-penalization, add hysteresis | COMPLETE |
+| WS2 - Reward System | Multi-component reward, motion-aware gating, sensor confidence scoring | COMPLETE |
+| WS3 - New Inputs | VO2 Max, sleep/respiratory/workout, audio route + CarPlay, focus mode | COMPLETE |
+| WS4 - Session Planning | Session arc planner, session critic, iso-principle phases | COMPLETE |
+| WS5 - Audio Analysis | Chunk-based AudioAnalyzer, spectral flux BPM, vocal detection | COMPLETE |
+| WS6 - Context Intelligence | Circadian energy curve, iso-principle mood trajectory, sleep preparation | COMPLETE |
+
+### 14.2 Second Brain Enhancement Sprint (19 new files, ~2,480 LOC)
+
+| Category | Files | LOC |
+|----------|-------|-----|
+| Spectral Audio | 3 | ~370 |
+| Circadian Rhythm | 5 | ~520 |
+| Watch Emotion Detection | 7 | ~640 |
+| Core ML Pipeline | 2 | ~250 |
+| Brain Accuracy R1-R6 | 2 | ~300 |
+| Documentation | 0 | ~400 |
+
+### 14.3 User Feature Implementation (8 workstreams)
+
+| # | Workstream | Status |
+|---|-----------|--------|
+| 1 | Onboarding Flow | COMPLETE |
+| 2 | Settings & Preferences | COMPLETE |
+| 3 | Session History & Stats | COMPLETE |
+| 4 | Mood Journal | COMPLETE |
+| 5 | Playlist Management | COMPLETE |
+| 6 | Social Features | SHELVED |
+| 7 | Notifications & Widgets | COMPLETE |
+| 8 | Accessibility & Localization | PARTIAL (VoiceOver done, localization deferred) |
+
+### 14.4 Quality Assurance
+
+| Activity | Issues Found | Issues Fixed |
+|----------|-------------|-------------|
+| Post-enhancement review | 16 critical | 16 (ALL) |
+| Novel feature bug fixes | 8 | 8 (ALL) |
+| Compilation fixes | 3 | 3 (ALL) |
+| Bug fix pass (18 fixes) | 18 | 18 (ALL) |
+| Code review | 25 | 22 (3 deferred cosmetic) |
+| UX/UI audit | 15 priority + 10 delight | Findings documented |
+
+### 14.5 Final Project Metrics
+
+| Metric | Value |
+|--------|-------|
+| Total Swift files | ~167 |
+| Total LOC | ~45,820 |
+| Test suites | 13 |
+| Test LOC | ~8,200 |
+| Bug fixes (all sessions) | 80+ |
+| Features implemented | 40+ |
+| Research papers referenced | 70+ |
 
 ---
 
 *End of Plan Document*
 
-*Version: 2.0*
-*Last Updated: 2026-03-05*
+*Version: 3.0*
+*Last Updated: 2026-03-20*

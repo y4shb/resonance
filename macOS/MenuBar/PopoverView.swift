@@ -52,16 +52,30 @@ struct PopoverView: View {
             Text("Resonance")
                 .font(.headline)
             Spacer()
+            settingsGearButton
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+    }
+
+    /// Settings gear icon using SettingsLink (macOS 14+) with legacy fallback.
+    @ViewBuilder
+    private var settingsGearButton: some View {
+        if #available(macOS 14.0, *) {
+            SettingsLink {
+                Image(systemName: "gearshape")
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+        } else {
             Button {
-                openSettings()
+                openSettingsLegacy()
             } label: {
                 Image(systemName: "gearshape")
                     .foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
     }
 
     // MARK: - Now Playing Section
@@ -229,19 +243,7 @@ struct PopoverView: View {
 
     private var actionsSection: some View {
         VStack(spacing: 4) {
-            Button {
-                openSettings()
-            } label: {
-                HStack {
-                    Text("Open Settings...")
-                        .font(.caption)
-                    Spacer()
-                }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 6)
+            settingsActionRow
 
             Divider()
                 .padding(.horizontal, 16)
@@ -263,19 +265,44 @@ struct PopoverView: View {
         .padding(.vertical, 4)
     }
 
+    /// "Open Settings..." row using SettingsLink (macOS 14+) with legacy fallback.
+    @ViewBuilder
+    private var settingsActionRow: some View {
+        if #available(macOS 14.0, *) {
+            SettingsLink {
+                HStack {
+                    Text("Open Settings...")
+                        .font(.caption)
+                    Spacer()
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 6)
+        } else {
+            Button {
+                openSettingsLegacy()
+            } label: {
+                HStack {
+                    Text("Open Settings...")
+                        .font(.caption)
+                    Spacer()
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 6)
+        }
+    }
+
     // MARK: - Helpers
 
-    private func openSettings() {
-        if #available(macOS 14.0, *) {
-            NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-        } else {
-            NSApp.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil)
-        }
-        if #available(macOS 14.0, *) {
-            NSApp.activate()
-        } else {
-            NSApp.activate(ignoringOtherApps: true)
-        }
+    /// Legacy settings opener for macOS 13 and earlier.
+    private func openSettingsLegacy() {
+        NSApp.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil)
+        NSApp.activate(ignoringOtherApps: true)
     }
 }
 

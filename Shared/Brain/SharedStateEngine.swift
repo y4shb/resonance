@@ -93,7 +93,7 @@ public final class SharedStateEngine: @unchecked Sendable {
 
     // MARK: - Initialization
 
-    public init(
+    init(
         restingHeartRate: Double = StateEngineConstants.defaultRestingHeartRate,
         userAge: Int = StateEngineConstants.defaultUserAge,
         typicalBedtimeHour: Int = 23,
