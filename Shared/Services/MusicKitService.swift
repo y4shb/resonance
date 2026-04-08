@@ -155,6 +155,12 @@ public final class MusicKitService: MusicKitServiceProtocol {
         set { player.state.shuffleMode = newValue }
     }
 
+    /// Provides read/write access to the player's repeat mode.
+    public var repeatMode: MusicPlayer.RepeatMode {
+        get { player.state.repeatMode ?? .none }
+        set { player.state.repeatMode = newValue }
+    }
+
     // MARK: - Initialization
 
     /// Whether crossfade transitions are enabled

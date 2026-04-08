@@ -22,13 +22,16 @@ final class SongScorer {
 
     /// Scores a single candidate song against the current decision context.
     ///
-    /// - Parameter arcPhase: Optional arc phase from SessionPlanner (WS-4).
-    ///   When present, overrides target BPM and energy with the phase targets,
-    ///   and applies an instrumental preference bonus.
+    /// - Parameters:
+    ///   - arcPhase: Optional arc phase from SessionPlanner (WS-4).
+    ///     When present, overrides target BPM and energy with the phase targets.
+    ///   - workoutBPMRange: Optional workout-specific BPM range from WorkoutBPMAdvisor.
+    ///     When present during workout context, overrides the generic need-based range.
     func scoreSong(
         _ song: Song,
         context: DecisionContext,
-        arcPhase: ArcPhase? = nil
+        arcPhase: ArcPhase? = nil,
+        workoutBPMRange: WorkoutBPMRange? = nil
     ) -> SongScore? {
         guard let songId = song.id else { return nil }
 
@@ -43,7 +46,7 @@ final class SongScorer {
             targetBPM = phase.targetBPM
             targetEnergy = phase.targetEnergy
         } else {
-            targetBPM = calculateTargetBPM(state: state, context: context)
+            targetBPM = calculateTargetBPM(state: state, context: context, workoutBPMRange: workoutBPMRange)
             targetEnergy = calculateTargetEnergy(state: state)
         }
 
@@ -157,14 +160,17 @@ final class SongScorer {
 
     /// Scores all candidate songs and returns them sorted by finalScore descending.
     ///
-    /// - Parameter arcPhase: Optional arc phase from SessionPlanner (WS-4).
+    /// - Parameters:
+    ///   - arcPhase: Optional arc phase from SessionPlanner (WS-4).
+    ///   - workoutBPMRange: Optional workout-specific BPM range from WorkoutBPMAdvisor.
     func scoreAllCandidates(
         _ songs: [Song],
         context: DecisionContext,
-        arcPhase: ArcPhase? = nil
+        arcPhase: ArcPhase? = nil,
+        workoutBPMRange: WorkoutBPMRange? = nil
     ) -> [SongScore] {
         let scores = songs.compactMap { song in
-            scoreSong(song, context: context, arcPhase: arcPhase)
+            scoreSong(song, context: context, arcPhase: arcPhase, workoutBPMRange: workoutBPMRange)
         }
         return scores.sorted { $0.finalScore > $1.finalScore }
     }
@@ -172,20 +178,32 @@ final class SongScorer {
     // MARK: - Target BPM Calculation (plan.md §5.2.2)
 
     /// Calculates the ideal target BPM based on user state and need.
-    func calculateTargetBPM(state: StateVector, context: DecisionContext) -> Double {
+    /// When a workout BPM range is provided (from WorkoutBPMAdvisor), it overrides
+    /// the generic need-based range for more precise tempo targeting during exercise.
+    func calculateTargetBPM(
+        state: StateVector,
+        context: DecisionContext,
+        workoutBPMRange: WorkoutBPMRange? = nil
+    ) -> Double {
         // Base BPM ranges by need
         let bpmRange: (min: Double, max: Double)
-        switch state.inferredNeed {
-        case .energize:
-            bpmRange = DecisionEngineConstants.BPMRange.energize
-        case .calm:
-            bpmRange = DecisionEngineConstants.BPMRange.calm
-        case .focus:
-            bpmRange = DecisionEngineConstants.BPMRange.focus
-        case .maintain:
-            bpmRange = DecisionEngineConstants.BPMRange.maintain
-        case .transition:
-            bpmRange = DecisionEngineConstants.BPMRange.transition
+
+        // Workout BPM advisor override: use activity-specific ranges during workouts
+        if let workoutRange = workoutBPMRange, state.context == .workout {
+            bpmRange = (min: workoutRange.minBPM, max: workoutRange.maxBPM)
+        } else {
+            switch state.inferredNeed {
+            case .energize:
+                bpmRange = DecisionEngineConstants.BPMRange.energize
+            case .calm:
+                bpmRange = DecisionEngineConstants.BPMRange.calm
+            case .focus:
+                bpmRange = DecisionEngineConstants.BPMRange.focus
+            case .maintain:
+                bpmRange = DecisionEngineConstants.BPMRange.maintain
+            case .transition:
+                bpmRange = DecisionEngineConstants.BPMRange.transition
+            }
         }
 
         // Interpolate within range based on energy level

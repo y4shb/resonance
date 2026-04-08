@@ -60,6 +60,7 @@ final class DecisionEngine: ObservableObject {
     private let effectivenessLearner: EffectivenessLearner
     private let sessionPlanner: SessionPlanner
     private let biometricCrossfade = BiometricCrossfadeEngine()
+    private let workoutBPMAdvisor = WorkoutBPMAdvisor()
 
     /// Real-time guard adjuster for biometric-aware filtering
     var guardAdjuster: RealTimeGuardAdjuster?
@@ -219,9 +220,23 @@ final class DecisionEngine: ObservableObject {
         }
         let currentArcPhase = currentArc.map { sessionPlanner.currentPhase(for: $0, songsPlayed: arcSongsPlayed) }
 
-        // 3. Score all remaining candidates (with arc phase overlay)
+        // Resolve workout BPM range if the user is currently in a workout.
+        // The WorkoutBPMAdvisor maps HKWorkoutActivityType to optimal BPM ranges.
+        let workoutRange: WorkoutBPMRange? = {
+            guard stateVector.context == .workout,
+                  let workoutName = contextCollector?.latestBiometric?.workoutType else {
+                return nil
+            }
+            return workoutBPMAdvisor.targetBPMRange(forWorkoutName: workoutName)
+        }()
+
+        // 3. Score all remaining candidates (with arc phase overlay + workout BPM)
         var scores = songScorer.scoreAllCandidates(
-            filterResult.accepted, context: decisionContext, arcPhase: currentArcPhase)
+            filterResult.accepted,
+            context: decisionContext,
+            arcPhase: currentArcPhase,
+            workoutBPMRange: workoutRange
+        )
 
         // Apply familiarity boost from guard adjuster (if active)
         if let adjuster = guardAdjuster, adjuster.hasActiveAdjustments {

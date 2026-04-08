@@ -88,6 +88,7 @@
 		4E446F663EE7E7B58A2A34C4 /* StateEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3363A3BC2B8AE16B46465C6E /* StateEngineTests.swift */; };
 		4EFB2B45A0F96C2FF7C8AA60 /* OnboardingPageViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED6E2902E4841A0245D79D08 /* OnboardingPageViews.swift */; };
 		509A8BA3F5977B5945D8564D /* MoodArcView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F88915D48B69A946185666D /* MoodArcView.swift */; };
+		513EC6C65437C12CD5B68137 /* QueueView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B464D0432E290B4EFC653BE /* QueueView.swift */; };
 		52A4FD530D1979F3662AD12B /* MusicKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC8908CCD706784EBE056C6F /* MusicKitService.swift */; };
 		52E7A7680991764C918EF310 /* MoodTrajectory.swift in Sources */ = {isa = PBXBuildFile; fileRef = B68EEFD0C6440840F06AC119 /* MoodTrajectory.swift */; };
 		531537A422B383A2CD6017EC /* FocusModeIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4777E7508A9C4823D7A9B090 /* FocusModeIntents.swift */; };
@@ -357,6 +358,7 @@
 		548B64C3FCA444DFB6C866F0 /* ResonanceWatchComplications.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ResonanceWatchComplications.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		5986C32A1FFE65478CE903BD /* SleepMoodBaseline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepMoodBaseline.swift; sourceTree = "<group>"; };
 		5A34F6D318FDDB3649D7F6DF /* LearningFormulaHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LearningFormulaHelper.swift; sourceTree = "<group>"; };
+		5B464D0432E290B4EFC653BE /* QueueView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QueueView.swift; sourceTree = "<group>"; };
 		5B770AB438979BBDC1644702 /* StatusItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusItemView.swift; sourceTree = "<group>"; };
 		5B92AE62B1153F58DD7457EC /* WorkoutSessionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutSessionManager.swift; sourceTree = "<group>"; };
 		5C498C30ED99353EDC688025 /* SessionCritic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionCritic.swift; sourceTree = "<group>"; };
@@ -934,6 +936,7 @@
 				19BA53DF712E3E2C0F0282D1 /* NowPlayingView.swift */,
 				158614189CEBBF0AD2AE00E9 /* PlaylistBrowserView.swift */,
 				5CA80BC3D26240206BB768A5 /* PlaylistDetailView.swift */,
+				5B464D0432E290B4EFC653BE /* QueueView.swift */,
 				7D6F10B525ED2209D4B56BC4 /* SessionIntentPicker.swift */,
 				B892372A1F6A5E1CD575155A /* SettingsView.swift */,
 				DCA0CD7FC6BF9C5855A1C224 /* StateDebugView.swift */,
@@ -1378,6 +1381,7 @@
 				6AF434331AED1DA74AB9C0A9 /* PlaylistImpactCalculator.swift in Sources */,
 				043C64226683F133E4FFDBCF /* PlaylistRepository.swift in Sources */,
 				B1D0D322EEA945CD362B33DB /* PlaylistViewModel.swift in Sources */,
+				513EC6C65437C12CD5B68137 /* QueueView.swift in Sources */,
 				58B53EE50C1EFBC5CAAD4E1C /* RealTimeGuardAdjuster.swift in Sources */,
 				0E0007883637141D6DE75F8E /* RealtimeBPMVerifier.swift in Sources */,
 				3B515791B418449660F92B8B /* Resonance.xcdatamodeld in Sources */,

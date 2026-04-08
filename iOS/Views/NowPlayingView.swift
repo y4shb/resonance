@@ -45,6 +45,7 @@ struct NowPlayingView: View {
     @State private var skipTrigger = 0
     @State private var previousTrigger = 0
     @State private var bookmarkTrigger = 0
+    @State private var showQueue = false
 
     // MARK: - Body
 
@@ -106,6 +107,10 @@ struct NowPlayingView: View {
                                 .padding(.bottom, 16)
 
                             transportControls
+                                .padding(.bottom, 8)
+
+                            shuffleRepeatControls
+                                .padding(.horizontal, 20)
                                 .padding(.bottom, 16)
 
                             volumeAndRouteControls
@@ -166,6 +171,9 @@ struct NowPlayingView: View {
             }
             .sheet(isPresented: $showMoodInput) {
                 MoodInputView(stateEngine: stateEngine)
+            }
+            .sheet(isPresented: $showQueue) {
+                QueueView(viewModel: viewModel)
             }
             .alert("Playback Error", isPresented: showErrorBinding) {
                 Button("Retry") {
@@ -350,6 +358,73 @@ struct NowPlayingView: View {
         }
     }
 
+    // MARK: - Shuffle / Repeat / Queue Controls
+
+    private var shuffleRepeatControls: some View {
+        HStack(spacing: 0) {
+            // Shuffle toggle
+            Button(action: { viewModel.toggleShuffle() }) {
+                Image(systemName: "shuffle")
+                    .font(.body)
+                    .foregroundStyle(viewModel.isShuffleOn ? ResonanceColors.accent : .secondary)
+                    .frame(width: 44, height: 36)
+                    .contentShape(Rectangle())
+            }
+            .accessibilityLabel("Shuffle")
+            .accessibilityValue(viewModel.isShuffleOn ? "On" : "Off")
+            .accessibilityHint("Double tap to toggle shuffle")
+
+            Spacer()
+
+            // Repeat mode cycle (none → all → one → none)
+            Button(action: { viewModel.cycleRepeatMode() }) {
+                ZStack {
+                    Image(systemName: repeatIconName)
+                        .font(.body)
+                        .foregroundStyle(viewModel.repeatMode != .none ? ResonanceColors.accent : .secondary)
+                        .frame(width: 44, height: 36)
+                        .contentShape(Rectangle())
+
+                    // "1" badge for repeat-one mode
+                    if viewModel.repeatMode == .one {
+                        Text("1")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(ResonanceColors.accent)
+                            .offset(x: 8, y: -6)
+                    }
+                }
+            }
+            .accessibilityLabel("Repeat")
+            .accessibilityValue(repeatAccessibilityValue)
+
+            Spacer()
+
+            // Queue / Up Next button
+            Button(action: { showQueue = true }) {
+                Image(systemName: "list.bullet")
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 44, height: 36)
+                    .contentShape(Rectangle())
+            }
+            .accessibilityLabel("Up Next")
+            .accessibilityHint("Shows the upcoming songs in the queue")
+        }
+    }
+
+    private var repeatIconName: String {
+        viewModel.repeatMode == .one ? "repeat.1" : "repeat"
+    }
+
+    private var repeatAccessibilityValue: String {
+        switch viewModel.repeatMode {
+        case .none: return "Off"
+        case .all: return "All"
+        case .one: return "One"
+        @unknown default: return "Off"
+        }
+    }
+
     // MARK: - Volume & Route Controls
 
     private var volumeAndRouteControls: some View {
@@ -371,41 +446,52 @@ struct NowPlayingView: View {
         }
     }
 
-    // MARK: - Explanation Bar (Progressive Disclosure)
+    // MARK: - Explanation Bar (Glass Card)
 
     private var explanationBar: some View {
         Group {
             if let explanation = viewModel.currentExplanation {
-                VStack(alignment: .leading, spacing: 4) {
-                    Button(action: {
-                        withAnimation(reduceMotion ? .none : .spring(response: 0.3, dampingFraction: 0.8)) {
-                            isExplanationExpanded.toggle()
-                        }
-                    }) {
-                        HStack(alignment: .top, spacing: 8) {
-                            Image(systemName: "wand.and.stars")
-                                .foregroundStyle(ResonanceColors.accent)
+                Button(action: {
+                    withAnimation(reduceMotion ? .none : .spring(response: 0.3, dampingFraction: 0.8)) {
+                        isExplanationExpanded.toggle()
+                    }
+                }) {
+                    HStack(alignment: .top, spacing: 10) {
+                        Image(systemName: "wand.and.stars")
+                            .font(.subheadline)
+                            .foregroundStyle(ResonanceColors.accent)
+                            .padding(.top, 2)
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Why this song")
                                 .font(.caption)
-                                .padding(.top, 2)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(ResonanceColors.accent)
+                                .textCase(.uppercase)
+                                .tracking(0.5)
 
                             Text(explanation)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(isExplanationExpanded ? nil : 1)
+                                .font(.subheadline)
+                                .foregroundStyle(.primary.opacity(0.85))
+                                .lineLimit(isExplanationExpanded ? nil : 2)
                                 .multilineTextAlignment(.leading)
-
-                            Spacer()
-
-                            Image(systemName: isExplanationExpanded ? "chevron.up" : "chevron.down")
-                                .foregroundStyle(.tertiary)
-                                .font(.caption2)
-                                .padding(.top, 2)
                         }
+
+                        Spacer(minLength: 4)
+
+                        Image(systemName: isExplanationExpanded ? "chevron.up" : "chevron.down")
+                            .foregroundStyle(.secondary)
+                            .font(.caption)
+                            .padding(.top, 4)
                     }
-                    .buttonStyle(.plain)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(.ultraThinMaterial)
+                    )
                 }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 8)
+                .buttonStyle(.plain)
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel("AI explanation: \(explanation)")
                 .accessibilityHint(isExplanationExpanded ? "Tap to collapse" : "Tap to expand")

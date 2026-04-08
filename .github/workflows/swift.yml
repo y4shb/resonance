@@ -30,19 +30,45 @@ jobs:
       - name: Generate Xcode project
         run: xcodegen generate
 
+      - name: Resolve simulator destination
+        id: sim
+        run: |
+          # Pick the latest available iPhone simulator runtime
+          DEST=$(xcrun simctl list devices available -j \
+            | python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          for runtime in sorted(data['devices'].keys(), reverse=True):
+              if 'iOS' in runtime:
+                  for d in data['devices'][runtime]:
+                      if 'iPhone' in d['name'] and d['isAvailable']:
+                          print(f\"platform=iOS Simulator,id={d['udid']}\")
+                          sys.exit(0)
+          sys.exit(1)
+          ")
+          echo "destination=${DEST}" >> "${GITHUB_OUTPUT}"
+          echo "Using simulator: ${DEST}"
+
       - name: Build
+        env:
+          SIM_DEST: ${{ steps.sim.outputs.destination }}
         run: |
           xcodebuild build-for-testing \
             -scheme Resonance \
-            -destination 'generic/platform=iOS Simulator' \
+            -destination "${SIM_DEST}" \
             -skipPackagePluginValidation \
             -quiet
 
+      - name: Remove stale result bundle
+        run: rm -rf TestResults.xcresult
+
       - name: Test
+        env:
+          SIM_DEST: ${{ steps.sim.outputs.destination }}
         run: |
           xcodebuild test \
             -scheme Resonance \
-            -destination 'generic/platform=iOS Simulator' \
+            -destination "${SIM_DEST}" \
             -skipPackagePluginValidation \
             -resultBundlePath TestResults.xcresult \
             -quiet

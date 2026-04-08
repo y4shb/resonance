@@ -560,6 +560,58 @@ final class NowPlayingViewModel {
         )
     }
 
+    // MARK: - Shuffle & Repeat
+
+    /// Whether shuffle mode is currently active.
+    var isShuffleOn: Bool {
+        musicService.shuffleMode == .songs
+    }
+
+    /// Current repeat mode for display.
+    var repeatMode: MusicPlayer.RepeatMode {
+        musicService.repeatMode
+    }
+
+    /// Toggles shuffle mode between .off and .songs.
+    func toggleShuffle() {
+        musicService.shuffleMode = isShuffleOn ? .off : .songs
+        logDebug("Shuffle toggled: \(isShuffleOn ? "on" : "off")", category: .musicKit)
+    }
+
+    /// Cycles repeat mode: none → all → one → none.
+    func cycleRepeatMode() {
+        switch musicService.repeatMode {
+        case .none:
+            musicService.repeatMode = .all
+        case .all:
+            musicService.repeatMode = .one
+        case .one:
+            musicService.repeatMode = .none
+        @unknown default:
+            musicService.repeatMode = .none
+        }
+        logDebug("Repeat mode: \(musicService.repeatMode)", category: .musicKit)
+    }
+
+    // MARK: - Queue Access
+
+    /// Returns the upcoming queue entries for the up-next view.
+    var queueEntries: [MusicPlayer.Queue.Entry] {
+        let entries = Array(ApplicationMusicPlayer.shared.queue.entries)
+        // Find the currently playing entry and return everything after it
+        guard let currentIndex = entries.firstIndex(where: { entry in
+            if case .song(let song) = entry.item {
+                return song.id.rawValue == currentSong.appleMusicId
+            }
+            return false
+        }) else {
+            return entries
+        }
+        let nextIndex = entries.index(after: currentIndex)
+        guard nextIndex < entries.endIndex else { return [] }
+        return Array(entries[nextIndex...])
+    }
+
     // MARK: - AI Song Selection
 
     /// The Core Data ID of the active playlist (set when a playlist is selected).
