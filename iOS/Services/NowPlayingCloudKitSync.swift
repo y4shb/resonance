@@ -83,7 +83,11 @@ final class NowPlayingCloudKitSync {
             record["isPlaying"] = (packet.isPlaying ? 1 : 0) as NSNumber
             record["progress"] = packet.progress as NSNumber
             record["duration"] = packet.duration as NSNumber
-            record["explanation"] = packet.explanation as NSString?
+            // Sanitize explanation before CloudKit upload: strip any raw biometric
+            // values (HR in BPM, HRV in ms) to comply with Guideline 5.1.3(ii)
+            // which prohibits health data in iCloud. Keep the qualitative description
+            // ("stress elevated", "energy rising") but remove numeric readings.
+            record["explanation"] = Self.sanitizeExplanation(packet.explanation) as NSString?
             record["timestamp"] = Date() as NSDate
 
             // Artwork: save as CKAsset if available (skip to avoid large writes
@@ -130,6 +134,54 @@ final class NowPlayingCloudKitSync {
                 )
             }
         }
+    }
+
+    // MARK: - Explanation Sanitization (Guideline 5.1.3(ii))
+
+    /// Strips raw biometric values from explanation text before CloudKit upload.
+    /// Removes patterns like "58 bpm", "22ms HRV", "heart rate 72", etc.
+    /// Keeps qualitative descriptions ("stress elevated", "energy rising").
+    private static func sanitizeExplanation(_ text: String?) -> String? {
+        guard let text = text else { return nil }
+
+        var sanitized = text
+
+        // Remove "XX bpm" / "XX BPM" patterns
+        sanitized = sanitized.replacingOccurrences(
+            of: "\\b\\d+\\.?\\d*\\s*(?:bpm|BPM)\\b",
+            with: "",
+            options: .regularExpression
+        )
+
+        // Remove "XX ms" / "XXms HRV" patterns
+        sanitized = sanitized.replacingOccurrences(
+            of: "\\b\\d+\\.?\\d*\\s*(?:ms|MS)(?:\\s+HRV)?\\b",
+            with: "",
+            options: .regularExpression
+        )
+
+        // Remove "heart rate XX" / "HR XX" patterns
+        sanitized = sanitized.replacingOccurrences(
+            of: "(?:heart rate|HR|resting HR)\\s+\\d+\\.?\\d*",
+            with: "",
+            options: [.regularExpression, .caseInsensitive]
+        )
+
+        // Remove "HRV XX" / "VO2 XX" patterns
+        sanitized = sanitized.replacingOccurrences(
+            of: "(?:HRV|VO2|VO2Max)\\s+\\d+\\.?\\d*",
+            with: "",
+            options: [.regularExpression, .caseInsensitive]
+        )
+
+        // Clean up double spaces left by removals
+        sanitized = sanitized.replacingOccurrences(
+            of: "\\s{2,}",
+            with: " ",
+            options: .regularExpression
+        ).trimmingCharacters(in: .whitespaces)
+
+        return sanitized.isEmpty ? nil : sanitized
     }
 }
 

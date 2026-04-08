@@ -2,6 +2,10 @@ name: Resonance
 options:
   bundleIdPrefix: com.y4sh.resonance
   deploymentTarget:
+    # IMPORTANT: Do NOT lower below 26.0 without adding #available guards for:
+    # - .glassEffect() (iOS 26+) — used in NowPlayingView, WatchNowPlayingView, MiniPlayerView
+    # - Foundation Models framework (iOS 26+) — used in ConversationalExplanation.swift
+    # - .tabViewBottomAccessory (iOS 26.1+) — used in MiniPlayerView #Preview only
     iOS: "26.0"
     watchOS: "26.0"
     macOS: "26.0"
@@ -61,11 +65,14 @@ targets:
       path: iOS/Info.plist
       properties:
         NSAppleMusicUsageDescription: "Resonance needs access to Apple Music to play and analyze your music library."
-        NSHealthShareUsageDescription: "Resonance reads heart rate and HRV data to personalize music selection."
-        NSHealthUpdateUsageDescription: "Resonance records workout context to improve music recommendations."
+        NSHealthShareUsageDescription: "Resonance reads your heart rate, heart rate variability (HRV), resting heart rate, VO2 Max, respiratory rate, step count, active energy, sleep stages, irregular heart rhythm events, wrist temperature, and workout data to personalize music selection based on your current physiological state. All health data is processed on-device and never leaves your device."
+        NSCalendarsFullAccessUsageDescription: "Resonance reads your upcoming calendar events to adjust music energy before meetings and suggest focus sessions during free blocks. Calendar data stays on your device."
+        NSFocusStatusUsageDescription: "Resonance detects Focus mode to adjust music for work, sleep, or relaxation contexts."
+        UIBackgroundModes:
+          - audio
+          - processing
         BGTaskSchedulerPermittedIdentifiers:
           - com.y4sh.resonance.playlistSync
-          - com.y4sh.resonance.featureUpdate
           - com.y4sh.resonance.historicalAnalysis
         UILaunchScreen: {}
     settings:

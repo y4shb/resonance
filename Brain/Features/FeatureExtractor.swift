@@ -389,6 +389,13 @@ final class FeatureExtractor {
 
     /// Resolves local audio file URLs for a batch of songs using MPMediaQuery.
     ///
+    /// **APP STORE COMPLIANCE NOTE (Guideline 5.1.1(ix)):**
+    /// This method only accesses audio files from locally-purchased, DRM-free songs
+    /// via `MPMediaItem.assetURL`. Apple Music DRM-protected (FairPlay) streaming
+    /// tracks return `nil` for `assetURL` and are automatically excluded — they fall
+    /// back to genre-based heuristics and CoreML prediction. No DRM content is
+    /// accessed, decrypted, or circumvented at any point.
+    ///
     /// Matches songs by title + artist name since MusicKit catalog IDs and
     /// MPMediaItem persistent IDs use different identifier systems.
     /// Songs that are not downloaded locally (streaming-only) will not have
