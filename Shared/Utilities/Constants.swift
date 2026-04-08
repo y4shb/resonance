@@ -50,10 +50,18 @@ public enum StateEngineConstants {
     /// Default resting heart rate if not available from HealthKit
     public static let defaultRestingHeartRate: Double = 70
 
-    /// Default maximum heart rate formula: 220 - age
-    public static let maxHeartRateBase: Double = 220
+    /// Tanaka formula intercept for max HR estimation (Tanaka et al., JACC 2001).
+    /// Formula: maxHR = 208 - 0.7 * age
+    /// Replaces the less accurate traditional 220-age formula which overestimates
+    /// maxHR in young adults and underestimates it in older adults (~10 BPM at age 70).
+    /// Meta-analysis of 18,712 subjects. See: doi:10.1016/s0735-1097(00)01054-8
+    public static let maxHeartRateBase: Double = 208
 
-    /// Default user age if not available
+    /// Tanaka formula age coefficient (0.7 instead of 1.0 from the old 220-age formula).
+    public static let maxHeartRateAgeCoefficient: Double = 0.7
+
+    /// Default user age if not available from HealthKit dateOfBirth.
+    /// TODO: Read actual age from HKCharacteristicType.dateOfBirth when available.
     public static let defaultUserAge: Int = 35
 
     /// Minimum confidence threshold for state estimation

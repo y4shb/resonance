@@ -167,9 +167,10 @@ final class RealTimeGuardAdjuster: ObservableObject {
     }
 
     /// Returns the biometric discount factor based on current motion intensity.
-    /// When motion > 0.5, returns (1.0 - motionIntensity); otherwise returns 1.0 (no discount).
+    /// When motion > 0.6, returns sqrt(1-motionIntensity) for gentler rolloff;
+    /// otherwise returns 1.0 (no discount). Consistent with MultiComponentReward.
     var biometricDiscountFactor: Double {
-        motionIntensity > 0.5 ? (1.0 - motionIntensity) : 1.0
+        motionIntensity > 0.6 ? sqrt(1.0 - motionIntensity) : 1.0
     }
 
     /// Record a non-skip (full listen) to decay skip tracking.

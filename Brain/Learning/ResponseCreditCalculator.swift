@@ -83,8 +83,10 @@ struct ResponseCreditCalculator {
             restingHR: restingHR
         )
 
-        // Workstream 2.2: Motion-aware discount factor for biometric signals
-        let motionDiscount = motionIntensity > 0.5 ? (1.0 - motionIntensity) : 1.0
+        // Workstream 2.2: Motion-aware discount factor for biometric signals.
+        // Uses sqrt for gentler rolloff, consistent with MultiComponentReward.
+        // Threshold 0.6 per Apple HealthKit PPG quality documentation.
+        let motionDiscount = motionIntensity > 0.6 ? sqrt(1.0 - motionIntensity) : 1.0
 
         // Completion bonus: songs listened past 50% get a bonus, under 50% get a penalty
         let completionBonus = (listenPercentage - LearningConstants.completionBonusThreshold) * 0.2

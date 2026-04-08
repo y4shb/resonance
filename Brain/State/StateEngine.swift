@@ -263,14 +263,14 @@ final class StateEngine: ObservableObject {
             }
         }
 
-        // R3: Compute HR acceleration (BPM change per minute)
-        let hrSample2MinAgo: Double? = {
+        // R3: Compute HR acceleration using actual timestamps for accurate rate
+        let previousSample: (timestamp: Date, hr: Double)? = {
             guard recentHRSamples.count >= maxHRHistorySamples else { return nil }
-            return recentHRSamples.first?.hr
+            return recentHRSamples.first
         }()
         lastHRAcceleration = Self.calculateHRAcceleration(
             currentHR: biometric?.heartRate ?? 0.0,
-            hrSample2MinAgo: hrSample2MinAgo
+            previousSample: previousSample
         )
 
         // R6: Compute morning mood baseline from overnight metrics if available

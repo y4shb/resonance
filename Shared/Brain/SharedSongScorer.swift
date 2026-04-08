@@ -249,13 +249,13 @@ public struct SharedSongScorer: Sendable {
                    min(DecisionEngineConstants.absoluteMaxBPM, adjusted))
     }
 
-    /// Scores how well a song's BPM matches the target.
+    /// Scores how well a song's BPM matches the target using Gaussian kernel.
+    /// Consistent with iOS SongScorer: smoother falloff, no hard cutoff at boundary.
     private func calculateBPMMatchScore(songBPM: Double, targetBPM: Double) -> Double {
         guard songBPM > 0 else { return 0.5 } // Unknown BPM gets neutral score
         let difference = abs(songBPM - targetBPM)
-        let tolerance = DecisionEngineConstants.bpmTolerance
-        let score = max(0.0, 1.0 - (difference / tolerance))
-        return score
+        let sigma = DecisionEngineConstants.bpmTolerance / 2.5
+        return exp(-0.5 * (difference * difference) / (sigma * sigma))
     }
 
     // MARK: - Energy Scoring
@@ -287,7 +287,9 @@ public struct SharedSongScorer: Sendable {
         )
 
         let difference = abs(songEnergy - blendedTarget)
-        return max(0.0, 1.0 - difference * 2.0)
+        // Gaussian kernel consistent with iOS SongScorer (sigma=0.4)
+        let sigma = 0.4
+        return exp(-0.5 * (difference * difference) / (sigma * sigma))
     }
 
     // MARK: - Familiarity Scoring (6.2 enhancement)

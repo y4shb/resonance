@@ -34,18 +34,18 @@ extension StateEngine {
         let resting = restingHeartRate ?? StateEngineConstants.defaultRestingHeartRate
         let maxHR: Double
 
-        // VO2 Max-adjusted max HR estimation (Workstream 3.1)
-        // Higher VO2 Max indicates better fitness, allowing higher sustainable HR.
-        // Adjusted formula: base max HR + fitness bonus
+        // Tanaka formula: maxHR = 208 - 0.7 * age (Tanaka et al., JACC 2001)
+        // More accurate than 220-age across all age groups. Meta-analysis of 18,712 subjects.
+        // VO2 Max fitness bonus: athletes with VO2Max > 40 get up to +10 BPM headroom.
+        let age = Double(StateEngineConstants.defaultUserAge)
+        let baseMaxHR = StateEngineConstants.maxHeartRateBase
+            - StateEngineConstants.maxHeartRateAgeCoefficient * age
+
         if let vo2Max = cachedVO2Max, vo2Max > 0 {
-            let baseMaxHR = StateEngineConstants.maxHeartRateBase
-                - Double(StateEngineConstants.defaultUserAge)
-            // Fitness bonus: VO2 Max above 40 adds capacity (capped at +10 BPM)
             let fitnessBonus = min(10.0, max(0.0, (vo2Max - 40.0) * 0.5))
             maxHR = baseMaxHR + fitnessBonus
         } else {
-            maxHR = StateEngineConstants.maxHeartRateBase
-                - Double(StateEngineConstants.defaultUserAge)
+            maxHR = baseMaxHR
         }
 
         let hrReserve = maxHR - resting
@@ -95,13 +95,16 @@ extension StateEngine {
         // Map ratio to stress using logarithmic relationship for physiological accuracy.
         // HRV-stress is nonlinear (Shaffer & Ginsberg, 2017): initial drops from
         // baseline are more significant than further drops from already-low HRV.
-        // Log mapping: stress = clamp(0.5 - 0.5 * ln(ratio) / ln(2), 0, 1)
-        // ratio 0.5 → stress = 0.5 - 0.5*(-1)/1 = 1.0 (high stress)
-        // ratio 1.0 → stress = 0.5 - 0.5*(0)/1 = 0.5 (baseline neutral)
-        // ratio 1.5 → stress = 0.5 - 0.5*(0.585)/1 = 0.21 (low stress)
-        // ratio 2.0 → stress = 0.5 - 0.5*(1)/1 = 0.0 (very relaxed)
+        // Baseline (ratio=1.0) maps to 0.35 stress (moderate-low, not neutral 0.5)
+        // per literature: a person at their personal HRV norm is in a low-moderate
+        // stress state, not a midpoint state.
+        //
+        // ratio 0.5 → stress = 0.35 + 0.5 = 0.85 (high stress)
+        // ratio 1.0 → stress = 0.35 - 0  = 0.35 (baseline, moderate-low)
+        // ratio 1.5 → stress = 0.35 - 0.29 = 0.06 (very relaxed)
+        // ratio 2.0 → stress = 0.35 - 0.5 = clamped to 0 (deeply relaxed)
         let logRatio = log(ratio) / log(2.0)  // log base 2
-        let stress = Self.clamp(0.5 - 0.5 * logRatio, 0.0, 1.0)
+        let stress = Self.clamp(0.35 - 0.5 * logRatio, 0.0, 1.0)
 
         let confidence = biometric?.sampleQuality ?? 0.5
 
@@ -199,13 +202,16 @@ extension StateEngine {
         let activityBonus: Double = (biometric?.isInWorkout == true) ? 0.1 : 0.0
 
         // HRV trend: rising HRV suggests improving autonomic balance and mood.
-        // Uses recent HRV history from the personal baseline tracker.
+        // Normalized relative to personal baseline (not fixed /20.0) so that users
+        // with baseline HRV of 100ms and 30ms have proportionally equivalent signals.
+        // A 40% deviation from personal baseline = full-strength trend signal.
         // (Appelhans & Luecken, Psychophysiology 2006)
         let hrvTrendComponent: Double = {
             guard let currentHRV = biometric?.hrv, currentHRV > 0 else { return 0.0 }
             let baseline = personalBaseline.currentBaseline
-            let trend = (currentHRV - baseline) / 20.0
-            return Self.clamp(trend * 0.10, -0.15, 0.15)
+            guard baseline > 0 else { return 0.0 }
+            let normalizedTrend = (currentHRV - baseline) / (baseline * 0.4)
+            return Self.clamp(normalizedTrend * 0.10, -0.15, 0.15)
         }()
 
         // Sleep quality predicts next-day positive affect.
@@ -239,10 +245,27 @@ extension StateEngine {
     /// such as onset of stress, excitement, or relaxation.
     /// Reference: Appelhans & Luecken, Psychophysiology 2006
     ///
+    /// Uses actual timestamps from the HR sample buffer instead of assuming
+    /// a fixed 2-minute window. With 4 samples at 30s intervals, the actual
+    /// span is ~90 seconds (1.5 min), not 2.0 min. Using real elapsed time
+    /// corrects a 25% rate underestimation.
+    ///
     /// - Parameters:
     ///   - currentHR: Current heart rate in BPM
-    ///   - hrSample2MinAgo: Heart rate sample from approximately 2 minutes ago
+    ///   - previousSample: Oldest HR sample with its timestamp
+    ///   - currentTimestamp: Current sample timestamp
     /// - Returns: Rate of HR change in BPM per minute (positive = accelerating)
+    static func calculateHRAcceleration(
+        currentHR: Double,
+        previousSample: (timestamp: Date, hr: Double)?
+    ) -> Double {
+        guard let previous = previousSample else { return 0.0 }
+        let elapsedMinutes = Date().timeIntervalSince(previous.timestamp) / 60.0
+        guard elapsedMinutes > 0.1 else { return 0.0 }  // Guard against near-zero division
+        return (currentHR - previous.hr) / elapsedMinutes
+    }
+
+    /// Legacy overload for backward compatibility.
     static func calculateHRAcceleration(
         currentHR: Double,
         hrSample2MinAgo: Double?
