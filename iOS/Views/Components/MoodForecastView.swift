@@ -6,6 +6,8 @@
 //  Users can adjust the predicted energy curve before a session starts, and the AI
 //  will reorder the playlist to match the modified trajectory.
 //
+//  Also supports a post-session overlay mode showing predicted vs actual curves.
+//
 
 #if os(iOS)
 import SwiftUI
@@ -15,22 +17,39 @@ import SwiftUI
 /// Displays an interactive energy curve with draggable control points.
 /// Users drag points vertically to modify the energy target at that time segment.
 /// The curve uses Catmull-Rom spline interpolation for smooth rendering.
+///
+/// In overlay mode (`actualTrajectory` provided), shows two curves:
+/// - Predicted arc: dashed, lighter opacity
+/// - Actual trajectory: solid, brighter color
 struct MoodForecastView: View {
     @State var forecast: MoodForecast
     let onAccept: (MoodForecast) -> Void
     let onDismiss: () -> Void
+
+    /// Optional actual trajectory for post-session overlay comparison.
+    /// When provided, the view switches to read-only overlay mode.
+    var actualTrajectory: [ForecastPoint]?
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// Stores the original forecast for reset functionality.
     @State private var originalForecast: MoodForecast?
 
+    /// Whether we are in post-session overlay mode (read-only).
+    private var isOverlayMode: Bool {
+        actualTrajectory != nil
+    }
+
     var body: some View {
         VStack(spacing: 16) {
             headerSection
-            curveSection
-            axisLabels
-            actionButtons
+            emotionalYAxisWithCurve
+            timeAxisLabels
+            if !isOverlayMode {
+                actionButtons
+            } else {
+                overlayLegend
+            }
         }
         .padding()
         .onAppear {
@@ -45,7 +64,7 @@ struct MoodForecastView: View {
     private var headerSection: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text("Mood Forecast")
+                Text(isOverlayMode ? "Session Trajectory" : "Mood Forecast")
                     .font(.headline)
 
                 Text(forecast.arcTemplate)
@@ -55,13 +74,15 @@ struct MoodForecastView: View {
 
             Spacer()
 
-            confidenceBadge
+            if !isOverlayMode {
+                confidenceBadge
 
-            Button("Reset") {
-                resetForecast()
+                Button("Reset") {
+                    resetForecast()
+                }
+                .font(.subheadline)
+                .foregroundStyle(.orange)
             }
-            .font(.subheadline)
-            .foregroundStyle(.orange)
         }
     }
 
@@ -86,6 +107,29 @@ struct MoodForecastView: View {
         }
     }
 
+    // MARK: - Emotional Y-Axis + Curve (Combined Layout)
+
+    /// Combines the emotional word labels on the left with the curve chart.
+    private var emotionalYAxisWithCurve: some View {
+        HStack(alignment: .top, spacing: 4) {
+            // Emotional Y-axis labels
+            GeometryReader { geo in
+                let height = geo.size.height
+                ForEach(EmotionalEnergyLabel.allCases, id: \.self) { label in
+                    let y = height * (1.0 - CGFloat(label.midpoint))
+                    Text(label.rawValue)
+                        .font(.system(size: 8, weight: .medium))
+                        .foregroundStyle(.tertiary)
+                        .position(x: 28, y: y)
+                }
+            }
+            .frame(width: 56, height: 200)
+
+            // Main curve area
+            curveSection
+        }
+    }
+
     // MARK: - Interactive Curve
 
     private var curveSection: some View {
@@ -93,9 +137,22 @@ struct MoodForecastView: View {
             let size = geo.size
             ZStack {
                 backgroundGrid(size: size)
-                gradientFill(size: size)
-                smoothCurve(size: size)
-                controlPoints(size: size)
+
+                if isOverlayMode {
+                    // Overlay mode: predicted (dashed) + actual (solid)
+                    predictedGradientFill(size: size)
+                    predictedDashedCurve(size: size)
+                    if let actual = actualTrajectory {
+                        actualCurveFill(points: actual, size: size)
+                        actualCurve(points: actual, size: size)
+                    }
+                } else {
+                    // Interactive mode: single curve with control points
+                    gradientFill(size: size)
+                    smoothCurve(size: size)
+                    trackTypeIcons(size: size)
+                    controlPoints(size: size)
+                }
             }
         }
         .frame(height: 200)
@@ -107,14 +164,15 @@ struct MoodForecastView: View {
 
     private func backgroundGrid(size: CGSize) -> some View {
         ZStack {
-            // Horizontal grid lines (energy levels)
-            ForEach(0..<11) { i in
+            // Horizontal grid lines -- aligned to emotional energy bands
+            ForEach(0..<6) { i in
+                let energy = CGFloat(i) * 0.2
                 Path { path in
-                    let y = size.height * (1.0 - CGFloat(i) / 10.0)
+                    let y = size.height * (1.0 - energy)
                     path.move(to: CGPoint(x: 0, y: y))
                     path.addLine(to: CGPoint(x: size.width, y: y))
                 }
-                .stroke(Color.gray.opacity(0.15), lineWidth: 0.5)
+                .stroke(Color.gray.opacity(0.12), lineWidth: 0.5)
             }
 
             // Vertical grid lines (time segments)
@@ -195,6 +253,23 @@ struct MoodForecastView: View {
         )
     }
 
+    // MARK: - Track Type Icons Along Curve
+
+    /// Small SF Symbol icons along the curve indicating predicted track characteristics.
+    private func trackTypeIcons(size: CGSize) -> some View {
+        ForEach(forecast.points.indices, id: \.self) { index in
+            let point = forecast.points[index]
+            let x = xPosition(for: point, in: size)
+            let y = yPosition(for: point, in: size)
+            let hint = TrackTypeHint.from(energy: point.energy)
+
+            Image(systemName: hint.sfSymbol)
+                .font(.system(size: 8))
+                .foregroundStyle(hint.color.opacity(0.65))
+                .position(x: x, y: max(y - 22, 10))
+        }
+    }
+
     // MARK: - Draggable Control Points
 
     private func controlPoints(size: CGSize) -> some View {
@@ -234,47 +309,180 @@ struct MoodForecastView: View {
                     }
             )
             .accessibilityLabel("Energy point \(index + 1)")
-            .accessibilityValue("Energy \(Int(round(point.energy * 10))) of 10, \(Int(point.bpm)) BPM")
+            .accessibilityValue(
+                "\(EmotionalEnergyLabel.from(energy: point.energy).rawValue), "
+                + "\(Int(point.bpm)) BPM, "
+                + "\(TrackTypeHint.from(energy: point.energy).label)"
+            )
             .accessibilityAdjustableAction { direction in
                 handleAccessibilityAdjust(at: index, direction: direction)
             }
         }
     }
 
-    // MARK: - Axis Labels
+    // MARK: - Overlay Mode: Predicted Curve (Dashed)
 
-    private var axisLabels: some View {
-        VStack(spacing: 4) {
-            // Energy scale
-            HStack {
-                Text("Low")
-                    .font(.system(size: 9))
-                    .foregroundStyle(.tertiary)
-                Spacer()
-                Text("Energy")
-                    .font(.system(size: 9))
-                    .foregroundStyle(.tertiary)
-                Spacer()
-                Text("High")
-                    .font(.system(size: 9))
-                    .foregroundStyle(.tertiary)
+    private func predictedGradientFill(size: CGSize) -> some View {
+        Path { path in
+            let cgPoints = forecast.points.map { pt in
+                CGPoint(
+                    x: xPosition(for: pt, in: size),
+                    y: yPosition(for: pt, in: size)
+                )
             }
 
-            // Time labels
-            HStack {
-                Text("0:00")
-                    .font(.system(size: 9))
-                    .foregroundStyle(.tertiary)
-                Spacer()
-                Text(formatDuration(forecast.sessionDuration / 2))
-                    .font(.system(size: 9))
-                    .foregroundStyle(.tertiary)
-                Spacer()
-                Text(formatDuration(forecast.sessionDuration))
-                    .font(.system(size: 9))
-                    .foregroundStyle(.tertiary)
+            guard cgPoints.count >= 2 else { return }
+            let curvePoints = catmullRomPoints(from: cgPoints, granularity: 20)
+
+            path.move(to: CGPoint(x: curvePoints[0].x, y: size.height))
+            path.addLine(to: curvePoints[0])
+            for point in curvePoints.dropFirst() {
+                path.addLine(to: point)
+            }
+            if let lastPoint = curvePoints.last {
+                path.addLine(to: CGPoint(x: lastPoint.x, y: size.height))
+            }
+            path.closeSubpath()
+        }
+        .fill(Color.gray.opacity(0.06))
+    }
+
+    private func predictedDashedCurve(size: CGSize) -> some View {
+        Path { path in
+            let cgPoints = forecast.points.map { pt in
+                CGPoint(
+                    x: xPosition(for: pt, in: size),
+                    y: yPosition(for: pt, in: size)
+                )
+            }
+
+            guard cgPoints.count >= 2 else { return }
+            let curvePoints = catmullRomPoints(from: cgPoints, granularity: 20)
+
+            path.move(to: curvePoints[0])
+            for point in curvePoints.dropFirst() {
+                path.addLine(to: point)
             }
         }
+        .stroke(
+            Color.gray.opacity(0.5),
+            style: StrokeStyle(
+                lineWidth: 2,
+                lineCap: .round,
+                lineJoin: .round,
+                dash: [6, 4]
+            )
+        )
+    }
+
+    // MARK: - Overlay Mode: Actual Trajectory (Solid)
+
+    private func actualCurveFill(points: [ForecastPoint], size: CGSize) -> some View {
+        Path { path in
+            let cgPoints = points.map { pt in
+                CGPoint(
+                    x: xPosition(for: pt, in: size),
+                    y: yPosition(for: pt, in: size)
+                )
+            }
+
+            guard cgPoints.count >= 2 else { return }
+            let curvePoints = catmullRomPoints(from: cgPoints, granularity: 20)
+
+            path.move(to: CGPoint(x: curvePoints[0].x, y: size.height))
+            path.addLine(to: curvePoints[0])
+            for point in curvePoints.dropFirst() {
+                path.addLine(to: point)
+            }
+            if let lastPoint = curvePoints.last {
+                path.addLine(to: CGPoint(x: lastPoint.x, y: size.height))
+            }
+            path.closeSubpath()
+        }
+        .fill(
+            LinearGradient(
+                colors: [ResonanceColors.accent.opacity(0.25), ResonanceColors.accent.opacity(0.03)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
+    }
+
+    private func actualCurve(points: [ForecastPoint], size: CGSize) -> some View {
+        Path { path in
+            let cgPoints = points.map { pt in
+                CGPoint(
+                    x: xPosition(for: pt, in: size),
+                    y: yPosition(for: pt, in: size)
+                )
+            }
+
+            guard cgPoints.count >= 2 else { return }
+            let curvePoints = catmullRomPoints(from: cgPoints, granularity: 20)
+
+            path.move(to: curvePoints[0])
+            for point in curvePoints.dropFirst() {
+                path.addLine(to: point)
+            }
+        }
+        .stroke(
+            LinearGradient(
+                colors: [ResonanceColors.accent, .green],
+                startPoint: .leading,
+                endPoint: .trailing
+            ),
+            style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round)
+        )
+    }
+
+    // MARK: - Overlay Legend
+
+    private var overlayLegend: some View {
+        HStack(spacing: 16) {
+            HStack(spacing: 6) {
+                RoundedRectangle(cornerRadius: 1)
+                    .fill(Color.gray.opacity(0.5))
+                    .frame(width: 20, height: 2)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 1)
+                            .stroke(Color.gray.opacity(0.5), style: StrokeStyle(lineWidth: 2, dash: [4, 3]))
+                            .frame(width: 20, height: 2)
+                    )
+                Text("Predicted")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+
+            HStack(spacing: 6) {
+                RoundedRectangle(cornerRadius: 1)
+                    .fill(ResonanceColors.accent)
+                    .frame(width: 20, height: 2)
+                Text("Actual")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+        }
+    }
+
+    // MARK: - Time Axis Labels
+
+    private var timeAxisLabels: some View {
+        HStack {
+            Text("0:00")
+                .font(.system(size: 9))
+                .foregroundStyle(.tertiary)
+            Spacer()
+            Text(formatDuration(forecast.sessionDuration / 2))
+                .font(.system(size: 9))
+                .foregroundStyle(.tertiary)
+            Spacer()
+            Text(formatDuration(forecast.sessionDuration))
+                .font(.system(size: 9))
+                .foregroundStyle(.tertiary)
+        }
+        .padding(.leading, 56) // Align with curve area (past emotional labels)
     }
 
     // MARK: - Action Buttons
@@ -380,65 +588,13 @@ struct MoodForecastView: View {
         }
     }
 
-    // MARK: - Catmull-Rom Spline
+    // MARK: - Catmull-Rom Spline (Delegate to Shared Utility)
 
-    /// Generates smooth curve points using Catmull-Rom spline interpolation.
-    /// This produces a natural-looking curve through all control points.
     private func catmullRomPoints(
         from controlPoints: [CGPoint],
         granularity: Int
     ) -> [CGPoint] {
-        guard controlPoints.count >= 2 else { return controlPoints }
-
-        var result: [CGPoint] = []
-
-        for i in 0..<controlPoints.count - 1 {
-            let p0 = i > 0 ? controlPoints[i - 1] : controlPoints[i]
-            let p1 = controlPoints[i]
-            let p2 = controlPoints[i + 1]
-            let p3 = i + 2 < controlPoints.count ? controlPoints[i + 2] : controlPoints[i + 1]
-
-            for t in 0..<granularity {
-                let tNorm = CGFloat(t) / CGFloat(granularity)
-                let point = catmullRomInterpolate(p0: p0, p1: p1, p2: p2, p3: p3, t: tNorm)
-                result.append(point)
-            }
-        }
-
-        // Add the final point
-        if let last = controlPoints.last {
-            result.append(last)
-        }
-
-        return result
-    }
-
-    /// Evaluates a single point on a Catmull-Rom spline segment.
-    private func catmullRomInterpolate(
-        p0: CGPoint,
-        p1: CGPoint,
-        p2: CGPoint,
-        p3: CGPoint,
-        t: CGFloat
-    ) -> CGPoint {
-        let t2 = t * t
-        let t3 = t2 * t
-
-        let x = 0.5 * (
-            (2.0 * p1.x) +
-            (-p0.x + p2.x) * t +
-            (2.0 * p0.x - 5.0 * p1.x + 4.0 * p2.x - p3.x) * t2 +
-            (-p0.x + 3.0 * p1.x - 3.0 * p2.x + p3.x) * t3
-        )
-
-        let y = 0.5 * (
-            (2.0 * p1.y) +
-            (-p0.y + p2.y) * t +
-            (2.0 * p0.y - 5.0 * p1.y + 4.0 * p2.y - p3.y) * t2 +
-            (-p0.y + 3.0 * p1.y - 3.0 * p2.y + p3.y) * t3
-        )
-
-        return CGPoint(x: x, y: y)
+        CatmullRomSpline.interpolate(through: controlPoints, granularity: granularity)
     }
 
     // MARK: - Formatting
@@ -450,9 +606,9 @@ struct MoodForecastView: View {
     }
 }
 
-// MARK: - Preview
+// MARK: - Previews
 
-#Preview {
+#Preview("Interactive Mode") {
     MoodForecastView(
         forecast: MoodForecast(
             points: [
@@ -472,6 +628,37 @@ struct MoodForecastView: View {
         ),
         onAccept: { _ in },
         onDismiss: { }
+    )
+    .padding()
+}
+
+#Preview("Overlay Mode") {
+    MoodForecastView(
+        forecast: MoodForecast(
+            points: [
+                ForecastPoint(id: 0, energy: 0.3, bpm: 80, timestamp: 0),
+                ForecastPoint(id: 1, energy: 0.45, bpm: 95, timestamp: 300),
+                ForecastPoint(id: 2, energy: 0.6, bpm: 110, timestamp: 600),
+                ForecastPoint(id: 3, energy: 0.75, bpm: 128, timestamp: 900),
+                ForecastPoint(id: 4, energy: 0.8, bpm: 135, timestamp: 1200),
+                ForecastPoint(id: 5, energy: 0.65, bpm: 115, timestamp: 1500),
+                ForecastPoint(id: 6, energy: 0.4, bpm: 90, timestamp: 1800),
+            ],
+            arcTemplate: "Workout",
+            sessionDuration: 1800,
+            confidence: 0.75
+        ),
+        onAccept: { _ in },
+        onDismiss: { },
+        actualTrajectory: [
+            ForecastPoint(id: 0, energy: 0.35, bpm: 85, timestamp: 0),
+            ForecastPoint(id: 1, energy: 0.5, bpm: 100, timestamp: 300),
+            ForecastPoint(id: 2, energy: 0.7, bpm: 120, timestamp: 600),
+            ForecastPoint(id: 3, energy: 0.85, bpm: 140, timestamp: 900),
+            ForecastPoint(id: 4, energy: 0.75, bpm: 128, timestamp: 1200),
+            ForecastPoint(id: 5, energy: 0.55, bpm: 105, timestamp: 1500),
+            ForecastPoint(id: 6, energy: 0.35, bpm: 85, timestamp: 1800),
+        ]
     )
     .padding()
 }

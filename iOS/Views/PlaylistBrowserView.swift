@@ -89,6 +89,25 @@ struct PlaylistBrowserView: View {
             } message: {
                 Text(viewModel.errorMessage ?? "")
             }
+            .alert(
+                "Switch Playlist?",
+                isPresented: Binding(
+                    get: { viewModel.pendingPlaylistSwitch != nil },
+                    set: { if !$0 { viewModel.cancelPlaylistSwitch() } }
+                )
+            ) {
+                Button("Switch", role: .destructive) {
+                    if let pending = viewModel.pendingPlaylistSwitch {
+                        viewModel.confirmPlaylistSwitch()
+                        onPlaylistSelected?(pending)
+                    }
+                }
+                Button("Cancel", role: .cancel) {
+                    viewModel.cancelPlaylistSwitch()
+                }
+            } message: {
+                Text("Your current session will end. AI learning from this session will be saved.")
+            }
             .onAppear {
                 if viewModel.playlists.isEmpty {
                     viewModel.fetchPlaylists()

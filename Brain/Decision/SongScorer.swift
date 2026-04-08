@@ -100,14 +100,30 @@ final class SongScorer {
             }
         }
 
-        // Final weighted score (plan.md §5.2.1)
+        // Exploration bias weight adjustment:
+        // When bias is high (Surprise Me), reduce familiarity and historical weights
+        // and redistribute to context and energy for novel discovery.
+        // When bias is low (Stay in Zone), boost familiarity and historical weights.
+        //
+        // At bias 0.0: familiarity/historical get +40% boost, context/energy get -20%
+        // At bias 0.5: weights are unchanged (neutral)
+        // At bias 1.0: familiarity/historical get -40% reduction, context/energy get +20%
+        let bias = weights.explorationBias
+        let exploitBoost = 1.0 + 0.8 * (0.5 - bias)     // 1.4 at 0.0, 1.0 at 0.5, 0.6 at 1.0
+        let exploreBoost = 1.0 + 0.4 * (bias - 0.5)     // 0.8 at 0.0, 1.0 at 0.5, 1.2 at 1.0
+
+        // Recency penalty is also modulated: lower bias = stronger penalty (don't repeat),
+        // higher bias = weaker penalty (okay to revisit sooner for variety)
+        let recencyMultiplier = 0.5 * exploitBoost       // 0.7 at 0.0, 0.5 at 0.5, 0.3 at 1.0
+
+        // Final weighted score (plan.md §5.2.1) with exploration bias modulation
         var finalScore =
             (bpmMatchScore * weights.bpmWeight) +
-            (energyMatchScore * weights.energyWeight) +
-            (familiarityScore * weights.familiarityWeight) +
-            (historicalEffectScore * weights.historicalWeight) +
-            (contextAlignmentScore * weights.contextWeight) -
-            (recencyPenalty * 0.5) +
+            (energyMatchScore * weights.energyWeight * exploreBoost) +
+            (familiarityScore * weights.familiarityWeight * exploitBoost) +
+            (historicalEffectScore * weights.historicalWeight * exploitBoost) +
+            (contextAlignmentScore * weights.contextWeight * exploreBoost) -
+            (recencyPenalty * recencyMultiplier) +
             arcPhaseBonus
 
         // Time of day as multiplier

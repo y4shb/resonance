@@ -298,7 +298,8 @@ final class DecisionEngine: ObservableObject {
             let contextType = stateVector.context.rawValue
             let rlRanked = effectivenessLearner.scoreWithExploration(
                 candidates: topCandidates,
-                contextType: contextType
+                contextType: contextType,
+                explorationBias: preferences.explorationBias
             )
 
             // Rebuild scores array with RL-adjusted ordering
@@ -515,6 +516,132 @@ final class DecisionEngine: ObservableObject {
     /// Returns the planned energy trajectory for visualization.
     var arcEnergyTrajectory: [(songIndex: Int, energy: Double)] {
         currentArc?.energyTrajectory ?? []
+    }
+
+    // MARK: - Queue Precomputation
+
+    /// Precomputes the top N songs for the up-next queue.
+    ///
+    /// Runs the full scoring pipeline (guard filters, song scorer, arc phase,
+    /// exploration/exploitation, transition smoothing) but does NOT mutate
+    /// session state -- songs are scored as if they were candidates for the
+    /// *next* selection, not consumed. This means the queue is a snapshot
+    /// prediction that remains valid until state changes significantly.
+    ///
+    /// - Parameters:
+    ///   - count: How many queue items to return (default 10, capped at 25).
+    ///   - playlistId: Active playlist UUID.
+    ///   - playlistName: Active playlist display name.
+    ///   - stateVector: Current user state.
+    ///   - preferences: User preferences (weights, exploration bias, etc.).
+    /// - Returns: An array of `QueueItem` ordered by predicted play order,
+    ///   or an empty array if no candidates are available.
+    func precomputeQueue(
+        count: Int = 10,
+        playlistId: UUID,
+        playlistName: String,
+        stateVector: StateVector,
+        preferences: UserPreferences = .load()
+    ) async -> [QueueItem] {
+        let cappedCount = min(max(count, 1), 25)
+
+        let context = persistence.viewContext
+
+        // 1. Fetch candidates
+        let candidates = fetchCandidateSongs(playlistId: playlistId, in: context)
+        guard !candidates.isEmpty else {
+            logDebug("precomputeQueue: no candidates in playlist", category: .decisionEngine)
+            return []
+        }
+
+        let candidateIds = candidates.compactMap { $0.id }
+        let decisionContext = DecisionContext(
+            stateVector: stateVector,
+            activePlaylistId: playlistId,
+            activePlaylistName: playlistName,
+            candidateSongIds: candidateIds,
+            recentlyPlayed: recentlyPlayed,
+            currentTime: Date(),
+            currentSessionSongIds: sessionSongIds,
+            preferences: preferences,
+            isSessionStart: sessionSongIds.isEmpty
+        )
+
+        // 2. Guard filters (same as selectNextSong but read-only)
+        let filterResult = guardFilters.apply(
+            candidates: candidates,
+            context: decisionContext,
+            recentArtists: sessionArtists
+        )
+
+        let scoringPool = filterResult.accepted.isEmpty ? candidates : filterResult.accepted
+
+        // 3. Resolve arc phase for scoring
+        let currentArcPhase = currentArc.map {
+            sessionPlanner.currentPhase(for: $0, songsPlayed: arcSongsPlayed)
+        }
+
+        // 4. Score all candidates
+        let scores = songScorer.scoreAllCandidates(
+            scoringPool,
+            context: decisionContext,
+            arcPhase: currentArcPhase
+        )
+
+        // 5. Take top N and build QueueItems
+        let topScores = Array(scores.prefix(cappedCount))
+
+        // Batch-resolve Apple Music IDs from Core Data
+        let songIdToAppleMusicId = resolveAppleMusicIds(
+            for: topScores.map(\.songId),
+            in: context
+        )
+
+        let items: [QueueItem] = topScores.enumerated().map { index, score in
+            let shortExplanation = explanationGenerator.generate(
+                score: score,
+                state: stateVector,
+                isSessionStart: false
+            ).short
+
+            return QueueItem(
+                songScore: score,
+                shortExplanation: shortExplanation,
+                appleMusicId: songIdToAppleMusicId[score.songId] ?? "",
+                position: index + 1
+            )
+        }
+
+        logInfo(
+            "precomputeQueue: built \(items.count) queue items "
+            + "(from \(scoringPool.count) candidates, top score: "
+            + "\(String(format: "%.3f", topScores.first?.finalScore ?? 0)))",
+            category: .decisionEngine
+        )
+
+        return items
+    }
+
+    /// Resolves Core Data Song UUIDs to their Apple Music IDs in a single
+    /// batch fetch, avoiding N+1 queries.
+    private func resolveAppleMusicIds(
+        for songIds: [UUID],
+        in context: NSManagedObjectContext
+    ) -> [UUID: String] {
+        guard !songIds.isEmpty else { return [:] }
+        let request = NSFetchRequest<Song>(entityName: "Song")
+        request.predicate = NSPredicate(format: "id IN %@", songIds as CVarArg)
+        request.propertiesToFetch = ["id", "appleMusicId"]
+
+        guard let songs = try? context.fetch(request) else { return [:] }
+
+        var result: [UUID: String] = [:]
+        for song in songs {
+            if let id = song.id, let amId = song.appleMusicId, !amId.isEmpty {
+                result[id] = amId
+            }
+        }
+        return result
     }
 
     // MARK: - Private Helpers

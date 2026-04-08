@@ -99,9 +99,6 @@ struct NowPlayingView: View {
                             songInfoView
                                 .padding(.bottom, 8)
 
-                            explanationBar
-                                .padding(.bottom, 16)
-
                             progressView
                                 .padding(.horizontal, 20)
                                 .padding(.bottom, 16)
@@ -109,9 +106,17 @@ struct NowPlayingView: View {
                             transportControls
                                 .padding(.bottom, 8)
 
-                            shuffleRepeatControls
+                            explanationBar
                                 .padding(.horizontal, 20)
-                                .padding(.bottom, 16)
+                                .padding(.bottom, 8)
+
+                            explorationBiasControl
+                                .padding(.horizontal, 20)
+                                .padding(.bottom, 12)
+
+                            queueButton
+                                .padding(.horizontal, 20)
+                                .padding(.bottom, 8)
 
                             volumeAndRouteControls
                                 .padding(.horizontal, 20)
@@ -133,6 +138,7 @@ struct NowPlayingView: View {
                     }
                     .onAppear {
                         updateDominantGlowColor()
+                        explorationSliderValue = viewModel.explorationBias
                     }
                 }
             }
@@ -218,7 +224,8 @@ struct NowPlayingView: View {
                 heartRate: approximateHeartRate,
                 musicBPM: viewModel.currentSongBPM,
                 accentColor: viewModel.artworkAccentColor ?? ResonanceColors.accent,
-                reduceMotion: reduceMotion
+                reduceMotion: reduceMotion,
+                isTransitioning: viewModel.isTransitioningTrack
             )
             .frame(
                 width: UIConstants.ArtworkSize.large + 24,
@@ -360,71 +367,107 @@ struct NowPlayingView: View {
         }
     }
 
-    // MARK: - Shuffle / Repeat / Queue Controls
+    // MARK: - Exploration Bias Control ("Surprise Me" / "Stay in the Zone")
 
-    private var shuffleRepeatControls: some View {
-        HStack(spacing: 0) {
-            // Shuffle toggle
-            Button(action: { viewModel.toggleShuffle() }) {
-                Image(systemName: "shuffle")
-                    .font(.body)
-                    .foregroundStyle(viewModel.isShuffleOn ? ResonanceColors.accent : .secondary)
-                    .frame(width: 44, height: 36)
-                    .contentShape(Rectangle())
-            }
-            .accessibilityLabel("Shuffle")
-            .accessibilityValue(viewModel.isShuffleOn ? "On" : "Off")
-            .accessibilityHint("Double tap to toggle shuffle")
+    /// Slider state for live dragging without persisting on every frame
+    @State private var explorationSliderValue: Double = UserPreferences.load().explorationBias
+    @State private var isExplorationSliderEditing = false
 
-            Spacer()
+    private var explorationBiasControl: some View {
+        VStack(spacing: 6) {
+            // Mode label with icon
+            HStack(spacing: 6) {
+                Image(systemName: viewModel.explorationBiasIcon)
+                    .font(.caption)
+                    .foregroundStyle(explorationAccentColor)
+                    .contentTransition(.symbolEffect(.replace))
 
-            // Repeat mode cycle (none → all → one → none)
-            Button(action: { viewModel.cycleRepeatMode() }) {
-                ZStack {
-                    Image(systemName: repeatIconName)
-                        .font(.body)
-                        .foregroundStyle(viewModel.repeatMode != .none ? ResonanceColors.accent : .secondary)
-                        .frame(width: 44, height: 36)
+                Text(viewModel.explorationBiasLabel)
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundStyle(explorationAccentColor)
+
+                Spacer()
+
+                // Queue button integrated into this row
+                Button(action: { showQueue = true }) {
+                    Image(systemName: "list.bullet")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 32, height: 28)
                         .contentShape(Rectangle())
+                }
+                .accessibilityLabel("Up Next")
+            }
 
-                    // "1" badge for repeat-one mode
-                    if viewModel.repeatMode == .one {
-                        Text("1")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundStyle(ResonanceColors.accent)
-                            .offset(x: 8, y: -6)
+            // Slider with endpoint labels
+            HStack(spacing: 10) {
+                Image(systemName: "target")
+                    .font(.caption2)
+                    .foregroundStyle(explorationSliderValue < 0.5 ? ResonanceColors.accent : .tertiary)
+
+                Slider(
+                    value: $explorationSliderValue,
+                    in: 0...1,
+                    step: 0.05,
+                    onEditingChanged: { editing in
+                        isExplorationSliderEditing = editing
+                        if !editing {
+                            viewModel.setExplorationBias(explorationSliderValue)
+                        }
+                    }
+                )
+                .tint(explorationAccentColor)
+                .onChange(of: explorationSliderValue) {
+                    // Update the label in real time while dragging
+                    if isExplorationSliderEditing {
+                        viewModel.explorationBias = explorationSliderValue
                     }
                 }
-            }
-            .accessibilityLabel("Repeat")
-            .accessibilityValue(repeatAccessibilityValue)
 
-            Spacer()
-
-            // Queue / Up Next button
-            Button(action: { showQueue = true }) {
-                Image(systemName: "list.bullet")
-                    .font(.body)
-                    .foregroundStyle(.secondary)
-                    .frame(width: 44, height: 36)
-                    .contentShape(Rectangle())
+                Image(systemName: "sparkles")
+                    .font(.caption2)
+                    .foregroundStyle(explorationSliderValue > 0.5 ? ResonanceColors.accent : .tertiary)
             }
-            .accessibilityLabel("Up Next")
-            .accessibilityHint("Shows the upcoming songs in the queue")
+
+            // Endpoint text labels
+            HStack {
+                Text("Stay in the Zone")
+                    .font(.system(size: 9))
+                    .foregroundStyle(.tertiary)
+                Spacer()
+                Text("Surprise Me")
+                    .font(.system(size: 9))
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .padding(.vertical, 8)
+        .padding(.horizontal, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(.ultraThinMaterial)
+        )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("AI exploration bias")
+        .accessibilityValue(viewModel.explorationBiasLabel)
+        .accessibilityHint("Slide left for familiar songs, right for discovery")
+    }
+
+    /// Accent color for the exploration slider, shifting from blue (zone) to purple (surprise)
+    private var explorationAccentColor: Color {
+        // Interpolate from accent (zone) to purple (surprise)
+        let bias = explorationSliderValue
+        if bias < 0.5 {
+            return ResonanceColors.accent
+        } else {
+            return .purple.opacity(0.7 + bias * 0.3)
         }
     }
 
-    private var repeatIconName: String {
-        viewModel.repeatMode == .one ? "repeat.1" : "repeat"
-    }
+    // MARK: - Standalone Queue Button
 
-    private var repeatAccessibilityValue: String {
-        switch viewModel.repeatMode {
-        case .none: return "Off"
-        case .all: return "All"
-        case .one: return "One"
-        @unknown default: return "Off"
-        }
+    private var queueButton: some View {
+        EmptyView()  // Queue button is now embedded in explorationBiasControl header
     }
 
     // MARK: - Volume & Route Controls
@@ -453,52 +496,207 @@ struct NowPlayingView: View {
     private var explanationBar: some View {
         Group {
             if let explanation = viewModel.currentExplanation {
-                Button(action: {
-                    withAnimation(reduceMotion ? .none : .spring(response: 0.3, dampingFraction: 0.8)) {
-                        isExplanationExpanded.toggle()
-                    }
-                }) {
-                    HStack(alignment: .top, spacing: 10) {
-                        Image(systemName: "wand.and.stars")
-                            .font(.subheadline)
-                            .foregroundStyle(ResonanceColors.accent)
-                            .padding(.top, 2)
-
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Why this song")
-                                .font(.caption)
-                                .fontWeight(.semibold)
-                                .foregroundStyle(ResonanceColors.accent)
-                                .textCase(.uppercase)
-                                .tracking(0.5)
-
-                            Text(explanation)
-                                .font(.subheadline)
-                                .foregroundStyle(.primary.opacity(0.85))
-                                .lineLimit(isExplanationExpanded ? nil : 2)
-                                .multilineTextAlignment(.leading)
+                VStack(spacing: 0) {
+                    Button(action: {
+                        withAnimation(reduceMotion ? .none : .spring(response: 0.35, dampingFraction: 0.75)) {
+                            isExplanationExpanded.toggle()
                         }
+                    }) {
+                        VStack(alignment: .leading, spacing: 0) {
+                            // Collapsed header (always visible)
+                            HStack(alignment: .top, spacing: 10) {
+                                Image(systemName: "wand.and.stars")
+                                    .font(.subheadline)
+                                    .foregroundStyle(ResonanceColors.accent)
+                                    .padding(.top, 2)
 
-                        Spacer(minLength: 4)
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Why this song")
+                                        .font(.caption)
+                                        .fontWeight(.semibold)
+                                        .foregroundStyle(ResonanceColors.accent)
+                                        .textCase(.uppercase)
+                                        .tracking(0.5)
 
-                        Image(systemName: isExplanationExpanded ? "chevron.up" : "chevron.down")
-                            .foregroundStyle(.secondary)
-                            .font(.caption)
-                            .padding(.top, 4)
+                                    Text(explanation.full)
+                                        .font(.subheadline)
+                                        .foregroundStyle(.primary.opacity(0.85))
+                                        .lineLimit(isExplanationExpanded ? nil : 2)
+                                        .multilineTextAlignment(.leading)
+                                }
+
+                                Spacer(minLength: 4)
+
+                                Image(systemName: isExplanationExpanded ? "chevron.up" : "chevron.down")
+                                    .foregroundStyle(.secondary)
+                                    .font(.caption)
+                                    .padding(.top, 4)
+                            }
+
+                            // Expanded factor breakdown with horizontal bar charts
+                            if isExplanationExpanded {
+                                expandedFactorsView(factors: explanation.factors)
+                                    .transition(.opacity.combined(with: .move(edge: .top)))
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .glassEffect(.regular)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(.ultraThinMaterial)
-                    )
+                    .buttonStyle(.plain)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel(explanationAccessibilityLabel(explanation))
+                    .accessibilityHint(isExplanationExpanded ? "Tap to collapse" : "Tap to see why this song was chosen")
+
+                    // Thumbs up/down feedback buttons (only when expanded)
+                    if isExplanationExpanded {
+                        aiFeedbackButtons
+                    }
                 }
-                .buttonStyle(.plain)
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel("AI explanation: \(explanation)")
-                .accessibilityHint(isExplanationExpanded ? "Tap to collapse" : "Tap to expand")
             }
         }
+    }
+
+    /// Shows the top 3-4 factors as horizontal bar charts when expanded.
+    private func expandedFactorsView(factors: [ExplanationFactor]) -> some View {
+        let topFactors = Array(factors.prefix(4))
+
+        return VStack(alignment: .leading, spacing: 10) {
+            Divider()
+                .padding(.vertical, 8)
+
+            if topFactors.isEmpty {
+                Text("Selected based on your current state")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(topFactors) { factor in
+                    factorRow(factor: factor, maxContribution: topFactors.first?.contribution ?? 1.0)
+                }
+            }
+        }
+    }
+
+    /// A single factor row with label, horizontal bar, and percentage.
+    private func factorRow(factor: ExplanationFactor, maxContribution: Double) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(factor.name)
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundStyle(.primary.opacity(0.9))
+
+                Spacer()
+
+                Text("\(Int(factor.contribution * 100))%")
+                    .font(.caption2)
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+            }
+
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(.primary.opacity(0.08))
+                        .frame(height: 6)
+
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(
+                            LinearGradient(
+                                colors: [ResonanceColors.accent.opacity(0.7), ResonanceColors.accent],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(
+                            width: factorBarWidth(
+                                contribution: factor.contribution,
+                                maxContribution: maxContribution,
+                                availableWidth: geometry.size.width
+                            ),
+                            height: 6
+                        )
+                        .animation(
+                            reduceMotion ? .none : .spring(response: 0.4, dampingFraction: 0.7).delay(0.05),
+                            value: isExplanationExpanded
+                        )
+                }
+            }
+            .frame(height: 6)
+
+            Text(factor.description)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(factor.name): \(Int(factor.contribution * 100)) percent. \(factor.description)")
+    }
+
+    /// Bar width normalized against the top factor.
+    private func factorBarWidth(contribution: Double, maxContribution: Double, availableWidth: CGFloat) -> CGFloat {
+        guard maxContribution > 0 else { return 0 }
+        let normalized = contribution / maxContribution
+        return max(CGFloat(normalized) * availableWidth, 4)
+    }
+
+    /// Builds accessibility label for the explanation card.
+    private func explanationAccessibilityLabel(_ explanation: SongExplanation) -> String {
+        var label = "AI explanation: \(explanation.full)"
+        if isExplanationExpanded && !explanation.factors.isEmpty {
+            let factorDescriptions = explanation.factors.prefix(4).map { factor in
+                "\(factor.name): \(Int(factor.contribution * 100)) percent"
+            }.joined(separator: ", ")
+            label += ". Factors: \(factorDescriptions)"
+        }
+        return label
+    }
+
+    // MARK: - AI Feedback Buttons
+
+    @State private var feedbackTrigger = 0
+
+    private var aiFeedbackButtons: some View {
+        HStack(spacing: 24) {
+            Spacer()
+
+            Button {
+                feedbackTrigger += 1
+                viewModel.submitAIFeedback(isPositive: false)
+            } label: {
+                Image(systemName: viewModel.currentSongFeedback == false
+                    ? "hand.thumbsdown.fill" : "hand.thumbsdown")
+                    .font(.body)
+                    .foregroundStyle(viewModel.currentSongFeedback == false
+                        ? .red : .secondary)
+                    .frame(width: 44, height: 36)
+                    .contentShape(Rectangle())
+            }
+            .disabled(viewModel.currentSongFeedback != nil)
+            .accessibilityLabel("Thumbs down")
+            .accessibilityHint("This song doesn't fit your current mood")
+
+            Button {
+                feedbackTrigger += 1
+                viewModel.submitAIFeedback(isPositive: true)
+            } label: {
+                Image(systemName: viewModel.currentSongFeedback == true
+                    ? "hand.thumbsup.fill" : "hand.thumbsup")
+                    .font(.body)
+                    .foregroundStyle(viewModel.currentSongFeedback == true
+                        ? ResonanceColors.accent : .secondary)
+                    .frame(width: 44, height: 36)
+                    .contentShape(Rectangle())
+            }
+            .disabled(viewModel.currentSongFeedback != nil)
+            .accessibilityLabel("Thumbs up")
+            .accessibilityHint("This song fits your current mood perfectly")
+
+            Spacer()
+        }
+        .sensoryFeedback(.impact(weight: .light), trigger: feedbackTrigger)
+        .padding(.top, 4)
+        .transition(.opacity.combined(with: .scale(scale: 0.8)))
     }
 
     // MARK: - HRV Zone Indicator

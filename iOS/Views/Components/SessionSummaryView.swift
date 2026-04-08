@@ -3,7 +3,10 @@
 //  Resonance
 //
 //  Post-session summary card shown after a listening session ends (>15 minutes).
-//  Displays session stats, HRV trend, best-fit song, and optional feedback.
+//  Displays session stats, HRV trend, best-fit song, mood trajectory overlay,
+//  highlight moment, session trend insight, shareable card, and optional feedback.
+//
+//  Supporting models and subviews live in SessionSummaryComponents.swift.
 //
 
 import SwiftUI
@@ -27,8 +30,31 @@ struct SessionSummaryData {
     /// Sonic Bookmarks captured during this session.
     var bookmarks: [SonicBookmarkData]
 
+    // MARK: - Enhancement 1: Forecast vs. Actual Trajectory
+
+    /// Pre-session forecast points for the trajectory overlay.
+    var forecastPoints: [ForecastSnapshot]
+
+    /// Actual biometric state snapshots captured during the session.
+    var actualStateSnapshots: [ActualStateSnapshot]
+
+    // MARK: - Enhancement 2: Highlight Moment
+
+    /// The track with peak biometric engagement, if identified.
+    var highlightTrack: HighlightTrack?
+
+    // MARK: - Enhancement 3: Session Trend Insight
+
+    /// Historical trend insight (e.g., "12th evening session, 15% improvement").
+    var trendInsight: SessionTrendInsight?
+
+    // MARK: - Enhancement 5: Per-Track Biometric Breakdown
+
+    /// Extended per-track data with inline HR samples.
+    var perTrackDetails: [PerTrackBiometricDetail]
+
     /// Convenience initializer preserving backward compatibility for callers
-    /// that do not yet provide a resonance score or bookmarks.
+    /// that do not yet provide enhancement data.
     init(
         sessionDuration: TimeInterval,
         songsPlayed: Int,
@@ -40,7 +66,12 @@ struct SessionSummaryData {
         averageBPM: Double,
         sessionQualityScore: Double,
         resonanceScore: ResonanceScoreResult? = nil,
-        bookmarks: [SonicBookmarkData] = []
+        bookmarks: [SonicBookmarkData] = [],
+        forecastPoints: [ForecastSnapshot] = [],
+        actualStateSnapshots: [ActualStateSnapshot] = [],
+        highlightTrack: HighlightTrack? = nil,
+        trendInsight: SessionTrendInsight? = nil,
+        perTrackDetails: [PerTrackBiometricDetail] = []
     ) {
         self.sessionDuration = sessionDuration
         self.songsPlayed = songsPlayed
@@ -53,6 +84,11 @@ struct SessionSummaryData {
         self.sessionQualityScore = sessionQualityScore
         self.resonanceScore = resonanceScore
         self.bookmarks = bookmarks
+        self.forecastPoints = forecastPoints
+        self.actualStateSnapshots = actualStateSnapshots
+        self.highlightTrack = highlightTrack
+        self.trendInsight = trendInsight
+        self.perTrackDetails = perTrackDetails
     }
 }
 
@@ -62,145 +98,32 @@ struct SessionSummaryView: View {
     let summary: SessionSummaryData
     var onDismiss: () -> Void
     var onFeedback: ((SessionFeedback) -> Void)?
+    var onBookmarkHighlight: ((HighlightTrack) -> Void)?
 
     @State private var selectedFeedback: SessionFeedback?
     @State private var showingFeedback = false
+    @State private var showingPerTrackBreakdown = false
+    @State private var cachedShareImage: Image?
 
     var body: some View {
-        VStack(spacing: 16) {
-            // Header
-            HStack {
-                Image(systemName: "music.note.list")
-                    .foregroundStyle(ResonanceColors.accent)
-
-                Text("Session Complete")
-                    .font(.headline)
-                    .fontWeight(.bold)
-
-                Spacer()
-
-                Button(action: onDismiss) {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.secondary)
-                        .font(.title3)
-                }
-                .accessibilityLabel("Dismiss summary")
+        ScrollView {
+            VStack(spacing: 16) {
+                headerSection
+                resonanceScoreSection
+                trajectoryOverlaySection
+                statsGrid
+                trendInsightSection
+                hrvTrend
+                highlightMomentSection
+                bestFitSongFallback
+                bookmarksSection
+                perTrackBreakdownSection
+                qualityBar
+                Divider()
+                feedbackSection
             }
-
-            // Resonance Score (shown when available)
-            if let resonanceScore = summary.resonanceScore {
-                ResonanceScoreView(result: resonanceScore)
-            }
-
-            // Stats grid
-            LazyVGrid(columns: [
-                GridItem(.flexible()),
-                GridItem(.flexible()),
-                GridItem(.flexible()),
-            ], spacing: 12) {
-                ResonanceMetricCell(
-                    icon: "clock.fill",
-                    value: formattedDuration,
-                    label: "Duration",
-                    color: ResonanceColors.accent
-                )
-
-                ResonanceMetricCell(
-                    icon: "music.note",
-                    value: "\(summary.songsPlayed)",
-                    label: "Songs",
-                    color: .purple
-                )
-
-                ResonanceMetricCell(
-                    icon: "forward.fill",
-                    value: "\(Int(summary.skipRate * 100))%",
-                    label: "Skip Rate",
-                    color: summary.skipRate < 0.2 ? .green : .orange
-                )
-            }
-
-            // HRV Trend
-            HStack(spacing: 8) {
-                Image(systemName: summary.hrvImproved ? "arrow.up.heart.fill" : "arrow.down.heart.fill")
-                    .foregroundStyle(summary.hrvImproved ? .green : .orange)
-
-                Text(summary.hrvImproved
-                     ? "HRV improved during this session (+\(String(format: "%.1f", abs(summary.hrvDelta)))ms)"
-                     : "HRV decreased slightly (\(String(format: "%.1f", abs(summary.hrvDelta)))ms)")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-                Spacer()
-            }
-            .padding(.vertical, 4)
-
-            // Best fit song
-            if let bestSong = summary.bestFitSong {
-                HStack(spacing: 8) {
-                    Image(systemName: "star.fill")
-                        .foregroundStyle(.yellow)
-                        .font(.caption)
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Best Match")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-
-                        Text("\(bestSong.title) — \(bestSong.artist)")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .lineLimit(1)
-                    }
-
-                    Spacer()
-                }
-            }
-
-            // Bookmarked Moments
-            if !summary.bookmarks.isEmpty {
-                BookmarkTimelineView(
-                    bookmarks: summary.bookmarks,
-                    sessionDuration: summary.sessionDuration
-                )
-            }
-
-            // Session quality bar
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text("Session Quality")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-
-                    Spacer()
-
-                    Text(qualityLabel)
-                        .font(.caption2)
-                        .fontWeight(.medium)
-                        .foregroundStyle(qualityColor)
-                }
-
-                ResonanceProgressBar(
-                    progress: summary.sessionQualityScore,
-                    color: qualityColor,
-                    height: 6
-                )
-            }
-
-            Divider()
-
-            // Feedback section
-            if !showingFeedback {
-                Button(action: { showingFeedback = true }) {
-                    Text("How was this session?")
-                        .font(.subheadline)
-                        .foregroundStyle(ResonanceColors.accent)
-                }
-            } else {
-                feedbackButtons
-            }
+            .padding()
         }
-        .padding()
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color(.secondarySystemGroupedBackground))
@@ -208,9 +131,229 @@ struct SessionSummaryView: View {
         )
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Session summary: \(summary.songsPlayed) songs played over \(formattedDuration)")
+        .task {
+            // Pre-render share card image once to avoid expensive duplicate ImageRenderer calls
+            if summary.resonanceScore != nil {
+                cachedShareImage = SessionShareCardRenderer.render(summary: summary)
+            }
+        }
     }
 
-    // MARK: - Feedback Buttons
+    // MARK: - Header
+
+    private var headerSection: some View {
+        HStack {
+            Image(systemName: "music.note.list")
+                .foregroundStyle(ResonanceColors.accent)
+
+            Text("Session Complete")
+                .font(.headline)
+                .fontWeight(.bold)
+
+            Spacer()
+
+            // Share button (Enhancement 4) — image pre-rendered to avoid duplicate renders
+            if summary.resonanceScore != nil, let shareImage = cachedShareImage {
+                ShareLink(
+                    item: shareImage,
+                    preview: SharePreview("Resonance Session", image: shareImage)
+                ) {
+                    Image(systemName: "square.and.arrow.up")
+                        .foregroundStyle(ResonanceColors.accent)
+                        .font(.subheadline)
+                }
+                .accessibilityLabel("Share session card")
+            }
+
+            Button(action: onDismiss) {
+                Image(systemName: "xmark.circle.fill")
+                    .foregroundStyle(.secondary)
+                    .font(.title3)
+            }
+            .accessibilityLabel("Dismiss summary")
+        }
+    }
+
+    // MARK: - Resonance Score
+
+    @ViewBuilder
+    private var resonanceScoreSection: some View {
+        if let resonanceScore = summary.resonanceScore {
+            ResonanceScoreView(result: resonanceScore)
+        }
+    }
+
+    // MARK: - Enhancement 1: Trajectory Overlay
+
+    @ViewBuilder
+    private var trajectoryOverlaySection: some View {
+        if !summary.forecastPoints.isEmpty || !summary.actualStateSnapshots.isEmpty {
+            MoodTrajectoryOverlayView(
+                forecastPoints: summary.forecastPoints,
+                actualSnapshots: summary.actualStateSnapshots
+            )
+        }
+    }
+
+    // MARK: - Stats Grid
+
+    private var statsGrid: some View {
+        LazyVGrid(columns: [
+            GridItem(.flexible()),
+            GridItem(.flexible()),
+            GridItem(.flexible()),
+        ], spacing: 12) {
+            ResonanceMetricCell(
+                icon: "clock.fill",
+                value: formattedDuration,
+                label: "Duration",
+                color: ResonanceColors.accent
+            )
+
+            ResonanceMetricCell(
+                icon: "music.note",
+                value: "\(summary.songsPlayed)",
+                label: "Songs",
+                color: .purple
+            )
+
+            ResonanceMetricCell(
+                icon: "forward.fill",
+                value: "\(Int(summary.skipRate * 100))%",
+                label: "Skip Rate",
+                color: summary.skipRate < 0.2 ? .green : .orange
+            )
+        }
+    }
+
+    // MARK: - Enhancement 3: Session Trend Insight
+
+    @ViewBuilder
+    private var trendInsightSection: some View {
+        if let trend = summary.trendInsight {
+            SessionTrendInsightRow(insight: trend)
+        }
+    }
+
+    // MARK: - HRV Trend
+
+    private var hrvTrend: some View {
+        HStack(spacing: 8) {
+            Image(systemName: summary.hrvImproved ? "arrow.up.heart.fill" : "arrow.down.heart.fill")
+                .foregroundStyle(summary.hrvImproved ? .green : .orange)
+
+            Text(summary.hrvImproved
+                 ? "HRV improved during this session (+\(String(format: "%.1f", abs(summary.hrvDelta)))ms)"
+                 : "HRV decreased slightly (\(String(format: "%.1f", abs(summary.hrvDelta)))ms)")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+
+            Spacer()
+        }
+        .padding(.vertical, 4)
+    }
+
+    // MARK: - Enhancement 2: Highlight Moment
+
+    @ViewBuilder
+    private var highlightMomentSection: some View {
+        if let highlight = summary.highlightTrack {
+            HighlightMomentView(
+                track: highlight,
+                onBookmark: { onBookmarkHighlight?(highlight) }
+            )
+        }
+    }
+
+    // MARK: - Best Fit Song Fallback
+
+    @ViewBuilder
+    private var bestFitSongFallback: some View {
+        if summary.highlightTrack == nil, let bestSong = summary.bestFitSong {
+            HStack(spacing: 8) {
+                Image(systemName: "star.fill")
+                    .foregroundStyle(.yellow)
+                    .font(.caption)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Best Match")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+
+                    Text("\(bestSong.title) -- \(bestSong.artist)")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .lineLimit(1)
+                }
+
+                Spacer()
+            }
+        }
+    }
+
+    // MARK: - Bookmarks
+
+    @ViewBuilder
+    private var bookmarksSection: some View {
+        if !summary.bookmarks.isEmpty {
+            BookmarkTimelineView(
+                bookmarks: summary.bookmarks,
+                sessionDuration: summary.sessionDuration
+            )
+        }
+    }
+
+    // MARK: - Enhancement 5: Per-Track Biometric Breakdown
+
+    @ViewBuilder
+    private var perTrackBreakdownSection: some View {
+        if !summary.perTrackDetails.isEmpty {
+            PerTrackBreakdownSection(
+                tracks: summary.perTrackDetails,
+                isExpanded: $showingPerTrackBreakdown
+            )
+        }
+    }
+
+    // MARK: - Quality Bar
+
+    private var qualityBar: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text("Session Quality")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+
+                Spacer()
+
+                Text(qualityLabel)
+                    .font(.caption2)
+                    .fontWeight(.medium)
+                    .foregroundStyle(qualityColor)
+            }
+
+            ResonanceProgressBar(
+                progress: summary.sessionQualityScore,
+                color: qualityColor,
+                height: 6
+            )
+        }
+    }
+
+    // MARK: - Feedback
+
+    @ViewBuilder
+    private var feedbackSection: some View {
+        if !showingFeedback {
+            Button(action: { showingFeedback = true }) {
+                Text("How was this session?")
+                    .font(.subheadline)
+                    .foregroundStyle(ResonanceColors.accent)
+            }
+        } else {
+            feedbackButtons
+        }
+    }
 
     private var feedbackButtons: some View {
         HStack(spacing: 12) {
@@ -299,9 +442,9 @@ enum SessionFeedback: String, CaseIterable {
 
     var emoji: String {
         switch self {
-        case .great: return "\u{1F60D}"  // Heart eyes
-        case .okay: return "\u{1F610}"   // Neutral
-        case .rough: return "\u{1F615}"  // Confused/rough
+        case .great: return "\u{1F60D}"
+        case .okay: return "\u{1F610}"
+        case .rough: return "\u{1F615}"
         }
     }
 
@@ -322,20 +465,73 @@ enum SessionFeedback: String, CaseIterable {
     }
 }
 
-// MARK: - Preview
+// MARK: - Previews
 
-#Preview {
+#Preview("Session Summary - Full") {
+    let sampleForecast: [ForecastSnapshot] = (0..<9).map { i in
+        let t = Double(i) / 8.0
+        return ForecastSnapshot(normalizedTime: t, energy: 0.3 + 0.4 * sin(t * .pi))
+    }
+
+    let sampleActual: [ActualStateSnapshot] = (0..<12).map { i in
+        let t = Double(i) / 11.0
+        return ActualStateSnapshot(
+            normalizedTime: t,
+            energy: 0.25 + 0.45 * sin(t * .pi) + Double.random(in: -0.05...0.05),
+            heartRate: 70 + 30 * sin(t * .pi)
+        )
+    }
+
+    let samplePerTrack: [PerTrackBiometricDetail] = [
+        PerTrackBiometricDetail(
+            songTitle: "Midnight City", artistName: "M83",
+            alignment: 0.92, wasSkipped: false,
+            heartRateSamples: (0..<8).map { (Double($0) / 7.0, 72 + Double($0) * 3) }
+        ),
+        PerTrackBiometricDetail(
+            songTitle: "Intro", artistName: "The xx",
+            alignment: 0.78, wasSkipped: false,
+            heartRateSamples: (0..<8).map { (Double($0) / 7.0, 80 - Double($0) * 1.5) }
+        ),
+        PerTrackBiometricDetail(
+            songTitle: "Blinding Lights", artistName: "The Weeknd",
+            alignment: 0.35, wasSkipped: true,
+            heartRateSamples: (0..<5).map { (Double($0) / 4.0, 90 + Double($0) * 2) }
+        ),
+    ]
+
+    ScrollView {
+        SessionSummaryView(
+            summary: SessionSummaryData(
+                sessionDuration: 2400, songsPlayed: 12, songsSkipped: 2,
+                skipRate: 0.167, hrvImproved: true, hrvDelta: 3.5,
+                bestFitSong: (title: "Weightless", artist: "Marconi Union"),
+                averageBPM: 95, sessionQualityScore: 0.82,
+                forecastPoints: sampleForecast,
+                actualStateSnapshots: sampleActual,
+                highlightTrack: HighlightTrack(
+                    title: "Midnight City", artist: "M83", appleMusicId: "abc123",
+                    alignmentScore: 0.92, heartRate: 96, artworkData: nil
+                ),
+                trendInsight: SessionTrendInsight(
+                    sessionCount: 12, sessionTypeLabel: "evening",
+                    trendDelta: 0.15, trendMetricLabel: "wind-down time"
+                ),
+                perTrackDetails: samplePerTrack
+            ),
+            onDismiss: {}
+        )
+        .padding()
+    }
+}
+
+#Preview("Session Summary - Minimal") {
     SessionSummaryView(
         summary: SessionSummaryData(
-            sessionDuration: 2400,
-            songsPlayed: 12,
-            songsSkipped: 2,
-            skipRate: 0.167,
-            hrvImproved: true,
-            hrvDelta: 3.5,
+            sessionDuration: 2400, songsPlayed: 12, songsSkipped: 2,
+            skipRate: 0.167, hrvImproved: true, hrvDelta: 3.5,
             bestFitSong: (title: "Weightless", artist: "Marconi Union"),
-            averageBPM: 95,
-            sessionQualityScore: 0.82
+            averageBPM: 95, sessionQualityScore: 0.82
         ),
         onDismiss: {}
     )

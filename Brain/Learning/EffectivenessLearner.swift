@@ -295,29 +295,63 @@ final class EffectivenessLearner {
     // MARK: - Score All Candidates
 
     /// Scores all candidate songs using Thompson Sampling for exploration.
+    ///
+    /// - Parameter explorationBias: User-facing exploration bias (0.0 = stay in zone,
+    ///   1.0 = surprise me). When provided, modulates the internal exploration weight
+    ///   and the RL blend ratio. `nil` uses the internal decayed weight unchanged.
+    ///
+    /// **Interaction with internal exploration weight decay:**
+    /// The internal `_explorationWeight` decays from 1.5 to 0.3 over the lifetime of
+    /// the app as the system learns. `explorationBias` acts as a user-controlled
+    /// *multiplier* on top of that learned weight:
+    /// - bias 0.0 -> effective weight = internal * 0.3 (heavy exploitation)
+    /// - bias 0.5 -> effective weight = internal * 1.0 (unchanged)
+    /// - bias 1.0 -> effective weight = internal * 2.0 (heavy exploration)
+    ///
+    /// The RL blend ratio also shifts:
+    /// - bias 0.0 -> 85% base / 15% RL (minimize RL influence)
+    /// - bias 0.5 -> 70% base / 30% RL (default)
+    /// - bias 1.0 -> 55% base / 45% RL (maximize RL exploration influence)
     func scoreWithExploration(
         candidates: [(songId: UUID, baseScore: Double)],
         contextType: String,
-        useThompsonSampling: Bool = true
+        useThompsonSampling: Bool = true,
+        explorationBias: Double? = nil
     ) -> [(songId: UUID, adjustedScore: Double)] {
-        candidates.map { candidate in
+        // Compute the effective exploration weight using the user's bias
+        let biasMultiplier: Double
+        let rlInfluence: Double
+        if let bias = explorationBias {
+            // Map bias 0..1 to multiplier 0.3..2.0 (linear interpolation)
+            biasMultiplier = 0.3 + bias * 1.7
+            // Map bias 0..1 to RL influence 0.15..0.45
+            rlInfluence = 0.15 + bias * 0.30
+        } else {
+            biasMultiplier = 1.0
+            rlInfluence = 0.3
+        }
+
+        return candidates.map { candidate in
             let effectiveness = getEffectivenessScore(
                 songId: candidate.songId,
                 contextType: contextType
             )
 
             let rlBonus: Double
-            if useThompsonSampling {
+            if useThompsonSampling && (explorationBias ?? 0.5) > 0.3 {
+                // Thompson Sampling adds stochastic exploration.
+                // At low bias (Stay in Zone), switch to deterministic UCB
+                // to avoid random surprises.
                 rlBonus = effectiveness.thompsonSample()
             } else {
                 lock.lock()
-                let weight = _explorationWeight
+                let weight = _explorationWeight * biasMultiplier
                 lock.unlock()
                 rlBonus = effectiveness.ucbScore(explorationWeight: weight)
             }
 
-            // Blend base score with RL score (30% RL influence)
-            let adjustedScore = candidate.baseScore * 0.7 + rlBonus * 0.3
+            // Blend base score with RL score using bias-adjusted ratio
+            let adjustedScore = candidate.baseScore * (1.0 - rlInfluence) + rlBonus * rlInfluence
 
             return (songId: candidate.songId, adjustedScore: adjustedScore)
         }

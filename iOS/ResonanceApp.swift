@@ -77,9 +77,6 @@ struct ResonanceApp: App {
     /// Sonic Bookmark manager
     @StateObject private var bookmarkManager: BookmarkManager
 
-    /// Library analysis engine for first-launch processing
-    @State private var libraryAnalysisEngine = LibraryAnalysisEngine()
-
     /// WatchConnectivity manager for iPhone <-> Watch communication
     private let watchConnectivityManager = WatchConnectivityManager.shared
 
@@ -134,6 +131,10 @@ struct ResonanceApp: App {
         _decisionEngine = StateObject(wrappedValue: decisionEngine)
         nowPlaying.decisionEngine = decisionEngine
         nowPlaying.stateEngine = stateEngine
+        nowPlaying.pomodoroTimer.stateEngine = stateEngine
+
+        // Start calendar context service (permission-gated, no-op if denied)
+        Task { await nowPlaying.calendarService.requestAccessAndStart() }
 
         // Create and wire learning store + guard adjuster
         let learningStore = LearningStore()
@@ -178,29 +179,16 @@ struct ResonanceApp: App {
         WindowGroup {
             Group {
                 if !hasCompletedOnboarding {
+                    // Golden path onboarding: Brain Orb -> Music -> HealthKit -> First Play
+                    // Library analysis runs inline during onboarding (no separate screen).
+                    // LandingView is merged into onboarding Page 1.
                     OnboardingContainerView(
                         hasCompletedOnboarding: $hasCompletedOnboarding,
                         musicService: musicService
                     )
-                } else if !hasCompletedLibraryAnalysis {
-                    LibraryAnalysisView(engine: libraryAnalysisEngine) {
-                        hasCompletedLibraryAnalysis = true
-                    }
-                    .task {
-                        guard musicService.authorizationStatus == .authorized else { return }
-                        await libraryAnalysisEngine.analyzeFullLibrary(
-                            musicService: musicService,
-                            featureExtractor: FeatureExtractor(),
-                            songRepository: SongRepository()
-                        )
-                    }
-                } else if !hasStartedFirstSession {
-                    LandingView(
-                        hasStartedFirstSession: $hasStartedFirstSession,
-                        animationNamespace: heroNamespace
-                    )
-                    .transition(.opacity)
                 } else {
+                    // After onboarding completes, go directly to the main app.
+                    // Library analysis continues in the background if not finished.
                     MainView(
                         nowPlayingViewModel: nowPlayingViewModel,
                         playlistViewModel: playlistViewModel,
@@ -210,6 +198,16 @@ struct ResonanceApp: App {
                         heroNamespace: heroNamespace
                     )
                     .transition(.opacity)
+                    .onAppear {
+                        // Mark legacy flags as complete so users who upgrade
+                        // don't get stuck in the old intermediate screens.
+                        if !hasCompletedLibraryAnalysis {
+                            hasCompletedLibraryAnalysis = true
+                        }
+                        if !hasStartedFirstSession {
+                            hasStartedFirstSession = true
+                        }
+                    }
                 }
             }
             .environment(\.managedObjectContext, persistenceController.viewContext)

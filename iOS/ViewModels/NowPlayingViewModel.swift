@@ -69,6 +69,13 @@ final class NowPlayingViewModel {
     /// Whether an AI song selection is currently in progress.
     private(set) var isLoadingAISelection = false
 
+    /// Whether the AI is actively selecting the next track.
+    /// Used by HeartPulseRing to trigger the ripple/transitioning state.
+    /// Set to true as soon as the decision engine begins selection, and
+    /// cleared when the new song starts playing. This allows the ring
+    /// to show the ripple animation even before the skeleton overlay.
+    private(set) var isTransitioningTrack = false
+
     /// Dominant accent color extracted from the current album artwork.
     var artworkAccentColor: Color?
 
@@ -95,8 +102,13 @@ final class NowPlayingViewModel {
     /// Bookmark manager for Sonic Bookmark feature. Set externally after init.
     var bookmarkManager: BookmarkManager?
 
-    /// The current AI explanation for why this song was selected (nil if manually chosen).
-    var currentExplanation: String?
+    /// The full structured explanation for why this song was selected (nil if manually chosen).
+    var currentExplanation: SongExplanation?
+
+    /// The explanation text string for backward compatibility (Watch, widgets, accessibility).
+    var currentExplanationText: String? {
+        currentExplanation?.full
+    }
 
     /// The BPM of the currently playing song.
     /// Tries the AI decision engine's last selection first, then falls back
@@ -126,6 +138,40 @@ final class NowPlayingViewModel {
 
     /// View model for mood forecast feature (pre-session energy curve prediction).
     let moodForecastViewModel = MoodForecastViewModel()
+
+    /// Conversational explanation generator for warm, personal AI DJ explanations.
+    private let conversationalExplanationGenerator = ConversationalExplanationGenerator()
+
+    /// Pomodoro focus timer for Deep Work sessions (25/5 cycles).
+    let pomodoroTimer = PomodoroTimer()
+
+    /// Calendar context service for pre-session priming (optional, permission-gated).
+    let calendarService = CalendarContextService()
+
+    /// Calendar context message for the explanation area.
+    var calendarContextMessage: String? { calendarService.contextMessage }
+
+    // MARK: - AI Queue State
+
+    /// AI-precomputed queue items for the up-next view.
+    /// Updated by `refreshQueue()` and mutated by user reorder/remove actions.
+    var aiQueueItems: [QueueItem] = []
+
+    /// Whether the AI queue is currently being computed.
+    private(set) var isLoadingQueue = false
+
+    /// Whether the user has manually reordered or removed items since the last refresh.
+    /// When true, auto-advance pops from the user's ordering instead of re-asking the engine.
+    private(set) var hasUserEditedQueue = false
+
+    /// Timestamp of the last queue refresh, used to throttle refresh requests.
+    private var lastQueueRefreshDate: Date?
+
+    /// Minimum interval between automatic queue refreshes (seconds).
+    private let queueRefreshThrottleInterval: TimeInterval = 15
+
+    /// Task handle for the current queue computation (cancellable).
+    private var queueRefreshTask: Task<Void, Never>?
 
     /// Whether the DJ should auto-select the next song when the current one ends.
     var aiAutoAdvanceEnabled = true
@@ -235,7 +281,7 @@ final class NowPlayingViewModel {
         let playing = isPlaying
         let progress = playbackProgress
         let dur = duration
-        let explanation = currentExplanation
+        let explanation = currentExplanationText
         let emoji = (stateEngine?.currentState.context ?? .unknown).emoji
 
         Task {
@@ -327,6 +373,7 @@ final class NowPlayingViewModel {
         cachedWatchArtworkData = nil
         // Clear stale explanation from the previous song
         currentExplanation = nil
+        currentSongFeedback = nil
 
         guard let entry = entry else {
             currentSong = .placeholder
@@ -378,7 +425,7 @@ final class NowPlayingViewModel {
             isPlaying: isPlaying,
             progress: playbackProgress,
             duration: duration,
-            explanation: currentExplanation
+            explanation: currentExplanationText
         )
 
         // Sync to Watch
@@ -409,7 +456,7 @@ final class NowPlayingViewModel {
                 isPlaying: isPlaying,
                 progress: playbackProgress,
                 duration: duration,
-                explanation: currentExplanation
+                explanation: currentExplanationText
             )
 
             // Sync play/pause state to Watch
@@ -560,7 +607,7 @@ final class NowPlayingViewModel {
         )
     }
 
-    // MARK: - Shuffle & Repeat
+    // MARK: - Shuffle & Repeat (Legacy — kept for programmatic access)
 
     /// Whether shuffle mode is currently active.
     var isShuffleOn: Bool {
@@ -591,6 +638,50 @@ final class NowPlayingViewModel {
             musicService.repeatMode = .none
         }
         logDebug("Repeat mode: \(musicService.repeatMode)", category: .musicKit)
+    }
+
+    // MARK: - AI Exploration Bias ("Surprise Me" / "Stay in the Zone")
+
+    /// The current exploration bias value (0.0 = Stay in the Zone, 1.0 = Surprise Me).
+    /// Initialized from persisted UserPreferences on first access.
+    var explorationBias: Double = UserPreferences.load().explorationBias
+
+    /// Human-readable label for the current exploration bias level.
+    var explorationBiasLabel: String {
+        switch explorationBias {
+        case ..<0.15:
+            return "Deep Focus"
+        case 0.15..<0.35:
+            return "Stay in the Zone"
+        case 0.35..<0.65:
+            return "Balanced"
+        case 0.65..<0.85:
+            return "Surprise Me"
+        default:
+            return "Full Discovery"
+        }
+    }
+
+    /// SF Symbol name for the current exploration bias mode.
+    var explorationBiasIcon: String {
+        explorationBias < 0.5 ? "target" : "sparkles"
+    }
+
+    /// Updates the exploration bias and persists to UserPreferences.
+    /// Called from the NowPlayingView slider on edit-end.
+    func setExplorationBias(_ value: Double) {
+        let clamped = max(0, min(1, value))
+        explorationBias = clamped
+
+        // Persist to UserPreferences
+        var prefs = UserPreferences.load()
+        prefs.explorationBias = clamped
+        try? prefs.save()
+
+        logDebug(
+            "Exploration bias updated: \(String(format: "%.2f", clamped)) (\(explorationBiasLabel))",
+            category: .decisionEngine
+        )
     }
 
     // MARK: - Queue Access
@@ -629,11 +720,15 @@ final class NowPlayingViewModel {
         }
 
         isLoadingAISelection = true
+        isTransitioningTrack = true
 
         aiSelectionTask?.cancel()
         aiSelectionTask = Task { [weak self] in
             guard let self else { return }
-            defer { self.isLoadingAISelection = false }
+            defer {
+                self.isLoadingAISelection = false
+                self.isTransitioningTrack = false
+            }
 
             guard let result = await engine.selectNextSong(
                 playlistId: playlistId,
@@ -665,8 +760,26 @@ final class NowPlayingViewModel {
             // Play the selected song
             await playSongById(result.songId)
 
-            // Update explanation
-            currentExplanation = result.explanation.full
+            // Store the full structured explanation (factors, state, need descriptions).
+            // If a conversational generator produces a warm summary, use it as the
+            // display text while preserving structured factors for the expanded view.
+            let conversational = await conversationalExplanationGenerator.generateConversational(
+                score: result.score,
+                state: state,
+                songTitle: result.score.songTitle,
+                artistName: result.score.artistName
+            )
+            if !conversational.isEmpty {
+                currentExplanation = SongExplanation(
+                    full: conversational,
+                    short: result.explanation.short,
+                    factors: result.explanation.factors,
+                    stateDescription: result.explanation.stateDescription,
+                    needDescription: result.explanation.needDescription
+                )
+            } else {
+                currentExplanation = result.explanation
+            }
 
             // Log the playback start with AI selection context
             let context = PersistenceController.shared.viewContext
@@ -756,4 +869,146 @@ final class NowPlayingViewModel {
         }
     }
 
+}
+
+// MARK: - AI Queue Management Extension
+
+extension NowPlayingViewModel {
+
+    /// Requests the DecisionEngine to precompute the upcoming queue.
+    ///
+    /// This is async and non-blocking. The result replaces `aiQueueItems`.
+    /// Throttled to avoid excessive computation -- calls within
+    /// `queueRefreshThrottleInterval` of the last refresh are ignored
+    /// unless `force` is true.
+    ///
+    /// - Parameter force: If true, bypasses the throttle and refreshes immediately.
+    func refreshQueue(force: Bool = false) {
+        guard let engine = decisionEngine,
+              let state = stateEngine?.currentState,
+              let playlistId = activePlaylistId,
+              let playlistName = activePlaylistName else {
+            logDebug("Queue refresh unavailable: missing engine, state, or playlist", category: .decisionEngine)
+            return
+        }
+
+        // Throttle non-forced refreshes
+        if !force, let lastRefresh = lastQueueRefreshDate,
+           Date().timeIntervalSince(lastRefresh) < queueRefreshThrottleInterval {
+            return
+        }
+
+        // Cancel any in-flight refresh
+        queueRefreshTask?.cancel()
+        isLoadingQueue = true
+
+        queueRefreshTask = Task { [weak self] in
+            guard let self else { return }
+            defer { self.isLoadingQueue = false }
+
+            let items = await engine.precomputeQueue(
+                count: 10,
+                playlistId: playlistId,
+                playlistName: playlistName,
+                stateVector: state
+            )
+
+            guard !Task.isCancelled else { return }
+
+            // If user has pinned items, preserve their positions and merge
+            if self.hasUserEditedQueue {
+                self.mergeQueueWithPinnedItems(newItems: items)
+            } else {
+                self.aiQueueItems = items
+            }
+
+            self.lastQueueRefreshDate = Date()
+            self.hasUserEditedQueue = false
+
+            logDebug("Queue refreshed: \(self.aiQueueItems.count) items", category: .decisionEngine)
+        }
+    }
+
+    /// Removes a queue item at the given offsets (from onDelete in SwiftUI List).
+    func removeQueueItems(at offsets: IndexSet) {
+        aiQueueItems.remove(atOffsets: offsets)
+        reindexQueueItems()
+        hasUserEditedQueue = true
+    }
+
+    /// Moves queue items (from onMove in SwiftUI List).
+    func moveQueueItems(from source: IndexSet, to destination: Int) {
+        aiQueueItems.move(fromOffsets: source, toOffset: destination)
+        // Pin moved items so they survive the next auto-refresh
+        for index in source {
+            let movedToIndex: Int
+            if index < destination {
+                movedToIndex = destination - 1
+            } else {
+                movedToIndex = destination
+            }
+            if movedToIndex < aiQueueItems.count {
+                aiQueueItems[movedToIndex].isPinned = true
+            }
+        }
+        reindexQueueItems()
+        hasUserEditedQueue = true
+    }
+
+    /// Pops the first queue item and plays it via AI selection.
+    /// Called by auto-advance when `hasUserEditedQueue` is true.
+    func playNextFromQueue() {
+        guard !aiQueueItems.isEmpty else {
+            // Fallback to standard AI selection if queue is exhausted
+            requestAISelection()
+            return
+        }
+
+        let next = aiQueueItems.removeFirst()
+        reindexQueueItems()
+
+        // Play the song directly
+        Task {
+            await playSongById(next.songScore.songId)
+            // Build a SongExplanation from the queue item's short explanation
+            currentExplanation = SongExplanation(
+                full: next.shortExplanation,
+                short: next.shortExplanation,
+                factors: [],
+                stateDescription: "",
+                needDescription: ""
+            )
+
+            // Refresh queue to backfill
+            refreshQueue()
+        }
+    }
+
+    // MARK: - Queue Helpers
+
+    /// Re-numbers positions after reorder/remove.
+    private func reindexQueueItems() {
+        for i in aiQueueItems.indices {
+            aiQueueItems[i].position = i + 1
+        }
+    }
+
+    /// Merges new AI-computed items with user-pinned items.
+    /// Pinned items keep their positions; unpinned slots are filled
+    /// with the top-scoring new items that are not already pinned.
+    private func mergeQueueWithPinnedItems(newItems: [QueueItem]) {
+        let pinned = aiQueueItems.filter(\.isPinned)
+        let pinnedSongIds = Set(pinned.map(\.songScore.songId))
+
+        // Filter out new items that duplicate pinned songs
+        let fresh = newItems.filter { !pinnedSongIds.contains($0.songScore.songId) }
+
+        // Rebuild: pinned items first (in their current order), then fresh items
+        var merged = pinned
+        let slotsAvailable = max(0, 10 - merged.count)
+        merged.append(contentsOf: fresh.prefix(slotsAvailable))
+
+        aiQueueItems = merged
+        reindexQueueItems()
+    }
 }

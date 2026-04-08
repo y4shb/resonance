@@ -31,7 +31,9 @@ struct SongExplanation: Sendable {
 }
 
 /// A single factor contributing to the song selection.
-struct ExplanationFactor: Sendable {
+struct ExplanationFactor: Sendable, Identifiable {
+    let id = UUID()
+
     /// Human-readable name of the factor.
     let name: String
 

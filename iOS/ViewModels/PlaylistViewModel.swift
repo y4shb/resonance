@@ -196,9 +196,41 @@ final class PlaylistViewModel {
         await currentTask?.value
     }
 
+    /// Set this to the playlist the user wants to switch to when a confirmation is needed.
+    /// The View layer observes this and shows a confirmation dialog.
+    var pendingPlaylistSwitch: PlaylistDisplayInfo?
+
+    /// Whether a session is active (songs have been played from a playlist).
+    var hasActiveSession: Bool {
+        nowPlayingViewModel?.activePlaylistName != nil
+            && nowPlayingViewModel?.currentSong != .placeholder
+    }
+
+    /// Completes the pending playlist switch after user confirms.
+    func confirmPlaylistSwitch() {
+        guard let playlist = pendingPlaylistSwitch else { return }
+        pendingPlaylistSwitch = nil
+        performPlaylistSelection(playlist)
+    }
+
+    /// Cancels the pending playlist switch.
+    func cancelPlaylistSwitch() {
+        pendingPlaylistSwitch = nil
+    }
+
     /// Selects a playlist, sets it as the playback queue, and begins playing.
-    /// Cancels any in-flight fetch or select operation before starting.
+    /// If another playlist session is active, sets pendingPlaylistSwitch for confirmation.
     func selectPlaylist(_ playlistInfo: PlaylistDisplayInfo) {
+        // If a session is active with a different playlist, ask for confirmation
+        if hasActiveSession && activePlaylistName != playlistInfo.name {
+            pendingPlaylistSwitch = playlistInfo
+            return
+        }
+        performPlaylistSelection(playlistInfo)
+    }
+
+    /// Internal: performs the actual playlist selection after confirmation (or when no session is active).
+    private func performPlaylistSelection(_ playlistInfo: PlaylistDisplayInfo) {
         // Cancel any in-flight operation to prevent interleaving with fetchPlaylists
         currentTask?.cancel()
         isLoading = false

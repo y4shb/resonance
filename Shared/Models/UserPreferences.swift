@@ -216,6 +216,10 @@ public struct UserPreferences: Codable, Sendable {
         case shareAnalytics, backupToiCloud
         case crossfadeEnabled, crossfadeDuration, biometricCrossfadeEnabled
         case allowCrossPlaylistRecommendations
+        case heartRateEnabled, hrvEnabled, motionEnabled, sleepEnabled, temperatureEnabled
+        case biometricSensitivity
+        case explorationBias, bodyVsMindWeight, djAutonomy, aiVerbosity
+        case defaultSessionDuration, defaultSessionIntent
     }
 
     /// Custom decoder that handles missing fields from older saved JSON.
@@ -246,6 +250,24 @@ public struct UserPreferences: Codable, Sendable {
         crossfadeDuration = try c.decodeIfPresent(Double.self, forKey: .crossfadeDuration) ?? 4.0
         biometricCrossfadeEnabled = try c.decodeIfPresent(Bool.self, forKey: .biometricCrossfadeEnabled) ?? true
         allowCrossPlaylistRecommendations = try c.decodeIfPresent(Bool.self, forKey: .allowCrossPlaylistRecommendations) ?? false
+
+        // Biometric signal toggles
+        heartRateEnabled = try c.decodeIfPresent(Bool.self, forKey: .heartRateEnabled) ?? true
+        hrvEnabled = try c.decodeIfPresent(Bool.self, forKey: .hrvEnabled) ?? true
+        motionEnabled = try c.decodeIfPresent(Bool.self, forKey: .motionEnabled) ?? true
+        sleepEnabled = try c.decodeIfPresent(Bool.self, forKey: .sleepEnabled) ?? true
+        temperatureEnabled = try c.decodeIfPresent(Bool.self, forKey: .temperatureEnabled) ?? true
+        biometricSensitivity = try c.decodeIfPresent(Double.self, forKey: .biometricSensitivity) ?? 0.5
+
+        // AI preferences
+        explorationBias = try c.decodeIfPresent(Double.self, forKey: .explorationBias) ?? 0.3
+        bodyVsMindWeight = try c.decodeIfPresent(Double.self, forKey: .bodyVsMindWeight) ?? 0.5
+        djAutonomy = try c.decodeIfPresent(Double.self, forKey: .djAutonomy) ?? 0.7
+        aiVerbosity = try c.decodeIfPresent(Int.self, forKey: .aiVerbosity) ?? 1
+
+        // Session defaults
+        defaultSessionDuration = try c.decodeIfPresent(Int.self, forKey: .defaultSessionDuration) ?? 60
+        defaultSessionIntent = try c.decodeIfPresent(String.self, forKey: .defaultSessionIntent) ?? "Auto-Detect"
     }
 
     // MARK: - Defaults
@@ -292,6 +314,12 @@ extension UserPreferences {
         copy.hrvResponseWeight = max(0, min(1, copy.hrvResponseWeight))
         copy.learningRate = max(0.05, min(0.5, copy.learningRate))
         copy.crossfadeDuration = max(1.0, min(10.0, copy.crossfadeDuration))
+        copy.biometricSensitivity = max(0, min(1, copy.biometricSensitivity))
+        copy.explorationBias = max(0, min(1, copy.explorationBias))
+        copy.bodyVsMindWeight = max(0, min(1, copy.bodyVsMindWeight))
+        copy.djAutonomy = max(0, min(1, copy.djAutonomy))
+        copy.aiVerbosity = max(0, min(2, copy.aiVerbosity))
+        copy.defaultSessionDuration = max(5, min(480, copy.defaultSessionDuration))
 
         return copy
     }

@@ -105,17 +105,27 @@ public struct SharedSongScorer: Sendable {
             }
         }
 
-        // Weighted combination
+        // Exploration bias weight adjustment:
+        // When bias is high (Surprise Me), reduce familiarity and historical weights
+        // and redistribute to context and energy for novel discovery.
+        let bias = preferences.explorationBias
+        let exploitBoost = 1.0 + 0.8 * (0.5 - bias)     // 1.4 at 0.0, 1.0 at 0.5, 0.6 at 1.0
+        let exploreBoost = 1.0 + 0.4 * (bias - 0.5)     // 0.8 at 0.0, 1.0 at 0.5, 1.2 at 1.0
+
+        // Weighted combination with exploration bias modulation
         let weightedScore =
             bpmScore * preferences.bpmWeight
-            + energyScore * preferences.energyWeight
-            + familiarityScore * preferences.familiarityWeight
-            + historicalScore * preferences.historicalWeight
-            + contextScore * preferences.contextWeight
+            + energyScore * preferences.energyWeight * exploreBoost
+            + familiarityScore * preferences.familiarityWeight * exploitBoost
+            + historicalScore * preferences.historicalWeight * exploitBoost
+            + contextScore * preferences.contextWeight * exploreBoost
+
+        // Recency penalty modulated: low bias = stronger penalty, high bias = weaker
+        let recencyMultiplier = 1.0 - recencyPenalty * exploitBoost
 
         // Apply recency penalty, time-of-day, and arc phase bonus (WS-4)
         let finalScore = max(0.0, min(1.0,
-            (weightedScore + arcPhaseBonus) * (1.0 - recencyPenalty) * timeScore))
+            (weightedScore + arcPhaseBonus) * max(0.0, recencyMultiplier) * timeScore))
 
         // Build explanation
         var explanations: [ExplanationComponent] = []

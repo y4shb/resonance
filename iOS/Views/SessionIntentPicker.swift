@@ -4,6 +4,8 @@
 //
 //  Presents a session intent picker when the user starts a listening session.
 //  Each intent maps to a biometric target state and BPM arc.
+//  Shows an inline forecast preview arc below the selected card before
+//  the user commits to the full interactive forecast editor.
 //
 
 import SwiftUI
@@ -94,8 +96,13 @@ struct SessionIntentPicker: View {
     /// Callback invoked when the user accepts a forecast with reordered songs.
     var onForecastAccepted: (([SongFeatures]) -> Void)?
 
+    /// The intent that currently has an inline preview showing.
+    @State private var previewIntent: SessionIntent?
+
     /// Tracks the intent chosen before showing the forecast sheet.
     @State private var pendingIntent: SessionIntent?
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         NavigationStack {
@@ -112,6 +119,7 @@ struct SessionIntentPicker: View {
                         .multilineTextAlignment(.center)
                         .padding(.horizontal)
 
+                    // Intent cards in a 2-column grid
                     LazyVGrid(columns: [
                         GridItem(.flexible()),
                         GridItem(.flexible()),
@@ -119,13 +127,30 @@ struct SessionIntentPicker: View {
                         ForEach(SessionIntent.allCases) { intent in
                             SessionIntentCard(
                                 intent: intent,
-                                isSelected: selectedIntent == intent
+                                isSelected: previewIntent == intent
                             ) {
-                                handleIntentSelection(intent)
+                                handleIntentTap(intent)
                             }
                         }
                     }
                     .padding(.horizontal)
+
+                    // Inline forecast preview below the grid
+                    if let preview = previewIntent,
+                       let vm = forecastViewModel,
+                       let forecast = vm.previewForecast {
+                        forecastPreviewSection(
+                            intent: preview,
+                            forecast: forecast,
+                            viewModel: vm
+                        )
+                        .transition(
+                            .asymmetric(
+                                insertion: .move(edge: .top).combined(with: .opacity),
+                                removal: .opacity
+                            )
+                        )
+                    }
                 }
                 .padding(.vertical)
             }
@@ -168,25 +193,104 @@ struct SessionIntentPicker: View {
         }
     }
 
-    /// Handles intent selection: generates a forecast if possible, otherwise applies directly.
-    private func handleIntentSelection(_ intent: SessionIntent) {
-        pendingIntent = intent
+    // MARK: - Forecast Preview Section
 
+    /// Displays the inline forecast preview with action buttons.
+    @ViewBuilder
+    private func forecastPreviewSection(
+        intent: SessionIntent,
+        forecast: MoodForecast,
+        viewModel: MoodForecastViewModel
+    ) -> some View {
+        VStack(spacing: 12) {
+            ForecastPreviewArc(
+                forecast: forecast,
+                intentColor: intent.color,
+                onTap: {
+                    openFullForecastEditor(intent: intent, viewModel: viewModel)
+                }
+            )
+
+            // Action buttons: Start or Customize
+            HStack(spacing: 12) {
+                Button {
+                    // Start session with the auto-generated forecast (no customization)
+                    viewModel.applyUserModification(forecast, songs: availableSongs)
+                    onForecastAccepted?(viewModel.reorderedSongs)
+                    selectedIntent = intent
+                    dismiss()
+                } label: {
+                    Text("Start Session")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(intent.color)
+                        )
+                }
+
+                Button {
+                    openFullForecastEditor(intent: intent, viewModel: viewModel)
+                } label: {
+                    Text("Customize")
+                        .font(.subheadline)
+                        .foregroundStyle(intent.color)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(intent.color.opacity(0.12))
+                        )
+                }
+            }
+        }
+        .padding(.horizontal)
+        .animation(reduceMotion ? .none : .easeInOut(duration: 0.3), value: previewIntent)
+    }
+
+    // MARK: - Intent Selection
+
+    /// Handles tapping an intent card: generates a preview forecast inline.
+    private func handleIntentTap(_ intent: SessionIntent) {
         if let vm = forecastViewModel, !availableSongs.isEmpty {
+            // If tapping the same intent again, toggle off
+            if previewIntent == intent {
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    previewIntent = nil
+                }
+                return
+            }
+
             let currentHour = Calendar.current.component(.hour, from: Date())
             let timeSlot = TimeSlot(hour: currentHour)
 
-            vm.generateForecast(
+            vm.generatePreviewForecast(
                 intent: intent.musicNeed,
                 timeSlot: timeSlot,
                 currentHRV: nil,
                 playlistSongs: availableSongs
             )
+
+            withAnimation(.easeInOut(duration: 0.3)) {
+                previewIntent = intent
+            }
         } else {
             // No forecast capability -- apply intent directly
             selectedIntent = intent
             dismiss()
         }
+    }
+
+    /// Opens the full interactive MoodForecastView as a sheet.
+    private func openFullForecastEditor(
+        intent: SessionIntent,
+        viewModel: MoodForecastViewModel
+    ) {
+        pendingIntent = intent
+        viewModel.promotePreviewToForecast()
     }
 }
 
