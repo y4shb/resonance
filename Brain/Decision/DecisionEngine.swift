@@ -381,8 +381,9 @@ final class DecisionEngine: ObservableObject {
             let restingHR = stateEngine?.restingHeartRate
             let maxHR: Double? = {
                 if let vo2 = stateEngine?.cachedVO2Max, vo2 > 0 {
-                    // Estimate max HR from VO2 Max (Uth et al. formula approximation)
-                    return nil // Fall back to Karvonen default inside engine
+                    // Uth et al. formula: MaxHR ≈ 15.3 × VO2Max / 3.5
+                    // Simplified: MaxHR ≈ 15.3 × (VO2Max / 3.5)
+                    return 15.3 * (vo2 / 3.5)
                 }
                 return nil
             }()

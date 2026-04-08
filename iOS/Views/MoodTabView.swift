@@ -127,7 +127,7 @@ struct MoodTabView: View {
                 value: $currentValence,
                 lowLabel: "Down",
                 highLabel: "Great",
-                tint: .blue,
+                tint: ResonanceColors.accent,
                 displayText: valenceLabel(for: currentValence)
             )
         }
@@ -157,7 +157,7 @@ struct MoodTabView: View {
                 value: $targetValence,
                 lowLabel: "Down",
                 highLabel: "Great",
-                tint: .blue,
+                tint: ResonanceColors.accent,
                 displayText: valenceLabel(for: targetValence)
             )
         }

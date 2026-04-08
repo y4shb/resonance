@@ -47,7 +47,7 @@ struct ResonanceScoreView: View {
     private var headerSection: some View {
         HStack {
             Image(systemName: "waveform.path.ecg")
-                .foregroundStyle(.blue)
+                .foregroundStyle(ResonanceColors.accent)
 
             Text("Resonance Score")
                 .font(.headline)
@@ -65,7 +65,7 @@ struct ResonanceScoreView: View {
             ringView(
                 progress: animateRings ? Double(result.overallScore) / 100.0 : 0,
                 lineWidth: 18,
-                color: .blue,
+                color: ResonanceColors.accent,
                 size: 160
             )
 
@@ -139,7 +139,7 @@ struct ResonanceScoreView: View {
 
             // Ring legend
             HStack(spacing: 16) {
-                legendItem(color: .blue, label: "Overall")
+                legendItem(color: ResonanceColors.accent, label: "Overall")
                 legendItem(color: .green, label: "Biometric")
                 legendItem(color: .purple, label: "Engagement")
             }

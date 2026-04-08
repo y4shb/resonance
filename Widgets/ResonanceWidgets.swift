@@ -162,7 +162,7 @@ struct NowPlayingWidgetView: View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
                 Image(systemName: entry.isPlaying ? "pause.fill" : "play.fill")
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(ResonanceColors.accent)
                 Text("Resonance")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
@@ -218,7 +218,7 @@ struct NowPlayingWidgetView: View {
                     Button(intent: TogglePlayPauseIntent()) {
                         Image(systemName: entry.isPlaying ? "pause.circle.fill" : "play.circle.fill")
                             .font(.title2)
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(ResonanceColors.accent)
                     }
                     .buttonStyle(.plain)
 
@@ -366,7 +366,7 @@ struct StateWidgetView: View {
                     RoundedRectangle(cornerRadius: 4)
                         .fill(.gray.opacity(0.3))
                     RoundedRectangle(cornerRadius: 4)
-                        .fill(.blue)
+                        .fill(ResonanceColors.accent)
                         .frame(width: geo.size.width * min(max(entry.energy, 0), 1))
                 }
             }

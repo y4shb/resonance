@@ -48,7 +48,7 @@ struct PopoverView: View {
     private var headerSection: some View {
         HStack {
             Image(systemName: "music.note")
-                .foregroundStyle(.blue)
+                .foregroundStyle(ResonanceColors.accent)
             Text("Resonance")
                 .font(.headline)
             Spacer()
@@ -152,7 +152,7 @@ struct PopoverView: View {
                         .frame(height: 3)
 
                     RoundedRectangle(cornerRadius: 1.5)
-                        .fill(.blue)
+                        .fill(ResonanceColors.accent)
                         .frame(
                             width: geometry.size.width * max(0, min(1, controller.nowPlayingInfo.progress)),
                             height: 3

@@ -71,7 +71,7 @@ struct SessionSummaryView: View {
             // Header
             HStack {
                 Image(systemName: "music.note.list")
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(ResonanceColors.accent)
 
                 Text("Session Complete")
                     .font(.headline)
@@ -102,7 +102,7 @@ struct SessionSummaryView: View {
                     icon: "clock.fill",
                     value: formattedDuration,
                     label: "Duration",
-                    color: .blue
+                    color: ResonanceColors.accent
                 )
 
                 ResonanceMetricCell(
@@ -194,7 +194,7 @@ struct SessionSummaryView: View {
                 Button(action: { showingFeedback = true }) {
                     Text("How was this session?")
                         .font(.subheadline)
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(ResonanceColors.accent)
                 }
             } else {
                 feedbackButtons
@@ -261,7 +261,7 @@ struct SessionSummaryView: View {
 
     private var qualityColor: Color {
         if summary.sessionQualityScore > 0.8 { return .green }
-        if summary.sessionQualityScore > 0.6 { return .blue }
+        if summary.sessionQualityScore > 0.6 { return ResonanceColors.accent }
         if summary.sessionQualityScore > 0.4 { return .orange }
         return .red
     }

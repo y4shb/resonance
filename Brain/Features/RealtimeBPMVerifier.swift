@@ -360,8 +360,51 @@ final class RealtimeBPMVerifier {
             }
         }
 
-        let bpm = 60.0 / (Double(bestLag) * Double(hopSize) / sampleRate)
-        return min(maxBPM, max(minBPM, bpm))
+        let rawBPM = 60.0 / (Double(bestLag) * Double(hopSize) / sampleRate)
+
+        // Octave correction: check half-lag and double-lag for comparable correlation.
+        // Prefer the BPM closest to 120 (musical norm center) to resolve octave ambiguity.
+        let musicalCenter = 120.0
+        let octaveThreshold: Float = 0.80
+        var bestBPM = rawBPM
+
+        let halfLag = bestLag / 2
+        if halfLag >= minLag {
+            let length = min(numFrames - halfLag, numFrames / 2)
+            if length > 0 {
+                var corr: Float = 0
+                vDSP_dotpr(onsetStrength, 1,
+                           Array(onsetStrength[halfLag..<(halfLag + length)]), 1,
+                           &corr, vDSP_Length(length))
+                if corr >= bestCorrelation * octaveThreshold {
+                    let halfBPM = 60.0 / (Double(halfLag) * Double(hopSize) / sampleRate)
+                    if halfBPM >= minBPM && halfBPM <= maxBPM
+                        && abs(halfBPM - musicalCenter) < abs(bestBPM - musicalCenter) {
+                        bestBPM = halfBPM
+                    }
+                }
+            }
+        }
+
+        let doubleLag = bestLag * 2
+        if doubleLag <= maxLag {
+            let length = min(numFrames - doubleLag, numFrames / 2)
+            if length > 0 {
+                var corr: Float = 0
+                vDSP_dotpr(onsetStrength, 1,
+                           Array(onsetStrength[doubleLag..<(doubleLag + length)]), 1,
+                           &corr, vDSP_Length(length))
+                if corr >= bestCorrelation * octaveThreshold {
+                    let doubleBPM = 60.0 / (Double(doubleLag) * Double(hopSize) / sampleRate)
+                    if doubleBPM >= minBPM && doubleBPM <= maxBPM
+                        && abs(doubleBPM - musicalCenter) < abs(bestBPM - musicalCenter) {
+                        bestBPM = doubleBPM
+                    }
+                }
+            }
+        }
+
+        return min(maxBPM, max(minBPM, bestBPM))
     }
 
     // MARK: - Core Data Update

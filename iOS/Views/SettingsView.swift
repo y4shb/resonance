@@ -422,9 +422,10 @@ struct SettingsView: View {
             sortDescriptors: [sortDescriptor]
         ) { _, samples, error in
             DispatchQueue.main.async {
-                // If we get samples back (even empty array with no error), read access was granted.
-                // A nil samples with an error means access was denied.
-                if error == nil {
+                // HealthKit returns nil error even when read access is denied but simply
+                // returns no data. We must check that samples is non-nil AND non-empty
+                // to confirm actual read access was granted.
+                if error == nil, let samples = samples, !samples.isEmpty {
                     self.healthReadAccessVerified = true
                 }
             }

@@ -159,11 +159,11 @@ struct BookmarkCard: View {
             case .iphoneShake:
                 Image(systemName: "iphone.radiowaves.left.and.right")
                     .font(.caption)
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(ResonanceColors.accent)
             case .iphoneButton:
                 Image(systemName: "hand.tap.fill")
                     .font(.caption)
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(ResonanceColors.accent)
             case .watchDoubleTap:
                 Image(systemName: "applewatch")
                     .font(.caption)

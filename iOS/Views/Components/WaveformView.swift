@@ -22,7 +22,7 @@ struct WaveformView: View {
     @Binding var isScrubbing: Bool
 
     /// Accent color for the played portion.
-    var accentColor: Color = .blue
+    var accentColor: Color = ResonanceColors.accent
 
     /// Called when the user finishes scrubbing.
     var onSeekComplete: ((Double) -> Void)?

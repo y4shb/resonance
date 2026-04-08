@@ -218,7 +218,7 @@ struct WatchNowPlayingView: View {
 
                     // Progress
                     RoundedRectangle(cornerRadius: 2)
-                        .fill(.blue)
+                        .fill(ResonanceColors.accent)
                         .frame(width: geometry.size.width * max(0, min(1, progress)), height: 4)
                 }
             }
@@ -327,7 +327,7 @@ struct WatchNowPlayingView: View {
         VStack(spacing: 12) {
             Image(systemName: "music.note")
                 .font(.largeTitle)
-                .foregroundStyle(.blue)
+                .foregroundStyle(ResonanceColors.accent)
 
             Text("Resonance")
                 .font(.headline)

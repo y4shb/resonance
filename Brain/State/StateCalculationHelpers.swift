@@ -92,11 +92,16 @@ extension StateEngine {
 
         let ratio = hrv / adjustedBaseline
 
-        // Map ratio to stress (inverse relationship):
-        // ratio 0.5 (low HRV) -> stress ~0.7
-        // ratio 1.0 (baseline) -> stress ~0.4
-        // ratio 1.5 (high HRV) -> stress ~0.1
-        let stress = Self.clamp(1.0 - (ratio * 0.6), 0.0, 1.0)
+        // Map ratio to stress using logarithmic relationship for physiological accuracy.
+        // HRV-stress is nonlinear (Shaffer & Ginsberg, 2017): initial drops from
+        // baseline are more significant than further drops from already-low HRV.
+        // Log mapping: stress = clamp(0.5 - 0.5 * ln(ratio) / ln(2), 0, 1)
+        // ratio 0.5 → stress = 0.5 - 0.5*(-1)/1 = 1.0 (high stress)
+        // ratio 1.0 → stress = 0.5 - 0.5*(0)/1 = 0.5 (baseline neutral)
+        // ratio 1.5 → stress = 0.5 - 0.5*(0.585)/1 = 0.21 (low stress)
+        // ratio 2.0 → stress = 0.5 - 0.5*(1)/1 = 0.0 (very relaxed)
+        let logRatio = log(ratio) / log(2.0)  // log base 2
+        let stress = Self.clamp(0.5 - 0.5 * logRatio, 0.0, 1.0)
 
         let confidence = biometric?.sampleQuality ?? 0.5
 
@@ -105,19 +110,22 @@ extension StateEngine {
 
     // MARK: - R1: Circadian HRV Baseline Adjustment
 
-    /// Circadian HRV baseline adjustment factor.
-    /// Based on population-average diurnal HRV pattern.
-    /// Peak early morning, nadir afternoon ~14:00-15:00.
+    /// Circadian HRV baseline adjustment factor using a cosine model.
+    /// Based on population-average diurnal HRV pattern: peak at ~04:00 (parasympathetic
+    /// dominance during deep sleep), nadir at ~15:00 (sympathetic peak).
     /// Reference: Boudreau et al., PMC 2022; Hernando et al., Sensors 2018
+    ///
+    /// Uses a shifted cosine: factor = 1.0 + amplitude * cos(2π * (hour - peakHour) / 24)
+    /// This produces a smooth continuous curve instead of stepped blocks, eliminating
+    /// artificial discontinuities at hour boundaries.
+    ///
+    /// amplitude = 0.15 gives a range of 0.85 (nadir) to 1.15 (peak), matching
+    /// the ~15% diurnal variation reported in the literature.
     static func circadianHRVFactor(for hour: Int) -> Double {
-        switch hour {
-        case 0..<6:   return 1.15  // Early morning: HRV naturally elevated
-        case 6..<10:  return 1.10  // Morning: still above average
-        case 10..<14: return 1.00  // Late morning: baseline
-        case 14..<18: return 0.85  // Afternoon: HRV naturally lower (nadir)
-        case 18..<22: return 0.95  // Evening: recovering
-        default:      return 1.05  // Night: rising with parasympathetic dominance
-        }
+        let peakHour = 4.0     // HRV peak at ~04:00 during deep sleep
+        let amplitude = 0.15   // ±15% variation from baseline
+        let hourFraction = Double(hour)
+        return 1.0 + amplitude * cos(2.0 * .pi * (hourFraction - peakHour) / 24.0)
     }
 
     // MARK: - Energy Calculation (plan.md Section 5.1.4)

@@ -272,7 +272,7 @@ private struct PlaylistRow: View {
             // Active indicator
             if isActive {
                 Image(systemName: "speaker.wave.2.fill")
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(ResonanceColors.accent)
                     .font(.subheadline)
             } else {
                 Image(systemName: "chevron.right")

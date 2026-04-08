@@ -27,12 +27,12 @@ struct WelcomePage: View {
                 .frame(width: 120, height: 120)
                 .foregroundStyle(
                     LinearGradient(
-                        colors: [.blue, .purple],
+                        colors: [ResonanceColors.accent, .purple],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
                 )
-                .shadow(color: .blue.opacity(0.3), radius: 20, y: 10)
+                .shadow(color: ResonanceColors.accent.opacity(0.3), radius: 20, y: 10)
 
             // App name
             Text("Resonance")
@@ -83,7 +83,7 @@ struct ValuePropositionPage: View {
 
                     FeatureCard(
                         icon: "chart.line.uptrend.xyaxis",
-                        iconColor: .blue,
+                        iconColor: ResonanceColors.accent,
                         title: "Learns Over Time",
                         description: "Gets smarter with every listen, adapting to your unique preferences."
                     )
@@ -458,7 +458,7 @@ private struct BenefitRow: View {
         HStack(spacing: 12) {
             Image(systemName: icon)
                 .font(.body)
-                .foregroundStyle(.blue)
+                .foregroundStyle(ResonanceColors.accent)
                 .frame(width: 24)
 
             Text(text)

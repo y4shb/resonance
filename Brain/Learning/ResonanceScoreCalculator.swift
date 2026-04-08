@@ -86,7 +86,7 @@ enum ResonanceGrade: String, CaseIterable, Sendable {
     var color: Color {
         switch self {
         case .excellent: return .green
-        case .good: return .blue
+        case .good: return ResonanceColors.accent
         case .fair: return .orange
         case .low: return .red
         }

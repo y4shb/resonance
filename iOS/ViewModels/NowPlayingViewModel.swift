@@ -98,10 +98,30 @@ final class NowPlayingViewModel {
     /// The current AI explanation for why this song was selected (nil if manually chosen).
     var currentExplanation: String?
 
-    /// The BPM of the currently playing song as reported by the DecisionEngine's last selection.
-    /// Returns 0 when no AI selection has been made (e.g., manually chosen track).
+    /// The BPM of the currently playing song.
+    /// Tries the AI decision engine's last selection first, then falls back
+    /// to the Core Data Song entity's stored BPM for the current Apple Music ID.
+    /// Returns 0 only when no BPM data is available at all.
     var currentSongBPM: Double {
-        decisionEngine?.lastDecision?.score.bpm ?? 0
+        // Priority 1: AI decision engine (most accurate, recently scored)
+        if let aiBPM = decisionEngine?.lastDecision?.score.bpm, aiBPM > 0 {
+            return aiBPM
+        }
+
+        // Priority 2: Core Data Song entity (from feature extraction)
+        let appleMusicId = currentSong.appleMusicId
+        guard !appleMusicId.isEmpty else { return 0 }
+
+        let context = PersistenceController.shared.viewContext
+        let fetchRequest = NSFetchRequest<Song>(entityName: "Song")
+        fetchRequest.predicate = NSPredicate(format: "appleMusicId == %@", appleMusicId)
+        fetchRequest.fetchLimit = 1
+
+        if let song = try? context.fetch(fetchRequest).first, song.bpm > 0 {
+            return song.bpm
+        }
+
+        return 0
     }
 
     /// View model for mood forecast feature (pre-session energy curve prediction).

@@ -118,7 +118,7 @@ final class DominantColorExtractor {
             rowBytes: 4,
             bounds: CGRect(x: 0, y: 0, width: 1, height: 1),
             format: .RGBA8,
-            colorSpace: CGColorSpace(name: CGColorSpace.sRGB)!
+            colorSpace: CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
         )
 
         let red = Double(bitmap[0]) / 255.0

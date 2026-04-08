@@ -28,7 +28,7 @@ enum CorrelationSeries: String, CaseIterable {
 
     var color: Color {
         switch self {
-        case .songBPM: return .blue
+        case .songBPM: return ResonanceColors.accent
         case .heartRate: return .red
         case .hrvTrend: return .green
         }
@@ -55,7 +55,7 @@ struct HealthCorrelationChart: View {
             // Header
             HStack {
                 Image(systemName: "chart.xyaxis.line")
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(ResonanceColors.accent)
 
                 Text("Music & Body")
                     .font(.headline)
@@ -150,7 +150,7 @@ struct HealthCorrelationChart: View {
     private var summaryRow: some View {
         HStack(spacing: 16) {
             if let avgBPM = averageValue(for: .songBPM) {
-                StatPill(label: "Avg BPM", value: "\(Int(avgBPM))", color: .blue)
+                StatPill(label: "Avg BPM", value: "\(Int(avgBPM))", color: ResonanceColors.accent)
             }
             if let avgHR = averageValue(for: .heartRate) {
                 StatPill(label: "Avg HR", value: "\(Int(avgHR))", color: .red)

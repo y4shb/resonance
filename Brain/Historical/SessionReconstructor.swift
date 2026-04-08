@@ -181,9 +181,9 @@ final class SessionReconstructor {
 
         // Filter out sessions that are too short
         let filteredGroups = groups.filter { group in
-            guard let firstStart = group.first?.startedAt else { return false }
+            guard let firstStart = group.first?.startedAt,
+                  let lastEvent = group.last else { return false }
 
-            let lastEvent = group.last!
             let lastEnd: Date
             if let endedAt = lastEvent.endedAt {
                 lastEnd = endedAt
@@ -225,7 +225,9 @@ final class SessionReconstructor {
                 throw SessionReconstructionError.missingEventData("startedAt on first event")
             }
 
-            let lastEvent = events.last!
+            guard let lastEvent = events.last else {
+                throw SessionReconstructionError.missingEventData("empty events array")
+            }
             let endTime: Date
             if let endedAt = lastEvent.endedAt {
                 endTime = endedAt

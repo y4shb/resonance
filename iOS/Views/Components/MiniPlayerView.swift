@@ -81,30 +81,6 @@ struct MiniPlayerView: View {
         .accessibilityLabel("Mini Player")
     }
 
-    // MARK: - Compact Layout
-
-    /// Compact layout shown when the tab bar is minimized (inline).
-    /// Shows only the play/pause button and a truncated title.
-    private var compactLayout: some View {
-        HStack(spacing: 8) {
-            playPauseButton(fontSize: .caption)
-
-            Text(viewModel.currentSong.title)
-                .font(.caption)
-                .fontWeight(.medium)
-                .lineLimit(1)
-                .foregroundStyle(.primary)
-        }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            onTapNavigate()
-        }
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel("Mini Player, \(viewModel.currentSong.title)")
-    }
-
     // MARK: - Artwork Thumbnail
 
     private var artworkThumbnail: some View {

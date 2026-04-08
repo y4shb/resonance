@@ -119,7 +119,7 @@ final class HistoricalEngine: ObservableObject {
 
         logInfo(
             "HistoricalEngine: starting \(isIncremental ? "incremental" : "full") backfill"
-            + (since != nil ? " (since: \(since!.description))" : ""),
+            + (since.map { " (since: \($0.description))" } ?? ""),
             category: .background
         )
 

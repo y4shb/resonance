@@ -40,7 +40,7 @@ struct MoodArcView: View {
             // Header
             HStack {
                 Image(systemName: "waveform.path")
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(ResonanceColors.accent)
                     .font(.caption2)
 
                 Text("Session Arc")
@@ -78,7 +78,7 @@ struct MoodArcView: View {
                     }
                     .stroke(
                         LinearGradient(
-                            colors: [.blue.opacity(0.3), .purple.opacity(0.3)],
+                            colors: [ResonanceColors.accent.opacity(0.3), .purple.opacity(0.3)],
                             startPoint: .leading,
                             endPoint: .trailing
                         ),
@@ -95,7 +95,7 @@ struct MoodArcView: View {
                             .frame(width: dotSize(for: point, index: index),
                                    height: dotSize(for: point, index: index))
                             .shadow(
-                                color: point.isPlaying ? .blue.opacity(0.5) : .clear,
+                                color: point.isPlaying ? ResonanceColors.accent.opacity(0.5) : .clear,
                                 radius: point.isPlaying ? 4 : 0
                             )
                             .scaleEffect(point.isPlaying && !reduceMotion ? 1.2 : 1.0)
@@ -132,7 +132,7 @@ struct MoodArcView: View {
 
     private func pointColor(for point: MoodArcPoint, index: Int) -> Color {
         if point.isPlaying {
-            return .blue
+            return ResonanceColors.accent
         } else if point.isCompleted {
             return .green.opacity(0.6)
         } else {

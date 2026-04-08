@@ -186,7 +186,7 @@ struct MoodChartView: View {
     private var chartHeader: some View {
         HStack {
             Image(systemName: "chart.pie.fill")
-                .foregroundStyle(.blue)
+                .foregroundStyle(ResonanceColors.accent)
                 .font(.caption)
                 .accessibilityHidden(true)
 

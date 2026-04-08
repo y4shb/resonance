@@ -146,8 +146,10 @@ struct ResonanceApp: App {
         nowPlaying.connectLearningStore(learningStore, eventLogger: eventLogger)
         nowPlaying.guardAdjuster = guardAdjuster
 
-        // Wire guard adjuster to DecisionEngine
+        // Wire guard adjuster, context collector, and state engine to DecisionEngine
         decisionEngine.guardAdjuster = guardAdjuster
+        decisionEngine.contextCollector = contextCollector
+        decisionEngine.stateEngine = stateEngine
 
         // Create and wire Sonic Bookmark manager
         let bookmarkManager = BookmarkManager()

@@ -145,7 +145,7 @@ struct PlaylistDetailView: View {
                                 } label: {
                                     Label("Play", systemImage: "play.fill")
                                 }
-                                .tint(.blue)
+                                .tint(ResonanceColors.accent)
                                 .accessibilityLabel("Play \(item.song.title)")
                             }
                     }

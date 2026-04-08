@@ -53,8 +53,14 @@ final class VocalDetector {
     /// Upper bound of vocal formant range (Hz)
     private let vocalBandHighHz: Float = 3400.0
 
-    /// Threshold for vocal energy ratio above which vocals are considered present
+    /// Threshold for combined vocal score above which vocals are considered present.
+    /// Uses both formant energy ratio and spectral flatness for reduced false positives.
     private let vocalThreshold = 0.3
+
+    /// Spectral flatness threshold below which the formant band is considered harmonic
+    /// (likely vocals) rather than noise-like (synths, percussion).
+    /// Flatness = geometric_mean / arithmetic_mean of the spectrum (0=pure tone, 1=white noise).
+    private let harmonicFlatnessThreshold: Double = 0.3
 
     /// FFT size for spectral analysis
     private let fftSize = 2048
@@ -90,6 +96,8 @@ final class VocalDetector {
         let samplePositions: [Double] = [0.25, 0.50, 0.75]
         var vocalRatios: [Double] = []
 
+        var flatnessValues: [Double] = []
+
         for position in samplePositions {
             let framePosition = AVAudioFramePosition(Double(totalFrames) * position)
             let framesToRead = min(analysisChunkSize, totalFrames - AVAudioFrameCount(framePosition))
@@ -113,6 +121,9 @@ final class VocalDetector {
 
                     let ratio = computeVocalRatio(channelData, count: count, sampleRate: sampleRate)
                     vocalRatios.append(ratio)
+
+                    let flatness = computeVocalBandFlatness(channelData, count: count, sampleRate: sampleRate)
+                    flatnessValues.append(flatness)
                 } catch {
                     logDebug(
                         "VocalDetector: failed to read sample at position \(position)",
@@ -131,10 +142,19 @@ final class VocalDetector {
         }
 
         let avgRatio = vocalRatios.reduce(0, +) / Double(vocalRatios.count)
+        let avgFlatness = flatnessValues.isEmpty
+            ? 1.0
+            : flatnessValues.reduce(0, +) / Double(flatnessValues.count)
         let confidence = min(1.0, Double(vocalRatios.count) / Double(samplePositions.count))
 
+        // Combined decision: energy ratio must exceed threshold AND formant band
+        // must show harmonic structure (low flatness). This eliminates false positives
+        // from bass-heavy EDM and synth-lead tracks that have high formant energy
+        // but noise-like (non-harmonic) spectral characteristics.
+        let hasVocals = avgRatio > vocalThreshold && avgFlatness < harmonicFlatnessThreshold
+
         return VocalDetectionResult(
-            hasVocals: avgRatio > vocalThreshold,
+            hasVocals: hasVocals,
             vocalEnergyRatio: avgRatio,
             confidence: confidence
         )
@@ -239,6 +259,89 @@ final class VocalDetector {
 
         guard totalFullEnergy > 0 else { return 0.0 }
         return totalVocalEnergy / totalFullEnergy
+    }
+
+    // MARK: - Spectral Flatness (Harmonic vs Noise Discriminator)
+
+    /// Computes spectral flatness within the vocal formant band (300Hz-3.4kHz).
+    /// Flatness = geometric_mean / arithmetic_mean of magnitude values.
+    /// Pure tones (vocals) → flatness ≈ 0; white noise (synths) → flatness ≈ 1.
+    ///
+    /// This discriminates vocal harmonics from noise-like energy (synth leads,
+    /// hi-hats, distorted guitars) that can produce false positives in the
+    /// energy-ratio-only detector.
+    ///
+    /// - Parameters:
+    ///   - data: Pointer to raw float audio samples.
+    ///   - count: Number of samples.
+    ///   - sampleRate: Sample rate of the audio.
+    /// - Returns: Spectral flatness in the vocal band (0.0 = harmonic, 1.0 = noise-like).
+    private func computeVocalBandFlatness(
+        _ data: UnsafePointer<Float>,
+        count: Int,
+        sampleRate: Double
+    ) -> Double {
+        guard count >= fftSize else { return 1.0 }
+
+        let log2n = vDSP_Length(Int(log2(Double(fftSize))))
+        guard let fftSetup = vDSP_create_fftsetup(log2n, FFTRadix(kFFTRadix2)) else {
+            return 1.0
+        }
+        defer { vDSP_destroy_fftsetup(fftSetup) }
+
+        let binWidth = Float(sampleRate) / Float(fftSize)
+        let vocalLowBin = Int(vocalBandLowHz / binWidth)
+        let vocalHighBin = min(fftSize / 2 - 1, Int(vocalBandHighHz / binWidth))
+        let bandSize = vocalHighBin - vocalLowBin + 1
+
+        guard bandSize > 0 else { return 1.0 }
+
+        var window = [Float](repeating: 0, count: fftSize)
+        vDSP_hann_window(&window, vDSP_Length(fftSize), Int32(vDSP_HANN_NORM))
+
+        // Use a sample from the middle of the data
+        let midOffset = max(0, (count - fftSize) / 2)
+
+        var realPart = [Float](repeating: 0, count: fftSize / 2)
+        var imagPart = [Float](repeating: 0, count: fftSize / 2)
+        var splitComplex = DSPSplitComplex(realp: &realPart, imagp: &imagPart)
+
+        var windowed = [Float](repeating: 0, count: fftSize)
+        vDSP_vmul(data.advanced(by: midOffset), 1, window, 1, &windowed, 1, vDSP_Length(fftSize))
+
+        for i in 0..<(fftSize / 2) {
+            realPart[i] = windowed[2 * i]
+            imagPart[i] = windowed[2 * i + 1]
+        }
+
+        vDSP_fft_zrip(fftSetup, &splitComplex, 1, log2n, FFTDirection(FFT_FORWARD))
+
+        var magnitudes = [Float](repeating: 0, count: fftSize / 2)
+        vDSP_zvmags(&splitComplex, 1, &magnitudes, 1, vDSP_Length(fftSize / 2))
+
+        // Extract vocal band magnitudes (add small epsilon to avoid log(0))
+        let epsilon: Float = 1e-10
+        var bandMags = [Float](repeating: 0, count: bandSize)
+        for i in 0..<bandSize {
+            bandMags[i] = max(epsilon, magnitudes[vocalLowBin + i])
+        }
+
+        // Geometric mean via exp(mean(log(x)))
+        var logBand = [Float](repeating: 0, count: bandSize)
+        var n = Int32(bandSize)
+        vvlogf(&logBand, bandMags, &n)
+
+        var logMean: Float = 0
+        vDSP_meanv(logBand, 1, &logMean, vDSP_Length(bandSize))
+        let geometricMean = exp(logMean)
+
+        // Arithmetic mean
+        var arithmeticMean: Float = 0
+        vDSP_meanv(bandMags, 1, &arithmeticMean, vDSP_Length(bandSize))
+
+        guard arithmeticMean > epsilon else { return 1.0 }
+
+        return Double(min(1.0, max(0.0, geometricMean / arithmeticMean)))
     }
 }
 

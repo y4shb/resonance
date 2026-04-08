@@ -89,7 +89,7 @@ struct MoodInputView: View {
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
-                    .tint(.blue)
+                    .tint(ResonanceColors.accent)
                     .accessibilityLabel("Mood level")
                     .accessibilityValue(moodLabel)
                     .accessibilityHint("Adjust your current mood from down to great")

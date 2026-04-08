@@ -66,7 +66,7 @@ struct ResonanceScoreTrendView: View {
             )
             .foregroundStyle(
                 .linearGradient(
-                    colors: [.blue.opacity(0.3), .blue.opacity(0.05)],
+                    colors: [ResonanceColors.accent.opacity(0.3), ResonanceColors.accent.opacity(0.05)],
                     startPoint: .top,
                     endPoint: .bottom
                 )
@@ -78,7 +78,7 @@ struct ResonanceScoreTrendView: View {
                 x: .value("Date", entry.date),
                 y: .value("Score", entry.score)
             )
-            .foregroundStyle(.blue)
+            .foregroundStyle(ResonanceColors.accent)
             .lineStyle(StrokeStyle(lineWidth: 2.5))
             .interpolationMethod(.catmullRom)
 
@@ -87,7 +87,7 @@ struct ResonanceScoreTrendView: View {
                 x: .value("Date", entry.date),
                 y: .value("Score", entry.score)
             )
-            .foregroundStyle(.blue)
+            .foregroundStyle(ResonanceColors.accent)
             .symbolSize(filteredScores.count > 14 ? 0 : 30)
         }
         .chartYScale(domain: 0...100)
@@ -139,7 +139,7 @@ struct ResonanceScoreTrendView: View {
             statItem(
                 value: "\(filteredScores.count)",
                 label: "Sessions",
-                color: .blue
+                color: ResonanceColors.accent
             )
         }
         .padding(.horizontal)
@@ -201,7 +201,7 @@ struct ResonanceScoreTrendView: View {
 
     private var averageScoreColor: Color {
         if averageScore >= 85 { return .green }
-        if averageScore >= 70 { return .blue }
+        if averageScore >= 70 { return ResonanceColors.accent }
         if averageScore >= 50 { return .orange }
         return .red
     }

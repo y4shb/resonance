@@ -412,8 +412,97 @@ final class AudioAnalyzer {
             }
         }
 
-        let bpm = 60.0 / (Double(bestLag) * Double(hopSize) / sampleRate)
-        return min(maxBPM, max(minBPM, bpm))
+        let rawBPM = 60.0 / (Double(bestLag) * Double(hopSize) / sampleRate)
+
+        // Octave correction: autocorrelation is prone to picking up half-time
+        // or double-time periods. Check if halving or doubling the lag yields
+        // comparable correlation, and prefer the BPM closest to the musical
+        // norm center (120 BPM). This resolves the most common BPM estimation
+        // error without requiring a full comb-filter bank.
+        let correctedBPM = octaveCorrectedBPM(
+            rawBPM: rawBPM,
+            bestLag: bestLag,
+            bestCorrelation: bestCorrelation,
+            onsetStrength: onsetStrength,
+            onsetCount: onsetCount,
+            minLag: minLag,
+            maxLag: maxLag
+        )
+
+        return min(maxBPM, max(minBPM, correctedBPM))
+    }
+
+    // MARK: - Octave Correction
+
+    /// Resolves octave ambiguity in autocorrelation-based BPM estimation.
+    /// Checks half-lag (double BPM) and double-lag (half BPM) against the
+    /// best correlation. If an octave-related lag has ≥80% of the best
+    /// correlation, prefers the BPM closest to 120 (musical norm center).
+    private func octaveCorrectedBPM(
+        rawBPM: Double,
+        bestLag: Int,
+        bestCorrelation: Float,
+        onsetStrength: [Float],
+        onsetCount: Int,
+        minLag: Int,
+        maxLag: Int
+    ) -> Double {
+        let musicalCenter = 120.0
+        let octaveThreshold: Float = 0.80  // Candidate must have ≥80% of best correlation
+
+        struct Candidate {
+            let bpm: Double
+            let correlation: Float
+        }
+
+        var candidates = [Candidate(bpm: rawBPM, correlation: bestCorrelation)]
+
+        // Check half-lag (double BPM)
+        let halfLag = bestLag / 2
+        if halfLag >= minLag {
+            let length = min(onsetCount - halfLag, onsetCount / 2)
+            if length > 0 {
+                var corr: Float = 0
+                vDSP_dotpr(
+                    onsetStrength, 1,
+                    Array(onsetStrength[halfLag..<(halfLag + length)]), 1,
+                    &corr,
+                    vDSP_Length(length)
+                )
+                if corr >= bestCorrelation * octaveThreshold {
+                    let bpm = 60.0 / (Double(halfLag) * Double(512) / sampleRate)
+                    if bpm >= minBPM && bpm <= maxBPM {
+                        candidates.append(Candidate(bpm: bpm, correlation: corr))
+                    }
+                }
+            }
+        }
+
+        // Check double-lag (half BPM)
+        let doubleLag = bestLag * 2
+        if doubleLag <= maxLag {
+            let length = min(onsetCount - doubleLag, onsetCount / 2)
+            if length > 0 {
+                var corr: Float = 0
+                vDSP_dotpr(
+                    onsetStrength, 1,
+                    Array(onsetStrength[doubleLag..<(doubleLag + length)]), 1,
+                    &corr,
+                    vDSP_Length(length)
+                )
+                if corr >= bestCorrelation * octaveThreshold {
+                    let bpm = 60.0 / (Double(doubleLag) * Double(512) / sampleRate)
+                    if bpm >= minBPM && bpm <= maxBPM {
+                        candidates.append(Candidate(bpm: bpm, correlation: corr))
+                    }
+                }
+            }
+        }
+
+        // Prefer the candidate closest to the musical center (120 BPM)
+        return candidates.min(by: {
+            abs($0.bpm - musicalCenter) < abs($1.bpm - musicalCenter)
+        })?.bpm ?? rawBPM
     }
 }
 

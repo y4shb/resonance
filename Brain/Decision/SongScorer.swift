@@ -232,17 +232,24 @@ final class SongScorer {
 
     // MARK: - Component Score Calculations
 
-    /// BPM match: 1.0 when exact match, linearly decreasing to 0.0 at tolerance boundary.
+    /// BPM match using Gaussian kernel for smoother, perceptually accurate scoring.
+    /// Unlike linear decay which has a sharp discontinuity at the tolerance boundary,
+    /// the Gaussian kernel provides gradual falloff: songs 5 BPM off score much higher
+    /// than songs 30 BPM off, without a hard cutoff.
+    /// sigma is set to tolerance/2.5 so that the tolerance boundary maps to ~0.08 score.
     private func calculateBPMMatchScore(songBPM: Double, targetBPM: Double) -> Double {
         guard songBPM > 0 else { return 0.5 } // Unknown BPM → neutral score
         let bpmDelta = abs(songBPM - targetBPM)
-        return max(0.0, 1.0 - (bpmDelta / DecisionEngineConstants.bpmTolerance))
+        let sigma = DecisionEngineConstants.bpmTolerance / 2.5
+        return exp(-0.5 * (bpmDelta * bpmDelta) / (sigma * sigma))
     }
 
-    /// Energy match: 1.0 when exact match, linearly decreasing.
+    /// Energy match using Gaussian kernel for smoother scoring.
+    /// sigma = 0.4 gives graceful falloff: 0.1 difference ≈ 0.97, 0.3 difference ≈ 0.57.
     private func calculateEnergyMatchScore(songEnergy: Double, targetEnergy: Double) -> Double {
         let energyDelta = abs(songEnergy - targetEnergy)
-        return max(0.0, 1.0 - energyDelta)
+        let sigma = 0.4
+        return exp(-0.5 * (energyDelta * energyDelta) / (sigma * sigma))
     }
 
     /// Familiarity: base familiarity score with contextual boosts.

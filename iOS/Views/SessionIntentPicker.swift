@@ -39,7 +39,7 @@ enum SessionIntent: String, CaseIterable, Identifiable, Codable {
         case .windDown: return .indigo
         case .morningRampUp: return .orange
         case .creativeFlow: return .pink
-        case .autoDetect: return .blue
+        case .autoDetect: return ResonanceColors.accent
         }
     }
 

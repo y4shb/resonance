@@ -93,7 +93,7 @@ struct OnboardingContainerView: View {
             HStack(spacing: 8) {
                 ForEach(0..<totalPages, id: \.self) { index in
                     Circle()
-                        .fill(index == currentPage ? Color.blue : Color.secondary.opacity(0.3))
+                        .fill(index == currentPage ? ResonanceColors.accent : Color.secondary.opacity(0.3))
                         .frame(width: 8, height: 8)
                         .scaleEffect(index == currentPage ? 1.2 : 1.0)
                         .animation(.easeInOut(duration: UIConstants.Animation.quick), value: currentPage)
@@ -110,7 +110,7 @@ struct OnboardingContainerView: View {
                     .padding(.vertical, 16)
                     .background(
                         LinearGradient(
-                            colors: [.blue, .purple],
+                            colors: [ResonanceColors.accent, .purple],
                             startPoint: .leading,
                             endPoint: .trailing
                         )

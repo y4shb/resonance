@@ -79,7 +79,7 @@ struct LandingView: View {
         ZStack {
             // Outer pulse ring
             Circle()
-                .fill(Color.blue.opacity(0.15))
+                .fill(ResonanceColors.accent.opacity(0.15))
                 .frame(width: 200, height: 200)
                 .blur(radius: 40)
                 .scaleEffect(isPulsing ? 1.15 : 1.0)
@@ -99,7 +99,7 @@ struct LandingView: View {
                 .font(.system(size: 80))
                 .foregroundStyle(
                     LinearGradient(
-                        colors: [.blue, .purple],
+                        colors: [ResonanceColors.accent, .purple],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
@@ -142,7 +142,7 @@ struct LandingView: View {
                     Capsule()
                         .fill(
                             LinearGradient(
-                                colors: [.blue, .purple],
+                                colors: [ResonanceColors.accent, .purple],
                                 startPoint: .leading,
                                 endPoint: .trailing
                             )

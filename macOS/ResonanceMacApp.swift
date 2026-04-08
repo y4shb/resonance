@@ -195,7 +195,7 @@ struct MacSettingsView: View {
                 HStack {
                     Image(systemName: "music.note")
                         .font(.largeTitle)
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(ResonanceColors.accent)
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Resonance for macOS")
                             .font(.headline)

@@ -151,7 +151,9 @@ struct MoodForecastView: View {
                 path.addLine(to: point)
             }
 
-            path.addLine(to: CGPoint(x: curvePoints.last!.x, y: size.height))
+            if let lastPoint = curvePoints.last {
+                path.addLine(to: CGPoint(x: lastPoint.x, y: size.height))
+            }
             path.closeSubpath()
         }
         .fill(
@@ -185,7 +187,7 @@ struct MoodForecastView: View {
         }
         .stroke(
             LinearGradient(
-                colors: [.blue, .purple],
+                colors: [ResonanceColors.accent, .purple],
                 startPoint: .leading,
                 endPoint: .trailing
             ),
