@@ -71,6 +71,7 @@ final class OnboardingAnalysisViewModel {
 
     private let engine = LibraryAnalysisEngine()
     private var analysisTask: Task<Void, Never>?
+    private var pollingTask: Task<Void, Never>?
     private var continueTimer: Task<Void, Never>?
 
     /// Local counters accumulated from the analysis engine's progress.
@@ -97,20 +98,20 @@ final class OnboardingAnalysisViewModel {
             }
         }
 
-        // Run analysis engine in background, polling for updates
-        analysisTask = Task {
-            // Start the engine (this blocks until complete or cancelled)
-            let analysisJob = Task.detached { [engine, musicService] in
-                await engine.analyzeFullLibrary(
-                    musicService: musicService,
-                    featureExtractor: FeatureExtractor(),
-                    songRepository: SongRepository()
-                )
-            }
+        // Start the engine in a detached task (survives detachFromOnboarding)
+        analysisTask = Task.detached { [engine, musicService] in
+            await engine.analyzeFullLibrary(
+                musicService: musicService,
+                featureExtractor: FeatureExtractor(),
+                songRepository: SongRepository()
+            )
+        }
 
-            // Poll engine state and update counters
+        // Separate polling task for UI updates (cancelled on detach)
+        pollingTask = Task {
             while !Task.isCancelled {
                 try? await Task.sleep(for: .milliseconds(300))
+                guard !Task.isCancelled else { break }
 
                 totalSongs = engine.totalSongs
                 analyzedSongs = engine.analyzedSongs
@@ -132,8 +133,6 @@ final class OnboardingAnalysisViewModel {
                     break
                 }
             }
-
-            await analysisJob.value
         }
     }
 
@@ -192,8 +191,9 @@ final class OnboardingAnalysisViewModel {
     /// in the background so the library is fully processed.
     func detachFromOnboarding() {
         continueTimer?.cancel()
+        pollingTask?.cancel()
         // Note: we intentionally do NOT cancel analysisTask here.
-        // The engine should complete in the background.
+        // The engine continues in the background to complete library processing.
     }
 
     deinit {

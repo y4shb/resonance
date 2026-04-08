@@ -42,8 +42,10 @@ final class EmotionMotionSensor: ObservableObject {
     // MARK: - Configuration
 
     /// Sampling rates (Hz) for each activity level.
+    /// Stationary rate reduced to 1 Hz — motion data is minimal when still,
+    /// so halving samples has negligible quality impact while saving battery.
     private enum SamplingRate {
-        static let stationary: TimeInterval = 1.0 / 2.0   // 2 Hz
+        static let stationary: TimeInterval = 1.0 / 1.0   // 1 Hz
         static let walking: TimeInterval    = 1.0 / 5.0   // 5 Hz
         static let workout: TimeInterval    = 1.0 / 10.0  // 10 Hz
     }

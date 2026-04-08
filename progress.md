@@ -2278,29 +2278,21 @@ All ship-critical UX gaps resolved:
 - [x] All algorithms optimized (12 improvements)
 - [x] UX audit passed (99/99 guidelines)
 
-### Tier 2: Differentiating Features — PLANNED
+### Tier 2: Differentiating Features — COMPLETE ✅ (2026-04-08)
 
-| # | Feature | Effort | Status |
-|---|---------|--------|--------|
-| T2-1 | Wire ConversationalExplanationGenerator (iOS 26 Foundation Models) | Medium | PLANNED — waiting for iOS 26 GA |
-| T2-2 | MusicKit crossfade API integration (biometric-triggered DJ transitions) | Low | PLANNED |
-| T2-3 | Calendar-aware pre-session priming (NF-5) | Low | PLANNED |
-| T2-4 | Pomodoro focus timer integration (NF-7) | Low | PLANNED |
-| T2-5 | AI feedback loop (thumbs up/down on explanation bar) | Medium | PLANNED |
-| T2-6 | Settings NavigationLink descriptions | Small | PLANNED |
-| T2-7 | Session reset confirmation dialog | Small | PLANNED |
+| # | Feature | Status |
+|---|---------|--------|
+| T2-1 | ConversationalExplanationGenerator wired | DONE |
+| T2-2 | Biometric crossfade duration applied to MusicKit | DONE (user wired) |
+| T2-3 | Calendar-aware pre-session priming | DONE — CalendarContextService.swift |
+| T2-4 | Pomodoro focus timer integration | DONE — PomodoroTimer.swift + PomodoroRingView.swift |
+| T2-5 | AI feedback loop (thumbs up/down) | DONE |
+| T2-6 | Settings NavigationLink descriptions | DONE (user added) |
+| T2-7 | Session reset confirmation dialog | DONE |
 
-### Tier 3: Novel UX — PLANNED
+### Tier 3: Novel UX — SHELVED (moved to next_wave.md roadmap)
 
-| # | Feature | Effort | Status |
-|---|---------|--------|--------|
-| T3-1 | Plutchik Emotion Flower mood picker | High | RESEARCHED, not implemented |
-| T3-2 | Gradient Aurora Mood Picker | Medium | RESEARCHED, not implemented |
-| T3-3 | Liquid Glass Depth Layers (iOS 26) | Medium | RESEARCHED, not implemented |
-| T3-4 | Synchronized Audio-Haptic-Visual Transitions | High | RESEARCHED, not implemented |
-| T3-5 | Biometric-Responsive Session Flow | High | RESEARCHED, not implemented |
-| T3-6 | Haptic Music Scrubbing | Medium | RESEARCHED, not implemented |
-| T3-7 | Napster-style action-hub home screen | High | RESEARCHED, not implemented |
+All 7 items shelved. 5 of 7 are duplicates of next_wave.md Part 4 (D1-D5). Remaining items (T3-5 biometric UI morphing, T3-7 radial nav) deferred post-launch. See `/docs/next_wave.md` for the comprehensive feature roadmap.
 
 ### Tier 4: Deferred/Long-term — SHELVED
 
@@ -2322,16 +2314,16 @@ All ship-critical UX gaps resolved:
 | Metric | Value |
 |--------|-------|
 | Bug fixes applied (all sessions) | 90+ |
-| Features implemented | 44+ |
+| Features implemented | 51+ |
 | Brain enhancements | 15 (B1-B15) |
 | Algorithm optimizations | 12 |
 | Novel features | 5 |
-| UI/UX features | 16+ |
+| UI/UX features | 23+ |
 | New Brain files (all sessions) | 30+ |
-| New iOS UI files (all sessions) | 21+ |
+| New iOS UI files (all sessions) | 24+ |
 | New Watch sensor files | 10 |
-| Final file count | ~168 Swift files |
-| Final LOC count | ~46,500 |
+| Final file count | ~171 Swift files |
+| Final LOC count | ~47,500 |
 | Research papers integrated | 70+ |
 | UX guidelines verified | 99 |
 

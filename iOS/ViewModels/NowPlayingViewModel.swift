@@ -938,18 +938,12 @@ extension NowPlayingViewModel {
 
     /// Moves queue items (from onMove in SwiftUI List).
     func moveQueueItems(from source: IndexSet, to destination: Int) {
+        // Capture IDs before mutation to correctly pin moved items
+        let movedIds = Set(source.map { aiQueueItems[$0].id })
         aiQueueItems.move(fromOffsets: source, toOffset: destination)
-        // Pin moved items so they survive the next auto-refresh
-        for index in source {
-            let movedToIndex: Int
-            if index < destination {
-                movedToIndex = destination - 1
-            } else {
-                movedToIndex = destination
-            }
-            if movedToIndex < aiQueueItems.count {
-                aiQueueItems[movedToIndex].isPinned = true
-            }
+        // Pin moved items by ID so they survive the next auto-refresh
+        for i in aiQueueItems.indices where movedIds.contains(aiQueueItems[i].id) {
+            aiQueueItems[i].isPinned = true
         }
         reindexQueueItems()
         hasUserEditedQueue = true

@@ -28,7 +28,7 @@ final class FocusModeService: ObservableObject {
     // MARK: - Private Properties
 
     private var pollTimer: Timer?
-    private let pollIntervalSeconds: TimeInterval = 30
+    private let pollIntervalSeconds: TimeInterval = 60
 
     // MARK: - Initialization
 
@@ -74,7 +74,7 @@ final class FocusModeService: ObservableObject {
         ) { [weak self] _ in
             self?.checkFocusStatus()
         }
-        pollTimer?.tolerance = 5.0
+        pollTimer?.tolerance = 10.0
     }
 
     /// Stops the polling timer.

@@ -194,7 +194,8 @@ struct DataSettingsView: View {
             "\(CircadianConstants.persistenceKeyPrefix).lastRefresh",
             BackfillConstants.WatermarkKey.sessionReconstruction,
             BackfillConstants.WatermarkKey.songImpact,
-            BackfillConstants.WatermarkKey.lastFullBackfill
+            BackfillConstants.WatermarkKey.lastFullBackfill,
+            "resonance_session_history"
         ]
         for key in appGroupKeys {
             appGroupDefaults?.removeObject(forKey: key)

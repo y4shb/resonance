@@ -45,13 +45,13 @@ struct MusicConnectionPage: View {
                     )
                     .padding(.bottom, 20)
 
-                // Pre-permission copy
-                if !isAuthorized && !analysisViewModel.analysisStarted {
-                    prePermissionSection
+                // Permission state: denied takes priority, then analysis, then pre-permission
+                if isDenied {
+                    deniedSection
                 } else if isAuthorized || analysisViewModel.analysisStarted {
                     analysisSection
-                } else if isDenied {
-                    deniedSection
+                } else {
+                    prePermissionSection
                 }
 
                 Spacer(minLength: 20)

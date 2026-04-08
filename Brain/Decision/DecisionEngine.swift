@@ -582,11 +582,52 @@ final class DecisionEngine: ObservableObject {
         }
 
         // 4. Score all candidates
-        let scores = songScorer.scoreAllCandidates(
+        var scores = songScorer.scoreAllCandidates(
             scoringPool,
             context: decisionContext,
             arcPhase: currentArcPhase
         )
+
+        // 4b. Apply RL exploration/exploitation reranking (mirrors selectNextSong step 3b)
+        if !scores.isEmpty {
+            let topCount = min(scores.count, 20)
+            let topCandidates = scores.prefix(topCount).map { score in
+                (songId: score.songId, baseScore: score.finalScore)
+            }
+            let contextType = stateVector.context.rawValue
+            let rlRanked = effectivenessLearner.scoreWithExploration(
+                candidates: topCandidates,
+                contextType: contextType,
+                explorationBias: preferences.explorationBias
+            )
+
+            var scoresBySongId: [UUID: SongScore] = [:]
+            for score in scores { scoresBySongId[score.songId] = score }
+
+            var reordered: [SongScore] = []
+            for rlResult in rlRanked {
+                if let original = scoresBySongId[rlResult.songId] {
+                    let adjusted = SongScore(
+                        songId: original.songId, songTitle: original.songTitle,
+                        artistName: original.artistName, albumName: original.albumName,
+                        bpm: original.bpm, bpmMatchScore: original.bpmMatchScore,
+                        energyMatchScore: original.energyMatchScore,
+                        familiarityScore: original.familiarityScore,
+                        historicalEffectScore: original.historicalEffectScore,
+                        contextAlignmentScore: original.contextAlignmentScore,
+                        recencyPenalty: original.recencyPenalty,
+                        timeOfDayScore: original.timeOfDayScore,
+                        finalScore: rlResult.adjustedScore,
+                        confidence: original.confidence,
+                        explanationComponents: original.explanationComponents
+                    )
+                    reordered.append(adjusted)
+                    scoresBySongId.removeValue(forKey: rlResult.songId)
+                }
+            }
+            reordered.append(contentsOf: scoresBySongId.values.sorted { $0.finalScore > $1.finalScore })
+            scores = reordered
+        }
 
         // 5. Take top N and build QueueItems
         let topScores = Array(scores.prefix(cappedCount))

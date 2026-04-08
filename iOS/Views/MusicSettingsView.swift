@@ -142,7 +142,7 @@ struct MusicSettingsView: View {
 
         Task {
             await musicService.requestAuthorization()
-            isRequestingAuth = false
+            await MainActor.run { isRequestingAuth = false }
         }
     }
 }

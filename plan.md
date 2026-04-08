@@ -4730,9 +4730,9 @@ All ship-critical UX gaps and bugs have been resolved:
 | 12 algorithm optimizations | Applied | 2026-04-08 |
 | UX audit (99 guidelines) | Passed | 2026-04-08 |
 
-## 11.3 Tier 2: Differentiating Features — NEXT
+## 11.3 Tier 2: Differentiating Features — COMPLETE ✅
 
-These features differentiate Resonance from competitors and should be implemented before public launch.
+All differentiating features implemented in the 2026-04-08 session.
 
 | # | Feature | Effort | Priority | Dependencies |
 |---|---------|--------|----------|-------------|
@@ -4747,7 +4747,9 @@ These features differentiate Resonance from competitors and should be implemente
 **Estimated effort:** 2-3 sprint sessions
 **Impact:** T2-1 and T2-2 are the two highest-impact differentiators vs. Spotify AI DJ and Endel.
 
-## 11.4 Tier 3: Novel UX — POST-LAUNCH
+## 11.4 Tier 3: Novel UX — SHELVED
+
+Shelved. 5 of 7 items are duplicates of next_wave.md Part 4 (D1-D5). See `/docs/next_wave.md` for the comprehensive post-launch roadmap covering 31 features across Refinements, Extensions, Moonshots, Design Upgrades, and Growth.
 
 These are researched, designed (in AgentDB), but not yet implemented novel UX concepts.
 Each transforms a standard interaction into something unique to Resonance.

@@ -123,6 +123,7 @@ final class RealtimeBPMVerifier {
         ) { [weak self] _ in
             self?.performVerificationCycle()
         }
+        dutyCycleTimer?.tolerance = 1.0  // Allow system to coalesce wakeups
     }
 
     /// Stops BPM verification. Call when playback stops or song changes.

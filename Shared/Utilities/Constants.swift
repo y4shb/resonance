@@ -139,8 +139,10 @@ public enum SessionConstants {
 // MARK: - WatchConnectivity Constants
 
 public enum WatchConnectivityConstants {
-    /// Biometric update batching interval (seconds)
-    public static let biometricBatchIntervalSeconds: TimeInterval = 5
+    /// Biometric update batching interval (seconds).
+    /// 10s balances responsiveness with battery life — the flush only sends the
+    /// latest packet, so intermediate samples are discarded anyway.
+    public static let biometricBatchIntervalSeconds: TimeInterval = 10
 
     /// Maximum biometric samples per batch
     public static let maxSamplesPerBatch: Int = 20

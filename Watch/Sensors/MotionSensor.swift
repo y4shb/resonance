@@ -16,7 +16,8 @@ final class MotionSensor: ObservableObject {
     // MARK: - Constants
 
     /// Steps accumulated over the polling window required to be considered "in motion".
-    private static let stationaryStepThreshold = 10
+    /// Scaled to match the 10-second polling window (≈2 steps/sec = walking pace).
+    private static let stationaryStepThreshold = 20
 
     /// How far back (in seconds) each pedometer sample covers. Matches the batch interval.
     private static let sampleWindowSeconds: TimeInterval = WatchConnectivityConstants.biometricBatchIntervalSeconds
@@ -57,6 +58,7 @@ final class MotionSensor: ObservableObject {
         ) { [weak self] _ in
             self?.queryRecentSteps()
         }
+        queryTimer?.tolerance = 2.0  // Allow system to coalesce wakeups
 
         logInfo("MotionSensor monitoring started", category: .general)
     }

@@ -57,7 +57,7 @@ final class SessionHistoryService {
 
     // MARK: - Initialization
 
-    init(defaults: UserDefaults = .standard) {
+    init(defaults: UserDefaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier) ?? .standard) {
         self.defaults = defaults
     }
 

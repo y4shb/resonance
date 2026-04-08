@@ -160,7 +160,7 @@ struct QueueView: View {
 
                 // Current explanation if available
                 if let explanation = viewModel.currentExplanation {
-                    Text(explanation)
+                    Text(explanation.short)
                         .font(.caption2)
                         .foregroundStyle(ResonanceColors.accent)
                         .lineLimit(1)
