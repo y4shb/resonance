@@ -237,7 +237,7 @@ extension UserPreferences {
     private static let userDefaultsKey = "com.y4sh.resonance.userPreferences"
 
     /// App Group UserDefaults suite for cross-target access (widgets, watch)
-    private static let defaults: UserDefaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier) ?? .standard
+    private nonisolated(unsafe) static let defaults: UserDefaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier) ?? .standard
 
     /// Saves preferences to App Group UserDefaults
     public func save() throws {

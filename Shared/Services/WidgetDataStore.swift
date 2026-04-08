@@ -14,7 +14,7 @@ import WidgetKit
 /// Writes from the main iOS app, reads from the Widget extension.
 /// Uses App Group UserDefaults for cross-process communication.
 struct WidgetDataStore {
-    private static let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier) ?? .standard
+    private nonisolated(unsafe) static let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier) ?? .standard
 
     // MARK: - Keys
 

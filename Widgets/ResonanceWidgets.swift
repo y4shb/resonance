@@ -9,6 +9,15 @@ import WidgetKit
 import SwiftUI
 import AppIntents
 
+// MARK: - Widget Colors (local to widget target)
+
+/// Local color definitions for the widget extension.
+/// Mirrors the accent from the main app's ResonanceColors without requiring
+/// the iOS-target ColorTheme.swift to be compiled into the widget target.
+private enum ResonanceColors {
+    static let accent = Color(red: 0.35, green: 0.55, blue: 1.0)
+}
+
 // MARK: - Widget Bundle
 
 @main
@@ -23,8 +32,8 @@ struct ResonanceWidgetBundle: WidgetBundle {
 
 /// App Intent for toggling play/pause from a widget.
 struct TogglePlayPauseIntent: AppIntent {
-    static var title: LocalizedStringResource = "Toggle Play/Pause"
-    static var description: IntentDescription? = IntentDescription("Toggle music playback")
+    static let title: LocalizedStringResource = "Toggle Play/Pause"
+    static let description: IntentDescription? = IntentDescription("Toggle music playback")
 
     func perform() async throws -> some IntentResult {
         let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier)
@@ -36,8 +45,8 @@ struct TogglePlayPauseIntent: AppIntent {
 
 /// App Intent for skipping to next track from a widget.
 struct WidgetSkipIntent: AppIntent {
-    static var title: LocalizedStringResource = "Skip Song"
-    static var description: IntentDescription? = IntentDescription("Skip to the next song")
+    static let title: LocalizedStringResource = "Skip Song"
+    static let description: IntentDescription? = IntentDescription("Skip to the next song")
 
     func perform() async throws -> some IntentResult {
         let defaults = UserDefaults(suiteName: AppConstants.appGroupIdentifier)
@@ -49,8 +58,8 @@ struct WidgetSkipIntent: AppIntent {
 
 /// App Intent for setting mood from a widget.
 struct WidgetSetMoodIntent: AppIntent {
-    static var title: LocalizedStringResource = "Set Mood"
-    static var description: IntentDescription? = IntentDescription("Set your current mood")
+    static let title: LocalizedStringResource = "Set Mood"
+    static let description: IntentDescription? = IntentDescription("Set your current mood")
 
     @Parameter(title: "Mood Level")
     var moodLevel: Int
