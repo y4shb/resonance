@@ -2,156 +2,137 @@
 //  OnboardingPageViews.swift
 //  Resonance
 //
-//  Individual page views for the onboarding flow: Welcome, Value Proposition,
-//  MusicKit Permission, and HealthKit Permission. Split from OnboardingContainerView
-//  for readability.
+//  Page views for the redesigned onboarding golden path:
+//    1. BrainOrbWelcomePage - Animated brain orb + "Get Started"
+//    2. MusicConnectionPage - MusicKit permission + inline library analysis
+//    3. HealthKitConnectionPage - HealthKit permission with benefit rows
+//
+//  Page 4 (FirstPlayPage) is in OnboardingFirstPlayPage.swift to keep
+//  each file under 500 lines.
 //
 
 import SwiftUI
 import MusicKit
 import HealthKit
 
-// MARK: - Welcome Page
+// MARK: - Page 1: Brain Orb Welcome
 
-struct WelcomePage: View {
-    let pageHeight: CGFloat
+/// Full-screen animated brain orb with app title and a single "Get Started" CTA.
+/// Target dwell time: ~10 seconds. No value proposition text -- show value through action.
+struct BrainOrbWelcomePage: View {
+    let onGetStarted: () -> Void
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var isPulsing = false
+    @State private var isVisible = false
 
     var body: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 0) {
             Spacer()
 
-            // App icon
-            Image(systemName: "waveform.circle.fill")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 120, height: 120)
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [ResonanceColors.accent, .purple],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+            // Brain orb (reused from LandingView design)
+            ZStack {
+                // Outer pulse ring
+                Circle()
+                    .fill(ResonanceColors.accent.opacity(0.15))
+                    .frame(width: 200, height: 200)
+                    .blur(radius: 40)
+                    .scaleEffect(isPulsing ? 1.15 : 1.0)
+                    .animation(
+                        reduceMotion ? .none :
+                            .easeInOut(duration: 2.0).repeatForever(autoreverses: true),
+                        value: isPulsing
                     )
-                )
-                .shadow(color: ResonanceColors.accent.opacity(0.3), radius: 20, y: 10)
 
-            // App name
+                // Inner glow
+                Circle()
+                    .fill(Color.purple.opacity(0.1))
+                    .frame(width: 160, height: 160)
+                    .blur(radius: 30)
+
+                // Brain icon
+                Image(systemName: "brain.head.profile")
+                    .font(.system(size: 80))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [ResonanceColors.accent, .purple],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Resonance brain icon")
+            .padding(.bottom, 32)
+
+            // Title
             Text("Resonance")
                 .font(.largeTitle)
                 .fontWeight(.bold)
+                .foregroundStyle(.primary)
 
-            // Tagline
-            Text("Music that adapts to you")
-                .font(.title2)
+            // Subtitle
+            Text("Your AI-Powered DJ")
+                .font(.title3)
                 .foregroundStyle(.secondary)
+                .padding(.top, 4)
 
             Spacer()
-        }
-        .frame(height: pageHeight)
-        .padding(.horizontal, 32)
-    }
-}
 
-// MARK: - Value Proposition Page
-
-struct ValuePropositionPage: View {
-    let pageHeight: CGFloat
-
-    var body: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                Spacer(minLength: 20)
-
-                Text("How It Works")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .padding(.bottom, 24)
-
-                VStack(spacing: 20) {
-                    FeatureCard(
-                        icon: "heart.fill",
-                        iconColor: .red,
-                        title: "Biometric Sensing",
-                        description: "Reads your heart rate and activity to understand how you feel right now."
-                    )
-
-                    FeatureCard(
-                        icon: "brain.head.profile",
-                        iconColor: .purple,
-                        title: "AI DJ",
-                        description: "Picks the perfect song for your current state and context."
-                    )
-
-                    FeatureCard(
-                        icon: "chart.line.uptrend.xyaxis",
-                        iconColor: ResonanceColors.accent,
-                        title: "Learns Over Time",
-                        description: "Gets smarter with every listen, adapting to your unique preferences."
-                    )
-                }
-
-                Spacer(minLength: 20)
-            }
-            .frame(minHeight: pageHeight)
-            .padding(.horizontal, 24)
-        }
-        .scrollIndicators(.hidden)
-    }
-}
-
-// MARK: - Feature Card
-
-private struct FeatureCard: View {
-    let icon: String
-    let iconColor: Color
-    let title: String
-    let description: String
-
-    var body: some View {
-        HStack(spacing: 16) {
-            Image(systemName: icon)
-                .font(.title2)
-                .foregroundStyle(iconColor)
-                .frame(width: 44, height: 44)
-                .background(iconColor.opacity(0.12))
-                .clipShape(RoundedRectangle(cornerRadius: 10))
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
+            // Single CTA
+            Button(action: onGetStarted) {
+                Text("Get Started")
                     .font(.headline)
-
-                Text(description)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(
+                        Capsule().fill(
+                            LinearGradient(
+                                colors: [ResonanceColors.accent, .purple],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                    )
             }
-
-            Spacer(minLength: 0)
+            .buttonStyle(.plain)
+            .padding(.horizontal, 32)
+            .padding(.bottom, 48)
+            .opacity(isVisible ? 1 : 0)
+            .offset(y: isVisible ? 0 : 20)
         }
-        .padding(16)
-        .background(Color(.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .onAppear {
+            isPulsing = true
+            withAnimation(reduceMotion ? .none : .easeIn(duration: 0.6)) {
+                isVisible = true
+            }
+        }
     }
 }
 
-// MARK: - MusicKit Permission Page
+// MARK: - Page 2: Music Connection
 
-struct MusicKitPermissionPage: View {
+/// MusicKit permission + inline library analysis with real-time emotion counters.
+/// On grant: immediately starts analysis, shows emotion tags animating in.
+/// "Continue" button appears after 10 seconds or 20% progress.
+struct MusicConnectionPage: View {
     @ObservedObject var musicService: MusicKitService
+    var analysisViewModel: OnboardingAnalysisViewModel
     @Binding var isAuthorized: Bool
-    let pageHeight: CGFloat
+    @Binding var isDenied: Bool
+    let onContinue: () -> Void
 
     @State private var isRequesting = false
 
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
-                Spacer(minLength: 20)
+                Spacer(minLength: 40)
 
                 // Icon
                 Image(systemName: "music.note.list")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 80, height: 80)
+                    .font(.system(size: 56))
                     .foregroundStyle(
                         LinearGradient(
                             colors: [.pink, .orange],
@@ -159,99 +140,211 @@ struct MusicKitPermissionPage: View {
                             endPoint: .bottomTrailing
                         )
                     )
-                    .padding(.bottom, 24)
+                    .padding(.bottom, 20)
 
-                Text("Access Your Music Library")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .multilineTextAlignment(.center)
-                    .padding(.bottom, 24)
-
-                // Benefits list
-                VStack(alignment: .leading, spacing: 12) {
-                    BenefitRow(icon: "play.circle", text: "Play songs from your library")
-                    BenefitRow(icon: "list.bullet", text: "Read your playlists")
-                    BenefitRow(icon: "lock.shield", text: "All data stays on your device")
-                }
-                .padding(.horizontal, 8)
-                .padding(.bottom, 32)
-
-                Spacer(minLength: 20)
-
-                // Authorization state
-                if isAuthorized {
-                    authorizedBadge
-                } else {
-                    grantAccessButton
-                    maybeLaterButton
-                        .padding(.top, 8)
+                // Pre-permission copy
+                if !isAuthorized && !analysisViewModel.analysisStarted {
+                    prePermissionSection
+                } else if isAuthorized || analysisViewModel.analysisStarted {
+                    analysisSection
+                } else if isDenied {
+                    deniedSection
                 }
 
                 Spacer(minLength: 20)
+
+                // Continue button (appears after analysis progress threshold)
+                if analysisViewModel.canContinue || isDenied {
+                    Button(action: onContinue) {
+                        Text("Continue")
+                            .font(.headline)
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(
+                                Capsule().fill(
+                                    LinearGradient(
+                                        colors: [ResonanceColors.accent, .purple],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 32)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+
+                // Skip for denied state
+                if !isAuthorized && !analysisViewModel.analysisStarted && !isDenied {
+                    skipButton
+                }
+
+                Spacer(minLength: 32)
             }
-            .frame(minHeight: pageHeight)
             .padding(.horizontal, 24)
+            .animation(.easeInOut(duration: UIConstants.Animation.standard), value: isAuthorized)
+            .animation(.easeInOut(duration: UIConstants.Animation.standard), value: analysisViewModel.canContinue)
         }
         .scrollIndicators(.hidden)
-        .onAppear {
-            isAuthorized = musicService.authorizationStatus == .authorized
-        }
     }
 
-    // MARK: - Subviews
+    // MARK: - Pre-Permission
 
-    private var authorizedBadge: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "checkmark.circle.fill")
-                .foregroundStyle(.green)
-                .font(.title3)
-            Text("Apple Music Connected")
-                .font(.headline)
-                .foregroundStyle(.green)
-        }
-        .padding(.vertical, 12)
-        .padding(.horizontal, 24)
-        .background(Color.green.opacity(0.1))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-    }
+    private var prePermissionSection: some View {
+        VStack(spacing: 20) {
+            Text("Let me browse your music\nso I can learn your taste")
+                .font(.title2)
+                .fontWeight(.bold)
+                .multilineTextAlignment(.center)
 
-    private var grantAccessButton: some View {
-        Button {
-            requestMusicKitAccess()
-        } label: {
-            HStack {
-                if isRequesting {
-                    ProgressView()
-                        .tint(.white)
-                        .padding(.trailing, 4)
+            Button {
+                requestMusicAccess()
+            } label: {
+                HStack(spacing: 8) {
+                    if isRequesting {
+                        ProgressView().tint(.white)
+                    }
+                    Text("Connect Apple Music")
+                        .font(.headline)
                 }
-                Text("Grant Access")
-                    .font(.headline)
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(Color.pink)
+                .clipShape(RoundedRectangle(cornerRadius: 14))
             }
-            .foregroundColor(.white)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 14)
-            .background(Color.pink)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .disabled(isRequesting)
+            .padding(.horizontal, 8)
         }
-        .disabled(isRequesting)
     }
 
-    private var maybeLaterButton: some View {
+    // MARK: - Denied State
+
+    private var deniedSection: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.title)
+                .foregroundStyle(.orange)
+
+            Text("Apple Music access is needed\nto analyze your library")
+                .font(.headline)
+                .multilineTextAlignment(.center)
+
+            Text("You can grant access later in Settings.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            Button {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            } label: {
+                Text("Open Settings")
+                    .font(.subheadline)
+                    .foregroundStyle(ResonanceColors.accent)
+            }
+        }
+    }
+
+    // MARK: - Analysis Section (inline library analysis)
+
+    private var analysisSection: some View {
+        VStack(spacing: 16) {
+            // Connected badge
+            HStack(spacing: 8) {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundStyle(.green)
+                Text("Apple Music Connected")
+                    .font(.headline)
+                    .foregroundStyle(.green)
+            }
+            .padding(.bottom, 8)
+
+            // Phase description
+            Text(analysisPhaseText)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+
+            // Progress bar
+            if analysisViewModel.totalSongs > 0 {
+                VStack(spacing: 6) {
+                    ProgressView(value: analysisViewModel.progress)
+                        .progressViewStyle(.linear)
+                        .tint(ResonanceColors.accent)
+
+                    Text("\(analysisViewModel.analyzedSongs) of \(analysisViewModel.totalSongs) songs")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                        .contentTransition(.numericText())
+                }
+                .padding(.horizontal, 16)
+            }
+
+            // Emotion tag counters
+            if !analysisViewModel.emotionCounters.isEmpty {
+                emotionTagGrid
+                    .transition(.opacity)
+            }
+        }
+    }
+
+    // MARK: - Emotion Tag Grid
+
+    private var emotionTagGrid: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Discovering your music's emotions...")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(.leading, 4)
+
+            // Show top 6 categories in a flowing grid
+            LazyVGrid(
+                columns: [GridItem(.flexible()), GridItem(.flexible())],
+                spacing: 8
+            ) {
+                ForEach(Array(analysisViewModel.emotionCounters.prefix(6))) { counter in
+                    EmotionTagRow(
+                        counter: counter,
+                        isHighlighted: counter.category == analysisViewModel.lastUpdatedCategory
+                    )
+                }
+            }
+        }
+        .padding(.top, 8)
+    }
+
+    // MARK: - Skip Button
+
+    private var skipButton: some View {
         Button {
-            logInfo("User skipped MusicKit authorization during onboarding", category: .ui)
+            logInfo("User skipped MusicKit during onboarding", category: .ui)
+            onContinue()
         } label: {
-            Text("Maybe Later")
+            Text("I'll set this up later")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
+        .padding(.top, 12)
     }
 
-    // MARK: - Actions
+    // MARK: - Helpers
 
-    private func requestMusicKitAccess() {
+    private var analysisPhaseText: String {
+        if analysisViewModel.analysisComplete {
+            return "Your library is analyzed and ready"
+        } else if analysisViewModel.totalSongs > 0 {
+            return "Learning your music taste..."
+        } else {
+            return "Scanning your library..."
+        }
+    }
+
+    private func requestMusicAccess() {
         isRequesting = true
-        logInfo("User tapped Grant Access for MusicKit", category: .ui)
+        logInfo("Onboarding: user tapped Connect Apple Music", category: .ui)
 
         Task {
             let status = await musicService.requestAuthorization()
@@ -259,38 +352,73 @@ struct MusicKitPermissionPage: View {
             await MainActor.run {
                 isRequesting = false
                 isAuthorized = status == .authorized
+                isDenied = status == .denied || status == .restricted
 
                 if status == .authorized {
-                    logInfo("MusicKit authorized during onboarding", category: .ui)
-                } else {
-                    logWarning("MusicKit authorization not granted during onboarding: \(status)", category: .ui)
+                    logInfo("MusicKit authorized during onboarding -- starting analysis", category: .ui)
+                    // Immediately start background analysis
+                    analysisViewModel.startAnalysis(musicService: musicService)
                 }
             }
         }
     }
 }
 
-// MARK: - HealthKit Permission Page
+// MARK: - Emotion Tag Row
 
-struct HealthKitPermissionPage: View {
+/// A single emotion category counter row with an animated count.
+private struct EmotionTagRow: View {
+    let counter: EmotionTagCounter
+    let isHighlighted: Bool
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Circle()
+                .fill(counter.category.color)
+                .frame(width: 10, height: 10)
+
+            Text(counter.category.displayName)
+                .font(.caption)
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+
+            Spacer()
+
+            Text("\(counter.count)")
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
+                .contentTransition(.numericText())
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(counter.category.color.opacity(isHighlighted ? 0.15 : 0.06))
+        )
+        .animation(.easeOut(duration: 0.3), value: isHighlighted)
+    }
+}
+
+// MARK: - Page 3: HealthKit Connection
+
+/// HealthKit permission page shown after library analysis has started,
+/// so the user has already seen value from the music analysis.
+struct HealthKitConnectionPage: View {
     @Binding var healthKitRequested: Bool
-    let pageHeight: CGFloat
+    let onContinue: () -> Void
 
     @State private var isRequesting = false
     @State private var healthKitAvailable = HKHealthStore.isHealthDataAvailable()
-
     private static let healthStore = HKHealthStore()
 
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
-                Spacer(minLength: 20)
+                Spacer(minLength: 40)
 
                 // Icon
                 Image(systemName: "heart.text.square")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 80, height: 80)
+                    .font(.system(size: 56))
                     .foregroundStyle(
                         LinearGradient(
                             colors: [.red, .pink],
@@ -298,39 +426,61 @@ struct HealthKitPermissionPage: View {
                             endPoint: .bottomTrailing
                         )
                     )
-                    .padding(.bottom, 24)
+                    .padding(.bottom, 20)
 
-                Text("Health & Activity Data")
-                    .font(.largeTitle)
+                Text("Now let me tune\ninto your body")
+                    .font(.title2)
                     .fontWeight(.bold)
                     .multilineTextAlignment(.center)
                     .padding(.bottom, 24)
 
-                // Benefits list
-                VStack(alignment: .leading, spacing: 12) {
-                    BenefitRow(icon: "heart.fill", text: "Heart rate for intensity matching")
-                    BenefitRow(icon: "figure.run", text: "Activity detection for workouts")
-                    BenefitRow(icon: "lock.shield", text: "Everything stays on-device")
+                // Benefit rows
+                VStack(alignment: .leading, spacing: 14) {
+                    BenefitRow(
+                        icon: "heart.fill",
+                        iconColor: .red,
+                        title: "Heart Rate Matching",
+                        description: "Music tempo adapts to your heartbeat"
+                    )
+
+                    BenefitRow(
+                        icon: "figure.run",
+                        iconColor: .orange,
+                        title: "Activity Detection",
+                        description: "Energy shifts for workouts and rest"
+                    )
+
+                    BenefitRow(
+                        icon: "lock.shield.fill",
+                        iconColor: .green,
+                        title: "Private by Design",
+                        description: "All biometric data stays on your device"
+                    )
                 }
                 .padding(.horizontal, 8)
-                .padding(.bottom, 32)
 
-                Spacer(minLength: 20)
+                Spacer(minLength: 32)
 
-                // Authorization state
+                // Grant / State
                 if healthKitRequested {
-                    healthKitGrantedBadge
+                    grantedBadge
+                        .padding(.bottom, 16)
+
+                    continueButton
                 } else if healthKitAvailable {
-                    grantHealthAccessButton
-                    maybeLaterButton
-                        .padding(.top, 8)
+                    grantButton
+                        .padding(.bottom, 8)
+
+                    skipButton
                 } else {
-                    healthKitUnavailableLabel
+                    unavailableLabel
+                        .padding(.bottom, 16)
+
+                    continueButton
                 }
 
-                Spacer(minLength: 20)
+                Spacer(minLength: 32)
             }
-            .frame(minHeight: pageHeight)
             .padding(.horizontal, 24)
         }
         .scrollIndicators(.hidden)
@@ -338,12 +488,11 @@ struct HealthKitPermissionPage: View {
 
     // MARK: - Subviews
 
-    private var healthKitGrantedBadge: some View {
+    private var grantedBadge: some View {
         HStack(spacing: 8) {
             Image(systemName: "checkmark.circle.fill")
                 .foregroundStyle(.green)
-                .font(.title3)
-            Text("HealthKit Access Requested")
+            Text("HealthKit Connected")
                 .font(.headline)
                 .foregroundStyle(.green)
         }
@@ -353,39 +502,60 @@ struct HealthKitPermissionPage: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
-    private var grantHealthAccessButton: some View {
+    private var grantButton: some View {
         Button {
             requestHealthKitAccess()
         } label: {
-            HStack {
+            HStack(spacing: 8) {
                 if isRequesting {
-                    ProgressView()
-                        .tint(.white)
-                        .padding(.trailing, 4)
+                    ProgressView().tint(.white)
                 }
-                Text("Grant Access")
+                Text("Connect HealthKit")
                     .font(.headline)
             }
-            .foregroundColor(.white)
+            .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 14)
             .background(Color.red)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .clipShape(RoundedRectangle(cornerRadius: 14))
         }
         .disabled(isRequesting)
+        .padding(.horizontal, 8)
     }
 
-    private var maybeLaterButton: some View {
+    private var continueButton: some View {
+        Button(action: onContinue) {
+            Text("Continue")
+                .font(.headline)
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(
+                    Capsule().fill(
+                        LinearGradient(
+                            colors: [ResonanceColors.accent, .purple],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                )
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 8)
+    }
+
+    private var skipButton: some View {
         Button {
-            logInfo("User skipped HealthKit authorization during onboarding", category: .ui)
+            logInfo("User skipped HealthKit during onboarding", category: .ui)
+            onContinue()
         } label: {
-            Text("Maybe Later")
+            Text("I'll set this up later")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
     }
 
-    private var healthKitUnavailableLabel: some View {
+    private var unavailableLabel: some View {
         HStack(spacing: 8) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .foregroundStyle(.orange)
@@ -399,7 +569,7 @@ struct HealthKitPermissionPage: View {
 
     private func requestHealthKitAccess() {
         isRequesting = true
-        logInfo("User tapped Grant Access for HealthKit", category: .ui)
+        logInfo("Onboarding: user tapped Connect HealthKit", category: .ui)
 
         Task {
             do {
@@ -410,20 +580,22 @@ struct HealthKitPermissionPage: View {
                     isRequesting = false
                     healthKitRequested = true
                     logInfo("HealthKit authorization requested during onboarding", category: .ui)
+                    // Auto-advance after granting
+                    onContinue()
                 }
             } catch {
                 await MainActor.run {
                     isRequesting = false
-                    logError("HealthKit authorization request failed during onboarding", error: error, category: .ui)
+                    logError("HealthKit authorization failed during onboarding", error: error, category: .ui)
+                    // Advance anyway to avoid trapping the user
+                    onContinue()
                 }
             }
         }
     }
 
-    /// Builds the set of HealthKit types to request read access for.
     private func healthKitReadTypes() -> Set<HKObjectType> {
         var types = Set<HKObjectType>()
-
         let quantityIdentifiers: [HKQuantityTypeIdentifier] = [
             .heartRate,
             .heartRateVariabilitySDNN,
@@ -431,64 +603,74 @@ struct HealthKitPermissionPage: View {
             .activeEnergyBurned,
             .stepCount,
         ]
-
         for identifier in quantityIdentifiers {
             if let quantityType = HKQuantityType.quantityType(forIdentifier: identifier) {
                 types.insert(quantityType)
             }
         }
-
         if let sleepType = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) {
             types.insert(sleepType)
         }
-
         types.insert(HKObjectType.workoutType())
-
         return types
     }
 }
 
-// MARK: - Benefit Row
+// MARK: - Benefit Row (redesigned with title + description)
 
 private struct BenefitRow: View {
     let icon: String
-    let text: String
+    let iconColor: Color
+    let title: String
+    let description: String
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 14) {
             Image(systemName: icon)
-                .font(.body)
-                .foregroundStyle(ResonanceColors.accent)
-                .frame(width: 24)
+                .font(.title3)
+                .foregroundStyle(iconColor)
+                .frame(width: 36, height: 36)
+                .background(iconColor.opacity(0.12))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
 
-            Text(text)
-                .font(.body)
-                .foregroundStyle(.primary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+
+                Text(description)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 0)
         }
     }
 }
 
 // MARK: - Previews
 
-#Preview("Welcome") {
-    WelcomePage(pageHeight: 700)
+#Preview("Brain Orb Welcome") {
+    BrainOrbWelcomePage(onGetStarted: {})
+        .preferredColorScheme(.dark)
 }
 
-#Preview("Value Proposition") {
-    ValuePropositionPage(pageHeight: 700)
-}
-
-#Preview("MusicKit Permission") {
-    MusicKitPermissionPage(
+#Preview("Music Connection") {
+    MusicConnectionPage(
         musicService: MusicKitService(),
+        analysisViewModel: OnboardingAnalysisViewModel(),
         isAuthorized: .constant(false),
-        pageHeight: 700
+        isDenied: .constant(false),
+        onContinue: {}
     )
+    .preferredColorScheme(.dark)
 }
 
-#Preview("HealthKit Permission") {
-    HealthKitPermissionPage(
+#Preview("HealthKit Connection") {
+    HealthKitConnectionPage(
         healthKitRequested: .constant(false),
-        pageHeight: 700
+        onContinue: {}
     )
+    .preferredColorScheme(.dark)
 }

@@ -60,7 +60,7 @@ struct MoodInputView: View {
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
-                    .tint(.orange)
+                    .tint(Color.orange.opacity(0.9))
                     .accessibilityLabel("Energy level")
                     .accessibilityValue(energyLabel)
                     .accessibilityHint("Adjust your current energy level from low to high")
@@ -120,7 +120,7 @@ struct MoodInputView: View {
                     .font(.headline)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(hasSubmitted ? Color.green : Color.accentColor)
+                    .background(hasSubmitted ? Color.green : ResonanceColors.accent)
                     .foregroundStyle(.white)
                     .clipShape(Capsule())
                 }

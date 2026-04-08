@@ -174,6 +174,8 @@ struct NowPlayingView: View {
             }
             .sheet(isPresented: $showQueue) {
                 QueueView(viewModel: viewModel)
+                    .presentationDetents([.medium, .large])
+                    .presentationDragIndicator(.visible)
             }
             .alert("Playback Error", isPresented: showErrorBinding) {
                 Button("Retry") {

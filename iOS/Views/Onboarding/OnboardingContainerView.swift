@@ -2,14 +2,33 @@
 //  OnboardingContainerView.swift
 //  Resonance
 //
-//  Swipeable onboarding flow with 4 pages: Welcome, Value Proposition,
-//  MusicKit Permission, and HealthKit Permission. Guides the user through
-//  initial setup and data access grants before entering the main app.
+//  Redesigned "3 Minutes to Wow" onboarding flow with 4 pages:
+//    Page 1 - Brain Orb Welcome (10s): Animated brain orb + "Get Started"
+//    Page 2 - Apple Music Connection (30s): Permission + inline library analysis
+//    Page 3 - HealthKit Connection (30s): Permission with benefit rows
+//    Page 4 - First Play (30s): HeartPulseRing sync + auto-selected song
+//
+//  Key design decisions:
+//  - No separate LandingView or LibraryAnalysisView; both are merged inline.
+//  - Library analysis starts immediately on MusicKit grant and continues
+//    in the background across all subsequent pages.
+//  - Programmatic page advancement (no swipe) to enforce sequencing.
+//  - Page 4 transitions directly into the main TabView.
 //
 
 import SwiftUI
 import MusicKit
 import HealthKit
+
+// MARK: - Onboarding Page
+
+/// The four pages of the redesigned onboarding flow.
+enum OnboardingPage: Int, CaseIterable {
+    case welcome = 0
+    case musicConnection = 1
+    case healthKit = 2
+    case firstPlay = 3
+}
 
 // MARK: - Onboarding Container View
 
@@ -19,176 +38,132 @@ struct OnboardingContainerView: View {
     @Binding var hasCompletedOnboarding: Bool
     @ObservedObject var musicService: MusicKitService
 
-    @State private var currentPage = 0
+    @State private var currentPage: OnboardingPage = .welcome
     @State private var musicKitAuthorized = false
+    @State private var musicKitDenied = false
     @State private var healthKitRequested = false
+    @State private var analysisViewModel = OnboardingAnalysisViewModel()
 
-    private let totalPages = 4
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     // MARK: - Body
 
     var body: some View {
         ZStack {
-            // Background gradient
-            LinearGradient(
-                colors: [Color(.systemBackground), Color(.systemGroupedBackground)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
+            // Background: deep dark with blue undertone
+            backgroundGradient
+                .ignoresSafeArea()
 
-            GeometryReader { geo in
-                VStack(spacing: 0) {
-                    // Page content
-                    TabView(selection: $currentPage) {
-                        WelcomePage(pageHeight: geo.size.height - bottomControlsHeight)
-                            .tag(0)
+            VStack(spacing: 0) {
+                // Page content (no swipe -- programmatic only)
+                TabView(selection: $currentPage) {
+                    BrainOrbWelcomePage(onGetStarted: advanceFromWelcome)
+                        .tag(OnboardingPage.welcome)
 
-                        ValuePropositionPage(pageHeight: geo.size.height - bottomControlsHeight)
-                            .tag(1)
+                    MusicConnectionPage(
+                        musicService: musicService,
+                        analysisViewModel: analysisViewModel,
+                        isAuthorized: $musicKitAuthorized,
+                        isDenied: $musicKitDenied,
+                        onContinue: advanceFromMusicConnection
+                    )
+                    .tag(OnboardingPage.musicConnection)
 
-                        MusicKitPermissionPage(
-                            musicService: musicService,
-                            isAuthorized: $musicKitAuthorized,
-                            pageHeight: geo.size.height - bottomControlsHeight
-                        )
-                        .tag(2)
+                    HealthKitConnectionPage(
+                        healthKitRequested: $healthKitRequested,
+                        onContinue: advanceFromHealthKit
+                    )
+                    .tag(OnboardingPage.healthKit)
 
-                        HealthKitPermissionPage(
-                            healthKitRequested: $healthKitRequested,
-                            pageHeight: geo.size.height - bottomControlsHeight
-                        )
-                        .tag(3)
-                    }
-                    .tabViewStyle(.page(indexDisplayMode: .never))
-                    .animation(.easeInOut(duration: UIConstants.Animation.standard), value: currentPage)
-
-                    // Bottom controls
-                    bottomControls
-                        .padding(.horizontal, 24)
-                        .padding(.bottom, 16)
+                    FirstPlayPage(
+                        analysisViewModel: analysisViewModel,
+                        onEnterApp: completeOnboarding
+                    )
+                    .tag(OnboardingPage.firstPlay)
                 }
+                .tabViewStyle(.page(indexDisplayMode: .never))
+                .animation(.easeInOut(duration: UIConstants.Animation.standard), value: currentPage)
+                // Disable swipe by intercepting gestures
+                .highPriorityGesture(DragGesture())
+
+                // Minimal page dots (no action button here; each page owns its CTA)
+                pageDots
+                    .padding(.bottom, 16)
             }
         }
         .onAppear {
-            logInfo("Onboarding flow started", category: .ui)
-            // Sync initial MusicKit authorization state
+            logInfo("Onboarding golden path started", category: .ui)
             musicKitAuthorized = musicService.authorizationStatus == .authorized
         }
         .onChange(of: musicService.authorizationStatus) { _, newStatus in
             musicKitAuthorized = newStatus == .authorized
+            musicKitDenied = newStatus == .denied || newStatus == .restricted
         }
     }
 
-    // MARK: - Constants
+    // MARK: - Background
 
-    /// Approximate height of bottom controls (dots + button + padding)
-    private var bottomControlsHeight: CGFloat { 100 }
+    private var backgroundGradient: some View {
+        LinearGradient(
+            colors: [
+                ResonanceColors.adaptiveBackground(for: colorScheme),
+                ResonanceColors.adaptiveSecondaryBackground(for: colorScheme),
+                ResonanceColors.adaptiveBackground(for: colorScheme),
+            ],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+    }
 
-    // MARK: - Bottom Controls
+    // MARK: - Page Dots
 
-    private var bottomControls: some View {
-        VStack(spacing: 16) {
-            // Page indicators
-            HStack(spacing: 8) {
-                ForEach(0..<totalPages, id: \.self) { index in
-                    Circle()
-                        .fill(index == currentPage ? ResonanceColors.accent : Color.secondary.opacity(0.3))
-                        .frame(width: 8, height: 8)
-                        .scaleEffect(index == currentPage ? 1.2 : 1.0)
-                        .animation(.easeInOut(duration: UIConstants.Animation.quick), value: currentPage)
-                }
-            }
-            .padding(.top, 8)
-
-            // Action button
-            Button(action: handlePrimaryAction) {
-                Text(primaryButtonTitle)
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(
-                        LinearGradient(
-                            colors: [ResonanceColors.accent, .purple],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 14))
-            }
-
-            // Skip option for permission pages (reduces friction)
-            if showSkipOption {
-                Button(action: handleSkip) {
-                    Text("I'll set this up later")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
+    private var pageDots: some View {
+        HStack(spacing: 8) {
+            ForEach(OnboardingPage.allCases, id: \.rawValue) { page in
+                Capsule()
+                    .fill(page == currentPage ? ResonanceColors.accent : Color.secondary.opacity(0.3))
+                    .frame(width: page == currentPage ? 24 : 8, height: 8)
+                    .animation(.easeInOut(duration: UIConstants.Animation.quick), value: currentPage)
             }
         }
+        .padding(.top, 8)
     }
 
-    // MARK: - Computed Properties
+    // MARK: - Navigation Actions
 
-    private var primaryButtonTitle: String {
-        switch currentPage {
-        case 2:
-            return musicKitAuthorized ? "Continue" : "Grant Music Access"
-        case 3:
-            return "Get Started"
-        default:
-            return "Continue"
-        }
-    }
-
-    /// Whether the current page shows a "Set up later" skip option
-    private var showSkipOption: Bool {
-        currentPage == 2 || currentPage == 3
-    }
-
-    // MARK: - Actions
-
-    private func handlePrimaryAction() {
-        if currentPage == 2 && !musicKitAuthorized {
-            // Request MusicKit authorization on this page
-            Task {
-                let status = await musicService.requestAuthorization()
-                if status == .authorized {
-                    musicKitAuthorized = true
-                    advanceToNextPage()
-                } else {
-                    // Denied or restricted — advance anyway to avoid trapping the user.
-                    // They can still use the skip button or grant access later in Settings.
-                    advanceToNextPage()
-                }
-            }
-        } else if currentPage < totalPages - 1 {
-            advanceToNextPage()
-        } else {
-            completeOnboarding()
-        }
-    }
-
-    private func advanceToNextPage() {
+    private func advanceFromWelcome() {
         withAnimation(.easeInOut(duration: UIConstants.Animation.standard)) {
-            currentPage += 1
+            currentPage = .musicConnection
         }
-        logInfo("Onboarding advanced to page \(currentPage)", category: .ui)
+        logInfo("Onboarding: Welcome -> Music Connection", category: .ui)
     }
 
-    private func handleSkip() {
-        logInfo("User skipped onboarding page \(currentPage)", category: .ui)
-        if currentPage < totalPages - 1 {
-            advanceToNextPage()
-        } else {
-            completeOnboarding()
+    private func advanceFromMusicConnection() {
+        withAnimation(.easeInOut(duration: UIConstants.Animation.standard)) {
+            currentPage = .healthKit
         }
+        logInfo("Onboarding: Music Connection -> HealthKit", category: .ui)
+    }
+
+    private func advanceFromHealthKit() {
+        withAnimation(.easeInOut(duration: UIConstants.Animation.standard)) {
+            currentPage = .firstPlay
+        }
+        logInfo("Onboarding: HealthKit -> First Play", category: .ui)
     }
 
     private func completeOnboarding() {
-        logInfo("Onboarding completed. MusicKit authorized: \(musicKitAuthorized), HealthKit requested: \(healthKitRequested)", category: .ui)
-        withAnimation(.easeInOut(duration: UIConstants.Animation.standard)) {
+        logInfo(
+            "Onboarding completed. MusicKit: \(musicKitAuthorized), HealthKit: \(healthKitRequested), "
+            + "Songs analyzed: \(analysisViewModel.analyzedSongs)/\(analysisViewModel.totalSongs)",
+            category: .ui
+        )
+
+        // Detach polling but let analysis continue in background
+        analysisViewModel.detachFromOnboarding()
+
+        withAnimation(.easeInOut(duration: UIConstants.Animation.slow)) {
             hasCompletedOnboarding = true
         }
     }
@@ -201,4 +176,5 @@ struct OnboardingContainerView: View {
         hasCompletedOnboarding: .constant(false),
         musicService: MusicKitService()
     )
+    .preferredColorScheme(.dark)
 }

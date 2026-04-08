@@ -90,6 +90,48 @@ public struct UserPreferences: Codable, Sendable {
     /// when they fit the current mood better
     public var allowCrossPlaylistRecommendations: Bool
 
+    // MARK: - Biometric Signal Toggles
+
+    /// Whether heart rate data influences song selection
+    public var heartRateEnabled: Bool
+
+    /// Whether HRV data influences song selection
+    public var hrvEnabled: Bool
+
+    /// Whether motion/accelerometer data influences song selection
+    public var motionEnabled: Bool
+
+    /// Whether sleep data influences song selection
+    public var sleepEnabled: Bool
+
+    /// Whether wrist temperature data influences song selection
+    public var temperatureEnabled: Bool
+
+    /// How aggressively biometrics influence song selection (0.0 = ignore, 1.0 = maximum)
+    public var biometricSensitivity: Double
+
+    // MARK: - AI Preferences
+
+    /// Exploration bias: 0.0 = only familiar songs, 1.0 = maximum exploration
+    public var explorationBias: Double
+
+    /// Body vs Mind weight: 0.0 = pure mood input, 1.0 = pure biometric
+    public var bodyVsMindWeight: Double
+
+    /// DJ autonomy: how independently the AI acts (0.0 = manual, 1.0 = fully autonomous)
+    public var djAutonomy: Double
+
+    /// AI explanation verbosity: 0 = silent, 1 = minimal, 2 = detailed
+    public var aiVerbosity: Int
+
+    // MARK: - Session Defaults
+
+    /// Default session duration in minutes
+    public var defaultSessionDuration: Int
+
+    /// Default session intent (raw value of SessionIntent)
+    public var defaultSessionIntent: String
+
     // MARK: - Initialization
 
     public init(
@@ -114,7 +156,19 @@ public struct UserPreferences: Codable, Sendable {
         crossfadeEnabled: Bool = true,
         crossfadeDuration: Double = 4.0,
         biometricCrossfadeEnabled: Bool = true,
-        allowCrossPlaylistRecommendations: Bool = false
+        allowCrossPlaylistRecommendations: Bool = false,
+        heartRateEnabled: Bool = true,
+        hrvEnabled: Bool = true,
+        motionEnabled: Bool = true,
+        sleepEnabled: Bool = true,
+        temperatureEnabled: Bool = true,
+        biometricSensitivity: Double = 0.5,
+        explorationBias: Double = 0.3,
+        bodyVsMindWeight: Double = 0.5,
+        djAutonomy: Double = 0.7,
+        aiVerbosity: Int = 1,
+        defaultSessionDuration: Int = 60,
+        defaultSessionIntent: String = "Auto-Detect"
     ) {
         self.bpmWeight = bpmWeight
         self.energyWeight = energyWeight
@@ -138,6 +192,18 @@ public struct UserPreferences: Codable, Sendable {
         self.crossfadeDuration = crossfadeDuration
         self.biometricCrossfadeEnabled = biometricCrossfadeEnabled
         self.allowCrossPlaylistRecommendations = allowCrossPlaylistRecommendations
+        self.heartRateEnabled = heartRateEnabled
+        self.hrvEnabled = hrvEnabled
+        self.motionEnabled = motionEnabled
+        self.sleepEnabled = sleepEnabled
+        self.temperatureEnabled = temperatureEnabled
+        self.biometricSensitivity = biometricSensitivity
+        self.explorationBias = explorationBias
+        self.bodyVsMindWeight = bodyVsMindWeight
+        self.djAutonomy = djAutonomy
+        self.aiVerbosity = aiVerbosity
+        self.defaultSessionDuration = defaultSessionDuration
+        self.defaultSessionIntent = defaultSessionIntent
     }
 
     // MARK: - Codable (Backward Compatible)

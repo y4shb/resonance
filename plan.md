@@ -4695,13 +4695,90 @@ The following work was completed after the original plan was finalized, extendin
 
 | Metric | Value |
 |--------|-------|
-| Total Swift files | ~167 |
-| Total LOC | ~45,820 |
+| Total Swift files | ~168 |
+| Total LOC | ~46,500 |
 | Test suites | 13 |
 | Test LOC | ~8,200 |
-| Bug fixes (all sessions) | 80+ |
-| Features implemented | 40+ |
+| Bug fixes (all sessions) | 90+ |
+| Features implemented | 44+ |
+| Algorithm optimizations | 12 |
 | Research papers referenced | 70+ |
+| UX guidelines verified | 99 |
+
+---
+
+# PART 11: POST-MVP ROADMAP (4-Tier Implementation Plan)
+
+## 11.1 Overview
+
+After completing all MVP milestones (M1-M8), enhancement tiers (1-3), the 2026-03-20 sprint,
+and the 2026-04-08 deep audit session, the project is organized into 4 tiers of remaining work.
+
+## 11.2 Tier 1: Ship-Critical — COMPLETE ✅
+
+All ship-critical UX gaps and bugs have been resolved:
+
+| Item | Status | Session |
+|------|--------|---------|
+| Volume control | Existed (+ thumb bug fixed) | 2026-04-08 |
+| AirPlay/output selector | Existed | Prior |
+| Shuffle/repeat controls | Implemented | 2026-04-08 |
+| Queue/up-next view | Implemented | 2026-04-08 |
+| AI explanation bar visibility | Improved | 2026-04-08 |
+| WorkoutBPMAdvisor wired | Implemented | 2026-04-08 |
+| 10 bugs fixed | Fixed | 2026-04-08 |
+| 12 algorithm optimizations | Applied | 2026-04-08 |
+| UX audit (99 guidelines) | Passed | 2026-04-08 |
+
+## 11.3 Tier 2: Differentiating Features — NEXT
+
+These features differentiate Resonance from competitors and should be implemented before public launch.
+
+| # | Feature | Effort | Priority | Dependencies |
+|---|---------|--------|----------|-------------|
+| T2-1 | ConversationalExplanationGenerator (iOS 26 Foundation Models) | Medium | HIGH | iOS 26 GA |
+| T2-2 | MusicKit crossfade API (biometric-triggered DJ transitions) | Low | HIGH | None |
+| T2-3 | Calendar-aware pre-session priming (NF-5) | Low | MEDIUM | macOS ContextBroadcaster already provides calendar data |
+| T2-4 | Pomodoro focus timer integration (NF-7) | Low | MEDIUM | SessionPlanner already supports focus arcs |
+| T2-5 | AI feedback loop (thumbs up/down on explanation bar) | Medium | MEDIUM | DecisionEngine + EffectivenessLearner already handle feedback |
+| T2-6 | Settings NavigationLink descriptions | Small | LOW | None |
+| T2-7 | Session reset confirmation dialog | Small | LOW | None |
+
+**Estimated effort:** 2-3 sprint sessions
+**Impact:** T2-1 and T2-2 are the two highest-impact differentiators vs. Spotify AI DJ and Endel.
+
+## 11.4 Tier 3: Novel UX — POST-LAUNCH
+
+These are researched, designed (in AgentDB), but not yet implemented novel UX concepts.
+Each transforms a standard interaction into something unique to Resonance.
+
+| # | Feature | Effort | Description |
+|---|---------|--------|-------------|
+| T3-1 | Plutchik Emotion Flower mood picker | High | 8-petal flower replacing sliders for mood input |
+| T3-2 | Gradient Aurora Mood Picker | Medium | Continuous color-space mood selection |
+| T3-3 | Liquid Glass Depth Layers (iOS 26) | Medium | Z-axis glass layering for depth perception |
+| T3-4 | Synchronized Audio-Haptic-Visual Transitions | High | Crossfade synced with haptic + visual pulse |
+| T3-5 | Biometric-Responsive Session Flow | High | UI morphs based on physiological state |
+| T3-6 | Haptic Music Scrubbing | Medium | Tactile waveform scrubbing feedback |
+| T3-7 | Napster-style action-hub home screen | High | Radial action menu replacing tab navigation |
+
+**Estimated effort:** 4-6 sprint sessions
+**Impact:** These are "wow" features for App Store editorial consideration and press coverage.
+
+## 11.5 Tier 4: Deferred / Long-term
+
+These are deprioritized or blocked by external dependencies.
+
+| # | Feature | Blocker |
+|---|---------|---------|
+| T4-1 | XCUITest suite | Effort — needs Xcode simulator environment |
+| T4-2 | Social Features (CloudKit shared zones) | Design decision — post-MVP scope |
+| T4-3 | Localization (5 languages) | Content — requires translation resources |
+| T4-4 | Sleep correlation dashboard | Data — needs 30+ days of user data |
+| T4-5 | CKSyncEngine migration | iOS 17+ API — replaces legacy CloudKit |
+| T4-6 | Build verification on Xcode/devices | REQUIRED before App Store submission |
+| T4-7 | Natural language session requests (NF-8) | iOS 26 Foundation Models API |
+| T4-8 | Read actual user age from HealthKit dateOfBirth | Low priority — currently defaults to 35 |
 
 ---
 

@@ -72,7 +72,11 @@ struct PlaylistBrowserView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { viewModel.fetchPlaylists() }) {
-                        Image(systemName: "arrow.clockwise")
+                        if viewModel.isLoading {
+                            ProgressView()
+                        } else {
+                            Image(systemName: "arrow.clockwise")
+                        }
                     }
                     .disabled(viewModel.isLoading)
                     .accessibilityLabel("Refresh playlists")

@@ -13,11 +13,14 @@ import AVKit
 // MARK: - System Volume Slider (MPVolumeView)
 
 /// Wraps MPVolumeView to provide a native system volume slider.
+/// Note: Do NOT call setVolumeThumbImage(UIImage(), ...) — passing an empty
+/// UIImage removes the thumb entirely, making the slider un-draggable.
+/// The default system thumb inherits tintColor and is fully accessible.
 struct SystemVolumeSlider: UIViewRepresentable {
     func makeUIView(context: Context) -> MPVolumeView {
         let volumeView = MPVolumeView(frame: .zero)
-        volumeView.showsRouteButton = false
-        volumeView.setVolumeThumbImage(UIImage(), for: .normal)
+        volumeView.showsRouteButton = false  // Route picker is separate (AirPlayButton)
+        volumeView.tintColor = UIColor(red: 0.35, green: 0.55, blue: 1.0, alpha: 1.0)
         return volumeView
     }
 

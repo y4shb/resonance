@@ -104,7 +104,10 @@ struct MainView: View {
                         selectedTab = .nowPlaying
                     }
                 )
-                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .transition(.asymmetric(
+                    insertion: .move(edge: .bottom).combined(with: .opacity),
+                    removal: .move(edge: .bottom).combined(with: .opacity).animation(.easeIn(duration: 0.2))
+                ))
             }
         }
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: shouldShowMiniPlayer)
