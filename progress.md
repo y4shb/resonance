@@ -2307,6 +2307,21 @@ All 7 items shelved. 5 of 7 are duplicates of next_wave.md Part 4 (D1-D5). Remai
 | T4-7 | Natural language session requests (NF-8, Foundation Models) | WAITING for iOS 26 |
 | T4-8 | Read actual user age from HKCharacteristicType.dateOfBirth | LOW — currently defaults to 35 |
 
+### App Store Compliance Audit — COMPLETE ✅ (2026-04-09)
+
+3-pass audit with 4 parallel research agents. 22 violations found, 21 fixed. See `/docs/violations-to-fix.md` for full details.
+
+| Pass | Violations Found | Fixed |
+|------|-----------------|-------|
+| Pass 1 (4 agents) | 16 | 14 (V-06, V-07 cleared as compliant) |
+| Pass 2 (manual) | 5 | 5 (V-17 through V-21) |
+| Pass 3 (agent + manual) | 1 | 1 (V-22: BGTask plist/code mismatch) |
+| **Total** | **22** | **21** |
+
+**Remaining:** V-08 (privacy policy URL) — external webpage, not a code fix.
+
+**Compliance rules stored in AgentDB** at `resonance/resonance-appstore-compliance-rules` — 8 rules to check before adding any new feature to prevent future violations.
+
 ---
 
 ### Updated Project Totals (All Sessions Combined)

@@ -5,7 +5,9 @@
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
 		<string>com.y4sh.resonance.playlistSync</string>
+		<string>com.y4sh.resonance.featureUpdate</string>
 		<string>com.y4sh.resonance.historicalAnalysis</string>
+		<string>com.y4sh.resonance.libraryAnalysis</string>
 	</array>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>

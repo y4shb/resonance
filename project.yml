@@ -73,7 +73,9 @@ targets:
           - processing
         BGTaskSchedulerPermittedIdentifiers:
           - com.y4sh.resonance.playlistSync
+          - com.y4sh.resonance.featureUpdate
           - com.y4sh.resonance.historicalAnalysis
+          - com.y4sh.resonance.libraryAnalysis
         UILaunchScreen: {}
     settings:
       base:
@@ -111,7 +113,7 @@ targets:
       properties:
         WKApplication: true
         WKCompanionAppBundleIdentifier: com.y4sh.resonance.ios
-        NSHealthShareUsageDescription: "Resonance Watch reads heart rate and HRV to personalize music."
+        NSHealthShareUsageDescription: "Resonance Watch reads your heart rate, heart rate variability (HRV), wrist temperature, motion, and workout data to detect your current state and personalize music selection. All data stays on your devices."
         NSMotionUsageDescription: "Resonance uses motion data to detect activity context for music selection."
     settings:
       base:
@@ -146,6 +148,8 @@ targets:
       path: macOS/Entitlements/ResonanceMac.entitlements
     info:
       path: macOS/Info.plist
+      properties:
+        NSCalendarsUsageDescription: "Resonance reads your calendar to detect meetings and adjust music context for the iPhone app."
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.y4sh.resonance.macos

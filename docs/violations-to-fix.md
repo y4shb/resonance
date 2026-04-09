@@ -315,3 +315,31 @@ This prevents installation on devices without HealthKit (e.g., iPod touch, old i
 **Cleared (no fix needed):**
 - V-06: UserDefaults for derived health aggregates — compliant
 - V-07: AVAudioEngine tap on own output — compliant
+
+---
+
+## SECOND PASS — Additional Violations Found (2026-04-09)
+
+All found and fixed in the same pass:
+
+| # | Violation | Severity | Fix Applied |
+|---|-----------|----------|-------------|
+| V-17 | Watch NSHealthShareUsageDescription too vague (same as V-04) | HIGH | Expanded to list HR, HRV, wrist temp, motion, workout |
+| V-18 | macOS CalendarProvider uses EventKit but no NSCalendarsUsageDescription | HIGH | Added to project.yml macOS target |
+| V-19 | macOS entitlements empty — no CloudKit, no sandbox, no calendar | CRITICAL | Added sandbox, network.client, iCloud/CloudKit, calendar entitlements |
+| V-20 | Widget entitlements empty — no App Group for shared UserDefaults | HIGH | Added app group entitlement |
+| V-21 | Watch entitlements empty — no HealthKit | HIGH | Added HealthKit entitlement |
+
+**All 5 additional violations fixed immediately upon discovery.**
+
+---
+
+## THIRD PASS — BGTask Mismatch (2026-04-09)
+
+| # | Violation | Severity | Fix Applied |
+|---|-----------|----------|-------------|
+| V-22 | Code registers 4 BGTask IDs (playlistSync, featureUpdate, historicalAnalysis, libraryAnalysis) but plist only had 2 after V-16 edit removed featureUpdate. libraryAnalysis was never in plist at all. Mismatch = runtime crash on BGTaskScheduler.register(). | CRITICAL | Restored all 4 IDs to both Info.plist and project.yml. All 4 have matching register() calls in ResonanceApp.swift lines 346-386. |
+
+| V-23 | Missing Assets.xcassets — no AppIcon.appiconset anywhere in the project. Build would fail with "No catalog matching AppIcon found". | CRITICAL | Created iOS/Assets.xcassets/ and Watch/Assets.xcassets/ with AppIcon.appiconset (1024x1024 slot). Added AccentColor.colorset with periwinkle accent. **NOTE:** Actual 1024x1024 PNG icon must be designed and placed before Xcode build. |
+
+**Third pass verified clean on all other items:** No location, camera, microphone, private framework imports, or Keychain usage. iOS entitlements match project.yml. All BGTask IDs match. Version numbers consistent. Launch screen valid.

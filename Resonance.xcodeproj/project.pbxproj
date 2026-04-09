@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 63;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -346,7 +346,7 @@
 		42C54413CF78D1AF38F1D3E6 /* EmotionMotionSensor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmotionMotionSensor.swift; sourceTree = "<group>"; };
 		437BEF5FB3370999F2998AF0 /* DataPipelineIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataPipelineIntegrationTests.swift; sourceTree = "<group>"; };
 		45EDFFD899A4EC01398458F3 /* LibraryAnalysisView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryAnalysisView.swift; sourceTree = "<group>"; };
-		46BBEBE3DEC25FC7AAFBC22E /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		46BBEBE3DEC25FC7AAFBC22E /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		4777E7508A9C4823D7A9B090 /* FocusModeIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusModeIntents.swift; sourceTree = "<group>"; };
 		48EE0D68589F955D9E9894D1 /* GuardFiltersTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuardFiltersTests.swift; sourceTree = "<group>"; };
 		4B3004AF8E3B77BE7F4AABF2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -466,11 +466,11 @@
 		F176AA70C080735B2D904E9D /* OvernightTemperatureSensor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OvernightTemperatureSensor.swift; sourceTree = "<group>"; };
 		F241DEEB8268A1779CC2935D /* StateVector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StateVector.swift; sourceTree = "<group>"; };
 		F5C6D6B85FF5100F07F6CD0C /* MoodPlaylistRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoodPlaylistRow.swift; sourceTree = "<group>"; };
-		F606172CE8BD49C3F27E2470 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		F606172CE8BD49C3F27E2470 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		F642DCAE16222D2052169A59 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		F94D3204A316757FF9FB86E1 /* WatchEmotionClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchEmotionClassifier.swift; sourceTree = "<group>"; };
 		FED89198337B9AFF544E3999 /* ResonanceWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResonanceWatchApp.swift; sourceTree = "<group>"; };
-		FF0F6F738D50081E6C82D4C5 /* ResonanceWidgets.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = ResonanceWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		FF0F6F738D50081E6C82D4C5 /* ResonanceWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ResonanceWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		FFFA9C009DD5F2F061713965 /* ConversationalExplanation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationalExplanation.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -1115,7 +1115,6 @@
 						ProvisioningStyle = Automatic;
 					};
 					9ADD061BE78C7F9A58426A5F = {
-						DevelopmentTeam = 69YKR4K9LC;
 						ProvisioningStyle = Automatic;
 					};
 					CB32CBEA10D68D5906A9D302 = {
@@ -1123,7 +1122,6 @@
 						ProvisioningStyle = Automatic;
 					};
 					D904743186D370ABC4670396 = {
-						DevelopmentTeam = 69YKR4K9LC;
 						ProvisioningStyle = Automatic;
 					};
 					FC9BD10EE4E404346585A4CA = {
@@ -1142,7 +1140,6 @@
 			);
 			mainGroup = 767D7001CBEA7CB689D0DD7D;
 			minimizedProjectReferenceProxies = 1;
-			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -1470,8 +1467,12 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION = YES;
 				CODE_SIGN_ENTITLEMENTS = Watch/Entitlements/ResonanceWatch.entitlements;
+				DEVELOPMENT_TEAM = 69YKR4K9LC;
 				INFOPLIST_FILE = Watch/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.y4sh.resonance.ios.watchkitapp;
 				SDKROOT = watchos;
 				SKIP_INSTALL = NO;
@@ -1488,7 +1489,10 @@
 				CODE_SIGN_ENTITLEMENTS = macOS/Entitlements/ResonanceMac.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
 				INFOPLIST_FILE = macOS/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.y4sh.resonance.macos;
 				SDKROOT = macosx;
@@ -1517,9 +1521,14 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = Widgets/ResonanceWidgets.entitlements;
+				DEVELOPMENT_TEAM = 69YKR4K9LC;
 				INFOPLIST_FILE = Widgets/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.y4sh.resonance.ios.widgets;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
@@ -1532,7 +1541,11 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = Watch/Entitlements/ResonanceWatch.entitlements;
 				INFOPLIST_FILE = Watch/Complications/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.y4sh.resonance.ios.watchkitapp.complications;
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
@@ -1619,7 +1632,10 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				INFOPLIST_FILE = iOS/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.y4sh.resonance.ios;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -1633,7 +1649,10 @@
 				CODE_SIGN_ENTITLEMENTS = macOS/Entitlements/ResonanceMac.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
 				INFOPLIST_FILE = macOS/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.y4sh.resonance.macos;
 				SDKROOT = macosx;
@@ -1712,8 +1731,12 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION = YES;
 				CODE_SIGN_ENTITLEMENTS = Watch/Entitlements/ResonanceWatch.entitlements;
+				DEVELOPMENT_TEAM = 69YKR4K9LC;
 				INFOPLIST_FILE = Watch/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.y4sh.resonance.ios.watchkitapp;
 				SDKROOT = watchos;
 				SKIP_INSTALL = NO;
@@ -1728,7 +1751,11 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = Watch/Entitlements/ResonanceWatch.entitlements;
 				INFOPLIST_FILE = Watch/Complications/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.y4sh.resonance.ios.watchkitapp.complications;
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
@@ -1745,7 +1772,10 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				INFOPLIST_FILE = iOS/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.y4sh.resonance.ios;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -1774,9 +1804,14 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = Widgets/ResonanceWidgets.entitlements;
+				DEVELOPMENT_TEAM = 69YKR4K9LC;
 				INFOPLIST_FILE = Widgets/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.y4sh.resonance.ios.widgets;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
