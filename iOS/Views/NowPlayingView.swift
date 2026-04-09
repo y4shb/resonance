@@ -404,7 +404,7 @@ struct NowPlayingView: View {
             HStack(spacing: 10) {
                 Image(systemName: "target")
                     .font(.caption2)
-                    .foregroundStyle(explorationSliderValue < 0.5 ? ResonanceColors.accent : .tertiary)
+                    .foregroundStyle(explorationSliderValue < 0.5 ? ResonanceColors.accent : Color.secondary.opacity(0.6))
 
                 Slider(
                     value: $explorationSliderValue,
@@ -427,7 +427,7 @@ struct NowPlayingView: View {
 
                 Image(systemName: "sparkles")
                     .font(.caption2)
-                    .foregroundStyle(explorationSliderValue > 0.5 ? ResonanceColors.accent : .tertiary)
+                    .foregroundStyle(explorationSliderValue > 0.5 ? ResonanceColors.accent : Color.secondary.opacity(0.6))
             }
 
             // Endpoint text labels

@@ -119,7 +119,8 @@ struct FirstPlayPage: View {
                     heartRate: heartRate,
                     musicBPM: demoBPM,
                     accentColor: ResonanceColors.accent,
-                    reduceMotion: reduceMotion
+                    reduceMotion: reduceMotion,
+                    isTransitioning: false
                 )
                 .frame(width: 200, height: 200)
 

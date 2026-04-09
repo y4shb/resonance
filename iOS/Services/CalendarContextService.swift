@@ -58,7 +58,7 @@ final class CalendarContextService {
     // MARK: - Private State
 
     private let store = EKEventStore()
-    private var pollTask: Task<Void, Never>?
+    nonisolated(unsafe) private var pollTask: Task<Void, Never>?
 
     /// Timestamp of the last meeting end, for recovery detection.
     private var lastMeetingEndTime: Date?

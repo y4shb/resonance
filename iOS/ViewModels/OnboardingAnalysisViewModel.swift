@@ -72,7 +72,7 @@ final class OnboardingAnalysisViewModel {
     private let engine = LibraryAnalysisEngine()
     private var analysisTask: Task<Void, Never>?
     private var pollingTask: Task<Void, Never>?
-    private var continueTimer: Task<Void, Never>?
+    nonisolated(unsafe) private var continueTimer: Task<Void, Never>?
 
     /// Local counters accumulated from the analysis engine's progress.
     private var categoryCounts: [EmotionCategory: Int] = [:]

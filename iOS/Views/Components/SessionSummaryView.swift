@@ -482,46 +482,56 @@ enum SessionFeedback: String, CaseIterable {
         )
     }
 
+    let hrSamples1: [(Double, Double)] = (0..<8).map { i in
+        (Double(i) / 7.0, 72.0 + Double(i) * 3.0)
+    }
+    let hrSamples2: [(Double, Double)] = (0..<8).map { i in
+        (Double(i) / 7.0, 80.0 - Double(i) * 1.5)
+    }
+    let hrSamples3: [(Double, Double)] = (0..<5).map { i in
+        (Double(i) / 4.0, 90.0 + Double(i) * 2.0)
+    }
     let samplePerTrack: [PerTrackBiometricDetail] = [
         PerTrackBiometricDetail(
             songTitle: "Midnight City", artistName: "M83",
             alignment: 0.92, wasSkipped: false,
-            heartRateSamples: (0..<8).map { (Double($0) / 7.0, 72 + Double($0) * 3) }
+            heartRateSamples: hrSamples1
         ),
         PerTrackBiometricDetail(
             songTitle: "Intro", artistName: "The xx",
             alignment: 0.78, wasSkipped: false,
-            heartRateSamples: (0..<8).map { (Double($0) / 7.0, 80 - Double($0) * 1.5) }
+            heartRateSamples: hrSamples2
         ),
         PerTrackBiometricDetail(
             songTitle: "Blinding Lights", artistName: "The Weeknd",
             alignment: 0.35, wasSkipped: true,
-            heartRateSamples: (0..<5).map { (Double($0) / 4.0, 90 + Double($0) * 2) }
+            heartRateSamples: hrSamples3
         ),
     ]
 
+    let sampleHighlight = HighlightTrack(
+        title: "Midnight City", artist: "M83", appleMusicId: "abc123",
+        alignmentScore: 0.92, heartRate: 96, artworkData: nil
+    )
+    let sampleTrend = SessionTrendInsight(
+        sessionCount: 12, sessionTypeLabel: "evening",
+        trendDelta: 0.15, trendMetricLabel: "wind-down time"
+    )
+    let sampleSummary = SessionSummaryData(
+        sessionDuration: 2400, songsPlayed: 12, songsSkipped: 2,
+        skipRate: 0.167, hrvImproved: true, hrvDelta: 3.5,
+        bestFitSong: (title: "Weightless", artist: "Marconi Union"),
+        averageBPM: 95, sessionQualityScore: 0.82,
+        forecastPoints: sampleForecast,
+        actualStateSnapshots: sampleActual,
+        highlightTrack: sampleHighlight,
+        trendInsight: sampleTrend,
+        perTrackDetails: samplePerTrack
+    )
+
     ScrollView {
-        SessionSummaryView(
-            summary: SessionSummaryData(
-                sessionDuration: 2400, songsPlayed: 12, songsSkipped: 2,
-                skipRate: 0.167, hrvImproved: true, hrvDelta: 3.5,
-                bestFitSong: (title: "Weightless", artist: "Marconi Union"),
-                averageBPM: 95, sessionQualityScore: 0.82,
-                forecastPoints: sampleForecast,
-                actualStateSnapshots: sampleActual,
-                highlightTrack: HighlightTrack(
-                    title: "Midnight City", artist: "M83", appleMusicId: "abc123",
-                    alignmentScore: 0.92, heartRate: 96, artworkData: nil
-                ),
-                trendInsight: SessionTrendInsight(
-                    sessionCount: 12, sessionTypeLabel: "evening",
-                    trendDelta: 0.15, trendMetricLabel: "wind-down time"
-                ),
-                perTrackDetails: samplePerTrack
-            ),
-            onDismiss: {}
-        )
-        .padding()
+        SessionSummaryView(summary: sampleSummary, onDismiss: {})
+            .padding()
     }
 }
 

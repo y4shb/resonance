@@ -171,6 +171,7 @@ targets:
           - "**/*.entitlements"
       - path: Shared/Models
       - path: Shared/Utilities/Constants.swift
+      - path: Shared/Utilities/ResonanceColors.swift
       - path: Shared/Services/WidgetDataStore.swift
     entitlements:
       path: Widgets/ResonanceWidgets.entitlements

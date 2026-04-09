@@ -79,6 +79,9 @@ final class NowPlayingViewModel {
     /// Dominant accent color extracted from the current album artwork.
     var artworkAccentColor: Color?
 
+    /// User feedback for the current song: true = thumbs up, false = thumbs down, nil = no feedback yet.
+    private(set) var currentSongFeedback: Bool?
+
     // MARK: - Private Properties
 
     private let musicService: MusicKitService
@@ -523,6 +526,12 @@ final class NowPlayingViewModel {
                 errorMessage = error.localizedDescription
             }
         }
+    }
+
+    /// Records user feedback (thumbs up/down) for the currently playing song.
+    func submitAIFeedback(isPositive: Bool) {
+        currentSongFeedback = isPositive
+        logInfo("Song feedback: \(isPositive ? "positive" : "negative")", category: .ui)
     }
 
     /// Skips to the next track.

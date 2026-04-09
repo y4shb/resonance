@@ -2,21 +2,23 @@
 //  ColorTheme.swift
 //  Resonance
 //
-//  Defines the app-wide color palette with dark mode refinements.
+//  iOS-specific color palette extensions with dark mode refinements.
 //  Uses dark gray (#121212) instead of pure black to prevent OLED smearing,
 //  and applies a blue undertone for a night-sky quality in dark mode.
+//
+//  The base ResonanceColors enum (including `accent`) lives in
+//  Shared/Utilities/ResonanceColors.swift for cross-platform access.
 //
 //  P2-20: Dark Mode Palette Refinement
 //
 
 import SwiftUI
 
-// MARK: - Resonance Color Palette
+// MARK: - iOS Color Extensions
 
-/// Centralized color definitions that adapt to light and dark mode.
-/// Dark mode uses carefully chosen grays with blue undertones rather than pure
-/// black, preventing OLED pixel smearing and reducing visual harshness.
-enum ResonanceColors {
+/// iOS-specific color helpers that depend on UIColor / system colors.
+/// The base `ResonanceColors` enum is defined in Shared/Utilities/ResonanceColors.swift.
+extension ResonanceColors {
     // MARK: - Background Colors
 
     /// Primary background: #121212 in dark mode (soft dark gray), system background in light mode.
@@ -86,12 +88,6 @@ enum ResonanceColors {
             return Color(.secondarySystemGroupedBackground)
         }
     }
-
-    // MARK: - Accent Color
-
-    /// App accent color, consistent across light and dark modes.
-    /// Custom periwinkle-blue for brand identity.
-    static let accent = Color(red: 0.35, green: 0.55, blue: 1.0)
 
     // MARK: - Saturation Adjustment
 

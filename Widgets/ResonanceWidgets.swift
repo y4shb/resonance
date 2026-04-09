@@ -9,15 +9,6 @@ import WidgetKit
 import SwiftUI
 import AppIntents
 
-// MARK: - Widget Colors (local to widget target)
-
-/// Local color definitions for the widget extension.
-/// Mirrors the accent from the main app's ResonanceColors without requiring
-/// the iOS-target ColorTheme.swift to be compiled into the widget target.
-private enum ResonanceColors {
-    static let accent = Color(red: 0.35, green: 0.55, blue: 1.0)
-}
-
 // MARK: - Widget Bundle
 
 @main
