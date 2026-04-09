@@ -4758,7 +4758,7 @@ Each transforms a standard interaction into something unique to Resonance.
 |---|---------|--------|-------------|
 | T3-1 | Plutchik Emotion Flower mood picker | High | 8-petal flower replacing sliders for mood input |
 | T3-2 | Gradient Aurora Mood Picker | Medium | Continuous color-space mood selection |
-| T3-3 | Liquid Glass Depth Layers (iOS 26) | Medium | Z-axis glass layering for depth perception |
+| T3-3 | ~~Liquid Glass Depth Layers (iOS 26)~~ | ✅ DONE | `.glassEffect(.regular)` applied across all views — see UI/UX Overhaul (2026-04-09) |
 | T3-4 | Synchronized Audio-Haptic-Visual Transitions | High | Crossfade synced with haptic + visual pulse |
 | T3-5 | Biometric-Responsive Session Flow | High | UI morphs based on physiological state |
 | T3-6 | Haptic Music Scrubbing | Medium | Tactile waveform scrubbing feedback |
@@ -4784,7 +4784,30 @@ These are deprioritized or blocked by external dependencies.
 
 ---
 
+---
+
+## 11.6 Completed: UI/UX Liquid Glass Overhaul (2026-04-09)
+
+Full iOS view redesign using iOS 26 Liquid Glass design language.
+
+**Completed items:**
+- [x] NowPlayingView declutter — removed 6 inline sections, moved to sheets
+- [x] StatusPillView — new component consolidating 3 status bars
+- [x] "Play for Me" smart play — one-tap AI song selection on empty state
+- [x] Glass transport capsule — prev/play/skip in `.glassEffect(.regular)` container
+- [x] MiniPlayerView glass polish — progress bar top edge, glass container
+- [x] MoodTabView glass cards — all sections, buttons, and mood orb
+- [x] SettingsView glass sections — icon backgrounds, row spacing
+- [x] SessionIntentPicker glass cards — intent cards and customize button
+- [x] PlaylistBrowserView glass grid — artwork placeholders and active glow
+- [x] ResonanceColors glass helpers — glassTint, glassDivider, accentSubtle
+- [x] Code review — 6 issues found and fixed
+
+**Remaining from T3 tier:** T3-1 (spatial audio visualizer), T3-2 (gradient aurora mood picker), T3-4 (synced audio-haptic-visual transitions), T3-5 (biometric-responsive session flow), T3-6 (haptic music scrubbing), T3-7 (radial action menu)
+
+---
+
 *End of Plan Document*
 
-*Version: 3.0*
-*Last Updated: 2026-03-20*
+*Version: 3.1*
+*Last Updated: 2026-04-09*

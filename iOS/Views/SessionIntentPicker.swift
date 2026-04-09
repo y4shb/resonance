@@ -244,6 +244,7 @@ struct SessionIntentPicker: View {
                             RoundedRectangle(cornerRadius: 12)
                                 .fill(intent.color.opacity(0.12))
                         )
+                        .glassEffect(.regular)
                 }
             }
         }
@@ -325,8 +326,9 @@ struct SessionIntentCard: View {
             .padding(.horizontal, 8)
             .background(
                 RoundedRectangle(cornerRadius: 14)
-                    .fill(isSelected ? intent.color.opacity(0.15) : Color(.secondarySystemGroupedBackground))
+                    .fill(isSelected ? intent.color.opacity(0.12) : .clear)
             )
+            .glassEffect(.regular)
             .overlay(
                 RoundedRectangle(cornerRadius: 14)
                     .strokeBorder(isSelected ? intent.color : .clear, lineWidth: 2)

@@ -23,9 +23,9 @@ This file tracks the current state of the project, completed work, and remaining
 | Enhancement Tier 3: Strategic | COMPLETE | 100% |
 | Enhancement Tier 4: Future Horizon | SHELVED | -- |
 
-**Current Phase:** Sprint 2026-03-20 COMPLETE -- All Brain Enhancements + User Features + Code Reviews + Security Audit Done
-**Last Updated:** 2026-03-20
-**Total Swift Files:** ~167 | **Total LOC:** ~45,820 | **Test Files:** 13 | **Test LOC:** ~8,200
+**Current Phase:** UI/UX Liquid Glass Overhaul COMPLETE
+**Last Updated:** 2026-04-09
+**Total Swift Files:** ~172 | **Total LOC:** ~47,800 | **Test Files:** 13 | **Test LOC:** ~8,200
 
 ---
 
@@ -2324,6 +2324,33 @@ All 7 items shelved. 5 of 7 are duplicates of next_wave.md Part 4 (D1-D5). Remai
 
 ---
 
+### UI/UX Liquid Glass Overhaul — COMPLETE ✅ (2026-04-09)
+
+Complete redesign of all iOS views using iOS 26 Liquid Glass design language. Decluttered Now Playing, added "Play for Me" smart play, applied `.glassEffect(.regular)` across all views.
+
+**Files Modified (8):**
+
+| File | Changes |
+|------|---------|
+| `NowPlayingView.swift` | Major overhaul: removed 6 inline sections (explorationBiasControl, hrvZoneBar, stateInfoBar, activePlaylistBar, volumeAndRouteControls, explanationBar), moved to sheets. Added StatusPillView, enlarged artwork (340pt), glass transport capsule, "Play for Me" empty state with `requestAISelection()`, bottom action row (Why? + Queue) |
+| `StatusPillView.swift` | **NEW** — Compact glass pill replacing 3 status bars. Shows HRV zone dot + brain icon + inferred need + confidence + active playlist. Taps to expand StatusDetailSheet with full biometrics breakdown |
+| `MiniPlayerView.swift` | Glass effect polish: progress bar moved to top edge, `.glassEffect(.regular)` container, tighter padding |
+| `ResonanceColors.swift` | Added `glassTint`, `glassDivider`, `accentSubtle` color helpers for glass surfaces |
+| `MoodTabView.swift` | 7 glass effect changes: section cards, journey button, preset buttons, mood orb glow |
+| `SettingsView.swift` | Glass icon backgrounds with `.ultraThinMaterial`, improved row spacing |
+| `SessionIntentPicker.swift` | Glass intent cards replacing solid backgrounds, glass customize button |
+| `PlaylistBrowserView.swift` | Glass artwork placeholders, active speaker glow shadow |
+
+**Code Review (6 issues found and fixed):**
+1. ~~`GlassEffectContainer` undefined~~ → replaced with `HStack` + `.glassEffect(.regular)`
+2. ~~Tuning sheet stale slider~~ → added `.onAppear` sync for `explorationSliderValue`
+3. ~~Haptic on Bool trigger~~ → switched to `Int` counter (`playPauseTrigger`) matching skip/previous pattern
+4. ~~"Play for Me" silent no-op~~ → falls back to `onBrowsePlaylists` when no playlist selected
+5. ~~Glass on blurred circle~~ → removed `.glassEffect(.regular)` from MoodTabView mood orb blur layer
+6. StatusPillView `hrvZoneColor` duplication (maintenance note — thresholds shared by copy)
+
+---
+
 ### Updated Project Totals (All Sessions Combined)
 
 | Metric | Value |
@@ -2333,12 +2360,12 @@ All 7 items shelved. 5 of 7 are duplicates of next_wave.md Part 4 (D1-D5). Remai
 | Brain enhancements | 15 (B1-B15) |
 | Algorithm optimizations | 12 |
 | Novel features | 5 |
-| UI/UX features | 23+ |
+| UI/UX features | 32+ |
 | New Brain files (all sessions) | 30+ |
-| New iOS UI files (all sessions) | 24+ |
+| New iOS UI files (all sessions) | 25+ |
 | New Watch sensor files | 10 |
-| Final file count | ~171 Swift files |
-| Final LOC count | ~47,500 |
+| Final file count | ~172 Swift files |
+| Final LOC count | ~47,800 |
 | Research papers integrated | 70+ |
 | UX guidelines verified | 99 |
 

@@ -45,8 +45,18 @@ struct MiniPlayerView: View {
     /// The entire row (except transport buttons) navigates to Now Playing on tap.
     private var expandedLayout: some View {
         VStack(spacing: 0) {
+            // Accent progress line at the top edge
+            ResonanceProgressBar(
+                progress: viewModel.playbackProgress,
+                color: ResonanceColors.accent,
+                height: 2
+            )
+            .animation(reduceMotion ? .none : .linear(duration: 0.5), value: viewModel.playbackProgress)
+            .accessibilityLabel("Playback progress")
+            .accessibilityValue("\(Int(max(0, min(1, viewModel.playbackProgress)) * 100)) percent")
+
             HStack(spacing: 12) {
-                // Album art thumbnail
+                // Album art thumbnail (slightly larger)
                 artworkThumbnail
                     .frame(width: artworkSize, height: artworkSize)
 
@@ -58,19 +68,10 @@ struct MiniPlayerView: View {
                 // Transport controls (play/pause + skip)
                 transportControls
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-
-            // Thin progress bar at the bottom
-            ResonanceProgressBar(
-                progress: viewModel.playbackProgress,
-                color: ResonanceColors.accent,
-                height: 2
-            )
-            .animation(reduceMotion ? .none : .linear(duration: 0.5), value: viewModel.playbackProgress)
-            .accessibilityLabel("Playback progress")
-            .accessibilityValue("\(Int(max(0, min(1, viewModel.playbackProgress)) * 100)) percent")
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
         }
+        .glassEffect(.regular)
         .contentShape(Rectangle())
         .simultaneousGesture(
             TapGesture().onEnded {

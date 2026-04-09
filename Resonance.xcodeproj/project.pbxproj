@@ -155,6 +155,7 @@
 		89EE392686C101E239E75A2A /* SongFeatures.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBF58E4EFDE766336AB717B7 /* SongFeatures.swift */; };
 		8A1B3E24BF03C6A9C15B209E /* ResonanceScoreView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D57DE1C188F07BF058F5FF7F /* ResonanceScoreView.swift */; };
 		8A61F7DB3E30C2A58CD618E2 /* MelFilterbank.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C5277A3788AB5E2AA30A26E /* MelFilterbank.swift */; };
+		8AC70E50D06DBB13219673BF /* StatusPillView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EA07F1D12B66E98182E0650 /* StatusPillView.swift */; };
 		8AD26BF523AB372A5B47F887 /* ContextSignal.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7CEBC645377CAEEE4177E11 /* ContextSignal.swift */; };
 		8B03DC2336883FFE87902A93 /* ResonanceColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDB7FD3C37F3E1FED99E0086 /* ResonanceColors.swift */; };
 		8D85FD1BCD474F1DEC7495E3 /* EmotionCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 763689D009EA4A4E1533D574 /* EmotionCategory.swift */; };
@@ -424,6 +425,7 @@
 		7D12E1B46B1BD722CDF76B7A /* MoodForecastViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoodForecastViewModel.swift; sourceTree = "<group>"; };
 		7D6F10B525ED2209D4B56BC4 /* SessionIntentPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionIntentPicker.swift; sourceTree = "<group>"; };
 		7E0B826229674100DEE2F127 /* ResonanceWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ResonanceWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		7EA07F1D12B66E98182E0650 /* StatusPillView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusPillView.swift; sourceTree = "<group>"; };
 		7FDA8AC702DE3000A063C125 /* MoodTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoodTabView.swift; sourceTree = "<group>"; };
 		7FF638D1478E3FB11FE0DACE /* PersistenceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceController.swift; sourceTree = "<group>"; };
 		82D2D39111132BB07D961808 /* DecisionContextTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecisionContextTests.swift; sourceTree = "<group>"; };
@@ -830,6 +832,7 @@
 				3533A01010114447B050B996 /* SessionSummaryComponents.swift */,
 				14F133A4295DD3EE3E69BB58 /* SessionSummaryView.swift */,
 				B77BC09EF1A8FF5B1A97D238 /* SkeletonView.swift */,
+				7EA07F1D12B66E98182E0650 /* StatusPillView.swift */,
 				D9B294E9643F8826A75382E1 /* WaveformView.swift */,
 			);
 			path = Components;
@@ -1515,6 +1518,7 @@
 				4618DA4CC7DB5A210E22C895 /* StateEngine.swift in Sources */,
 				90A17294625E6F17B5DDC513 /* StateEngineTypes.swift in Sources */,
 				CBDCA92D05EF0491FDF120D3 /* StateVector.swift in Sources */,
+				8AC70E50D06DBB13219673BF /* StatusPillView.swift in Sources */,
 				74C9AE559891068C4C1AAC1B /* TimeInterval+Formatting.swift in Sources */,
 				6A89C006415919AFD582586B /* TransitionController.swift in Sources */,
 				0248D52CFC2DB705C1DA6BF5 /* UIImage+DominantColor.swift in Sources */,

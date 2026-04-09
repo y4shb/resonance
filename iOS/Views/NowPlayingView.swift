@@ -46,6 +46,13 @@ struct NowPlayingView: View {
     @State private var previousTrigger = 0
     @State private var bookmarkTrigger = 0
     @State private var showQueue = false
+    @State private var showExplanation = false
+    @State private var showTuning = false
+    @State private var animatePulse = false
+    @State private var playPauseTrigger = 0
+
+    /// Enlarged artwork size for the decluttered Now Playing layout
+    private let artworkDisplaySize: CGFloat = 340
 
     // MARK: - Body
 
@@ -69,19 +76,26 @@ struct NowPlayingView: View {
                         }
 
                         VStack(spacing: 0) {
-                            Spacer()
+                            // Compact status pill (replaces HRV/state/playlist bars)
+                            StatusPillView(
+                                stateEngine: stateEngine,
+                                activePlaylistName: viewModel.activePlaylistName
+                            )
+                            .padding(.top, 8)
 
+                            Spacer(minLength: 4)
+
+                            // Large artwork with skeleton overlay
                             ZStack {
                                 artworkView
 
                                 if viewModel.isLoadingAISelection {
-                                    // Skeleton overlay during AI song selection
                                     TimedSkeletonView(message: "AI is analyzing your state and library...") {
-                                        RoundedRectangle(cornerRadius: 12)
+                                        RoundedRectangle(cornerRadius: 16)
                                             .fill(.ultraThinMaterial)
                                             .frame(
-                                                width: UIConstants.ArtworkSize.large,
-                                                height: UIConstants.ArtworkSize.large
+                                                width: artworkDisplaySize,
+                                                height: artworkDisplaySize
                                             )
                                             .overlay(
                                                 VStack(spacing: 16) {
@@ -96,39 +110,25 @@ struct NowPlayingView: View {
                             }
                             .padding(.bottom, 24)
 
+                            // Song info
                             songInfoView
-                                .padding(.bottom, 8)
-
-                            progressView
-                                .padding(.horizontal, 20)
-                                .padding(.bottom, 16)
-
-                            transportControls
-                                .padding(.bottom, 8)
-
-                            explanationBar
-                                .padding(.horizontal, 20)
-                                .padding(.bottom, 8)
-
-                            explorationBiasControl
-                                .padding(.horizontal, 20)
                                 .padding(.bottom, 12)
 
-                            queueButton
-                                .padding(.horizontal, 20)
-                                .padding(.bottom, 8)
+                            // Progress scrubber
+                            progressView
+                                .padding(.horizontal, 24)
+                                .padding(.bottom, 20)
 
-                            volumeAndRouteControls
-                                .padding(.horizontal, 20)
+                            // Transport controls (glass capsule)
+                            transportControls
                                 .padding(.bottom, 16)
 
-                            Spacer()
+                            // Bottom action row: Why this song + Queue
+                            bottomActionRow
+                                .padding(.horizontal, 24)
+                                .padding(.bottom, 8)
 
-                            hrvZoneBar
-
-                            stateInfoBar
-
-                            activePlaylistBar
+                            Spacer(minLength: 4)
                         }
                         .padding(.horizontal, 20)
                         .background(artworkBackgroundGradient)
@@ -157,6 +157,12 @@ struct NowPlayingView: View {
 
                 ToolbarItem(placement: .topBarTrailing) {
                     HStack(spacing: 12) {
+                        Button { showTuning = true } label: {
+                            Image(systemName: "slider.horizontal.3")
+                        }
+                        .accessibilityLabel("DJ Tuning")
+                        .accessibilityHint("Adjust exploration bias and volume")
+
                         Button {
                             bookmarkTrigger += 1
                             viewModel.createBookmark(source: .iphoneButton)
@@ -182,6 +188,12 @@ struct NowPlayingView: View {
                 QueueView(viewModel: viewModel)
                     .presentationDetents([.medium, .large])
                     .presentationDragIndicator(.visible)
+            }
+            .sheet(isPresented: $showExplanation) {
+                explanationSheet
+            }
+            .sheet(isPresented: $showTuning) {
+                tuningSheet
             }
             .alert("Playback Error", isPresented: showErrorBinding) {
                 Button("Retry") {
@@ -228,14 +240,14 @@ struct NowPlayingView: View {
                 isTransitioning: viewModel.isTransitioningTrack
             )
             .frame(
-                width: UIConstants.ArtworkSize.large + 24,
-                height: UIConstants.ArtworkSize.large + 24
+                width: artworkDisplaySize + 24,
+                height: artworkDisplaySize + 24
             )
 
             // Artwork
             Group {
                 if let artwork = viewModel.currentSong.artwork {
-                    ArtworkImage(artwork, width: UIConstants.ArtworkSize.large)
+                    ArtworkImage(artwork, width: artworkDisplaySize)
                         .cornerRadius(12)
                         .shadow(color: .black.opacity(0.3), radius: 12, x: 0, y: 6)
                 } else {
@@ -243,8 +255,8 @@ struct NowPlayingView: View {
                     RoundedRectangle(cornerRadius: 12)
                         .fill(.ultraThinMaterial)
                         .frame(
-                            width: UIConstants.ArtworkSize.large,
-                            height: UIConstants.ArtworkSize.large
+                            width: artworkDisplaySize,
+                            height: artworkDisplaySize
                         )
                         .overlay(
                             Image(systemName: "music.note")
@@ -323,48 +335,52 @@ struct NowPlayingView: View {
     // MARK: - Transport Controls
 
     private var transportControls: some View {
-        GlassEffectContainer {
-            HStack(spacing: 40) {
-                Button(action: {
-                    previousTrigger += 1
-                    viewModel.previous()
-                }) {
-                    Image(systemName: "backward.fill")
-                        .font(.title3)
-                        .foregroundStyle(.primary)
-                        .frame(width: 44, height: 44)
-                        .contentShape(Circle())
-                }
-                .glassEffect(.regular.interactive())
-                .accessibilityLabel("Previous track")
-                .sensoryFeedback(.impact(weight: .light), trigger: previousTrigger)
-
-                Button(action: { viewModel.togglePlayPause() }) {
-                    Image(systemName: viewModel.isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                        .font(.system(size: 48))
-                        .foregroundStyle(ResonanceColors.accent)
-                        .frame(width: 64, height: 64)
-                        .contentShape(Circle())
-                }
-                .glassEffect(.regular.interactive())
-                .accessibilityLabel(viewModel.isPlaying ? "Pause" : "Play")
-                .sensoryFeedback(.impact(weight: .medium), trigger: viewModel.isPlaying)
-
-                Button(action: {
-                    skipTrigger += 1
-                    viewModel.skip()
-                }) {
-                    Image(systemName: "forward.fill")
-                        .font(.title3)
-                        .foregroundStyle(.primary)
-                        .frame(width: 44, height: 44)
-                        .contentShape(Circle())
-                }
-                .glassEffect(.regular.interactive())
-                .accessibilityLabel("Skip to next track")
-                .sensoryFeedback(.impact(weight: .light), trigger: skipTrigger)
+        HStack(spacing: 40) {
+            Button(action: {
+                previousTrigger += 1
+                viewModel.previous()
+            }) {
+                Image(systemName: "backward.fill")
+                    .font(.title3)
+                    .foregroundStyle(.primary)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Circle())
             }
+            .glassEffect(.regular.interactive())
+            .accessibilityLabel("Previous track")
+            .sensoryFeedback(.impact(weight: .light), trigger: previousTrigger)
+
+            Button(action: {
+                playPauseTrigger += 1
+                viewModel.togglePlayPause()
+            }) {
+                Image(systemName: viewModel.isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                    .font(.system(size: 48))
+                    .foregroundStyle(ResonanceColors.accent)
+                    .frame(width: 64, height: 64)
+                    .contentShape(Circle())
+            }
+            .glassEffect(.regular.interactive())
+            .accessibilityLabel(viewModel.isPlaying ? "Pause" : "Play")
+            .sensoryFeedback(.impact(weight: .medium), trigger: playPauseTrigger)
+
+            Button(action: {
+                skipTrigger += 1
+                viewModel.skip()
+            }) {
+                Image(systemName: "forward.fill")
+                    .font(.title3)
+                    .foregroundStyle(.primary)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Circle())
+            }
+            .glassEffect(.regular.interactive())
+            .accessibilityLabel("Skip to next track")
+            .sensoryFeedback(.impact(weight: .light), trigger: skipTrigger)
         }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 12)
+        .glassEffect(.regular)
     }
 
     // MARK: - Exploration Bias Control ("Surprise Me" / "Stay in the Zone")
@@ -841,20 +857,210 @@ struct NowPlayingView: View {
 
     // MARK: - Empty State View
 
-    /// Contextual empty state with time-based greeting and a button to navigate to playlists.
+    /// Smart empty state with "Play for Me" hero button and browse playlists fallback.
     private var emptyStateView: some View {
-        ContentUnavailableView {
-            Label(timeBasedGreeting, systemImage: "music.note.list")
-        } description: {
-            Text("Pick a playlist to start your AI DJ session.")
-        } actions: {
+        VStack(spacing: 32) {
+            Spacer()
+
+            // Animated brain icon with pulse ring
+            ZStack {
+                // Outer pulse ring
+                Circle()
+                    .stroke(ResonanceColors.accent.opacity(0.3), lineWidth: 2)
+                    .frame(width: 120, height: 120)
+                    .scaleEffect(animatePulse ? 1.4 : 1.0)
+                    .opacity(animatePulse ? 0 : 0.6)
+                    .animation(
+                        reduceMotion ? .none : .easeOut(duration: 2).repeatForever(autoreverses: false),
+                        value: animatePulse
+                    )
+
+                // Inner glow
+                Circle()
+                    .fill(
+                        RadialGradient(
+                            colors: [ResonanceColors.accent.opacity(0.15), .clear],
+                            center: .center,
+                            startRadius: 10,
+                            endRadius: 50
+                        )
+                    )
+                    .frame(width: 100, height: 100)
+
+                // Brain icon
+                Image(systemName: "brain.head.profile")
+                    .font(.system(size: 44))
+                    .foregroundStyle(ResonanceColors.accent)
+                    .symbolEffect(.pulse, options: .repeating, isActive: !reduceMotion)
+            }
+
+            // Greeting text
+            VStack(spacing: 8) {
+                Text(timeBasedGreeting)
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .multilineTextAlignment(.center)
+
+                Text("Let Resonance pick the perfect track\nfor how you're feeling right now.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.horizontal, 32)
+
+            // "Play for Me" hero button
+            Button {
+                if viewModel.activePlaylistName != nil {
+                    viewModel.requestAISelection()
+                } else {
+                    onBrowsePlaylists?()
+                }
+            } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: "wand.and.stars")
+                        .font(.title3)
+                    Text("Play for Me")
+                        .font(.headline)
+                }
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(ResonanceColors.accent.gradient)
+                )
+                .glassEffect(.regular)
+            }
+            .padding(.horizontal, 40)
+            .accessibilityLabel("Play for Me")
+            .accessibilityHint("Let AI select the perfect song for your current state")
+
+            // Secondary: Browse Playlists
             if let onBrowsePlaylists {
                 Button(action: onBrowsePlaylists) {
-                    Label("Browse Playlists", systemImage: "music.note.list")
+                    HStack(spacing: 6) {
+                        Image(systemName: "music.note.list")
+                        Text("Browse Playlists")
+                    }
+                    .font(.subheadline)
+                    .foregroundStyle(ResonanceColors.accent)
                 }
-                .buttonStyle(.borderedProminent)
+                .accessibilityLabel("Browse Playlists")
+            }
+
+            Spacer()
+        }
+        .onAppear { animatePulse = true }
+    }
+
+    // MARK: - Bottom Action Row
+
+    /// Minimal row with "Why this song?" and "Queue" links.
+    private var bottomActionRow: some View {
+        HStack {
+            if viewModel.currentExplanation != nil {
+                Button { showExplanation = true } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "wand.and.stars")
+                            .font(.caption)
+                        Text("Why?")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                    }
+                    .foregroundStyle(ResonanceColors.accent)
+                }
+                .accessibilityLabel("Why this song")
+                .accessibilityHint("See why AI picked this song")
+            }
+
+            Spacer()
+
+            Button { showQueue = true } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "list.bullet")
+                        .font(.caption)
+                    Text("Queue")
+                        .font(.caption)
+                }
+                .foregroundStyle(.secondary)
+            }
+            .accessibilityLabel("Up Next")
+        }
+    }
+
+    // MARK: - Explanation Sheet
+
+    /// Full explanation of why the current song was chosen, shown in a sheet.
+    private var explanationSheet: some View {
+        NavigationStack {
+            ScrollView {
+                if let explanation = viewModel.currentExplanation {
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text(explanation.full)
+                            .font(.body)
+                            .foregroundStyle(.primary.opacity(0.85))
+                            .padding(.horizontal)
+
+                        if !explanation.factors.isEmpty {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("Factors")
+                                    .font(.headline)
+                                    .padding(.horizontal)
+
+                                ForEach(explanation.factors.prefix(4)) { factor in
+                                    factorRow(
+                                        factor: factor,
+                                        maxContribution: explanation.factors.first?.contribution ?? 1.0
+                                    )
+                                    .padding(.horizontal)
+                                }
+                            }
+                        }
+
+                        aiFeedbackButtons
+                            .padding(.top, 8)
+                    }
+                    .padding(.top, 16)
+                }
+            }
+            .navigationTitle("Why This Song")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") { showExplanation = false }
+                }
             }
         }
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+    }
+
+    // MARK: - Tuning Sheet
+
+    /// DJ tuning sheet with exploration bias slider and volume controls.
+    private var tuningSheet: some View {
+        NavigationStack {
+            VStack(spacing: 24) {
+                explorationBiasControl
+                    .padding(.horizontal, 20)
+
+                volumeAndRouteControls
+                    .padding(.horizontal, 20)
+
+                Spacer()
+            }
+            .padding(.top, 20)
+            .onAppear { explorationSliderValue = viewModel.explorationBias }
+            .navigationTitle("DJ Tuning")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") { showTuning = false }
+                }
+            }
+        }
+        .presentationDetents([.medium])
+        .presentationDragIndicator(.visible)
     }
 
     /// Returns a time-of-day greeting to personalize the empty state.

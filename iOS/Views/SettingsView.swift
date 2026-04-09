@@ -100,6 +100,8 @@ struct SettingsView: View {
                     .font(.title3)
                     .foregroundStyle(color)
                     .frame(width: 32, height: 32)
+                    .background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
@@ -110,7 +112,7 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            .padding(.vertical, 4)
+            .padding(.vertical, 6)
         }
     }
 

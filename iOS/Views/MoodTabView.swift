@@ -132,8 +132,7 @@ struct MoodTabView: View {
             )
         }
         .padding()
-        .background(Color(.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .glassEffect(.regular)
     }
 
     // MARK: - Target Mood Section
@@ -162,8 +161,7 @@ struct MoodTabView: View {
             )
         }
         .padding()
-        .background(Color(.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .glassEffect(.regular)
     }
 
     // MARK: - Preset Buttons
@@ -220,8 +218,7 @@ struct MoodTabView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
-        .background(Color(.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .glassEffect(.regular)
     }
 
     // MARK: - Start Journey Button
@@ -237,9 +234,9 @@ struct MoodTabView: View {
             .font(.headline)
             .frame(maxWidth: .infinity)
             .padding()
-            .background(Color.accentColor)
+            .background(ResonanceColors.accent.gradient)
             .foregroundStyle(.white)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .glassEffect(.regular)
         }
         .accessibilityLabel("Start mood journey")
         .accessibilityHint(
@@ -290,8 +287,7 @@ struct MoodTabView: View {
             .accessibilityHint("Stops the current mood journey and clears the trajectory")
         }
         .padding()
-        .background(Color(.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .glassEffect(.regular)
     }
 
     // MARK: - Journey Info Row
@@ -365,9 +361,8 @@ struct MoodTabView: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 10)
-            .background(color.opacity(0.15))
             .foregroundStyle(color)
-            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .glassEffect(.regular)
         }
         .accessibilityLabel("Set target to \(title)")
         .accessibilityHint("Sets target energy to \(energyLabel(for: energy)) and mood to \(valenceLabel(for: valence))")

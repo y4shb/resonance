@@ -297,6 +297,7 @@ private struct PlaylistRow: View {
                 Image(systemName: "speaker.wave.2.fill")
                     .foregroundStyle(ResonanceColors.accent)
                     .font(.subheadline)
+                    .shadow(color: ResonanceColors.accent.opacity(0.4), radius: 4)
             } else {
                 Image(systemName: "chevron.right")
                     .foregroundStyle(.tertiary)
@@ -322,7 +323,8 @@ private struct PlaylistRow: View {
             ArtworkImage(artwork, width: UIConstants.ArtworkSize.small, height: UIConstants.ArtworkSize.small)
         } else {
             RoundedRectangle(cornerRadius: 6)
-                .fill(.ultraThinMaterial)
+                .fill(.clear)
+                .glassEffect(.regular)
                 .overlay(
                     Image(systemName: "music.note.list")
                         .font(.system(size: 18))
