@@ -84,6 +84,10 @@ public enum ArcTemplate: String, Codable, CaseIterable, Sendable {
     case sleepWindDown          // decreasing 80->60 at -3 to -5 BPM/song
     case morningRise            // gentle ramp 70 -> 110-120
     case commuteEnergize        // quick energize to 100-130
+    case adhdPomodoro           // 25-min focus blocks + 5-min breaks
+    case recoveryArc            // BPM decreasing toward resting HR, high valence
+    case emotionalLadder        // valence increases from detected negative level with HRV gates
+    case commuteDecompress      // evening commute: decreasing energy from work-stress to calm
 
     public var displayName: String {
         switch self {
@@ -93,6 +97,10 @@ public enum ArcTemplate: String, Codable, CaseIterable, Sendable {
         case .sleepWindDown: return "Sleep"
         case .morningRise: return "Morning"
         case .commuteEnergize: return "Commute"
+        case .adhdPomodoro: return "ADHD Focus"
+        case .recoveryArc: return "Recovery"
+        case .emotionalLadder: return "Mood Lift"
+        case .commuteDecompress: return "Decompress"
         }
     }
 }
@@ -168,11 +176,15 @@ public struct SessionPlanner: Sendable {
 
         switch template {
         case .workoutBuildPeakCool:  return generateWorkoutPhases(scale: scale)
-        case .sleepWindDown:         return generateSleepPhases(currentState: currentState, scale: scale)
+        case .sleepWindDown:         return generateSleepWindDownPhases(currentState: currentState, scale: scale)
         case .focusSustainPlateau:   return generateFocusPhases(currentState: currentState, scale: scale)
         case .relaxationDescend:     return generateRelaxationPhases(currentState: currentState, scale: scale)
         case .morningRise:           return generateMorningPhases(scale: scale)
         case .commuteEnergize:       return generateCommutePhases(currentState: currentState, scale: scale)
+        case .adhdPomodoro:          return generateADHDPomodoroPhases(scale: scale)
+        case .recoveryArc:           return generateRecoveryPhases(currentState: currentState, scale: scale)
+        case .emotionalLadder:       return generateEmotionalLadderPhases(currentState: currentState, scale: scale)
+        case .commuteDecompress:     return generateCommuteDecompressPhases(currentState: currentState, scale: scale)
         }
     }
 
@@ -193,9 +205,10 @@ public struct SessionPlanner: Sendable {
         ]
     }
 
-    // MARK: - Sleep: decreasing 80->60 at -3 to -5 BPM/song, all instrumental
+    // MARK: - Sleep Wind-Down: gradual energy decrease from current to near-zero
+    // BPM 60-75, high familiarity, over user's average sleep onset latency
 
-    private func generateSleepPhases(currentState: StateVector, scale: Double) -> [ArcPhase] {
+    private func generateSleepWindDownPhases(currentState: StateVector, scale: Double) -> [ArcPhase] {
         let startBPM = min(80.0, max(60.0, currentState.energy * 100.0 + 30.0))
         return [
             ArcPhase(phase: .match, targetBPMRange: (startBPM - 2)...(startBPM + 2),
@@ -272,6 +285,130 @@ public struct SessionPlanner: Sendable {
                      targetEnergyRange: 0.5...0.7, songCount: scaled(3, by: scale), bpmDeltaPerSong: 8.0),
             ArcPhase(phase: .sustain, targetBPMRange: 100...130,
                      targetEnergyRange: 0.5...0.7, songCount: scaled(11, by: scale))
+        ]
+    }
+
+    // MARK: - ADHD Pomodoro: 25-min focus blocks (instrumental, BPM 80-105, energy 0.3-0.5)
+    //                        + 5-min breaks (relaxed, allows vocals, higher energy)
+
+    private func generateADHDPomodoroPhases(scale: Double) -> [ArcPhase] {
+        // Each focus block ~7 songs (25 min / 3.5 min avg), break ~1-2 songs (5 min)
+        let focusSongs = scaled(7, by: scale)
+        let breakSongs = scaled(2, by: scale)
+
+        return [
+            // Focus block 1
+            ArcPhase(phase: .match, targetBPMRange: 80...95,
+                     targetEnergyRange: 0.3...0.5, songCount: scaled(2, by: scale),
+                     preferInstrumental: true, bpmDeltaPerSong: 3.0),
+            ArcPhase(phase: .sustain, targetBPMRange: 85...105,
+                     targetEnergyRange: 0.3...0.5, songCount: focusSongs,
+                     preferInstrumental: true),
+            // Break 1
+            ArcPhase(phase: .shift, targetBPMRange: 90...115,
+                     targetEnergyRange: 0.4...0.65, songCount: breakSongs),
+            // Focus block 2
+            ArcPhase(phase: .shift, targetBPMRange: 80...95,
+                     targetEnergyRange: 0.3...0.5, songCount: scaled(1, by: scale),
+                     preferInstrumental: true, bpmDeltaPerSong: -5.0),
+            ArcPhase(phase: .sustain, targetBPMRange: 85...105,
+                     targetEnergyRange: 0.3...0.5, songCount: focusSongs,
+                     preferInstrumental: true),
+            // Break 2
+            ArcPhase(phase: .shift, targetBPMRange: 90...115,
+                     targetEnergyRange: 0.4...0.65, songCount: breakSongs)
+        ]
+    }
+
+    // MARK: - Recovery: BPM decreasing by 5/track toward resting HR, high valence, low energy
+
+    private func generateRecoveryPhases(currentState: StateVector, scale: Double) -> [ArcPhase] {
+        // Start from elevated post-workout state, descend toward resting
+        let startBPM = estimateBPMFromEnergy(currentState.energy)
+        let targetRestBPM = max(60.0, startBPM - 40.0) // approximate resting HR zone
+        let stepsNeeded = max(3, Int((startBPM - targetRestBPM) / 5.0))
+
+        let midBPM = (startBPM + targetRestBPM) / 2.0
+        return [
+            ArcPhase(phase: .match, targetBPMRange: (startBPM - 5)...(startBPM + 5),
+                     targetEnergyRange: 0.3...0.5, songCount: scaled(2, by: scale),
+                     bpmDeltaPerSong: -5.0),
+            ArcPhase(phase: .shift, targetBPMRange: (midBPM - 5)...(midBPM + 5),
+                     targetEnergyRange: 0.2...0.4, songCount: scaled(min(stepsNeeded, 5), by: scale),
+                     bpmDeltaPerSong: -5.0),
+            ArcPhase(phase: .arrive, targetBPMRange: (targetRestBPM - 5)...(targetRestBPM + 5),
+                     targetEnergyRange: 0.1...0.3, songCount: scaled(2, by: scale)),
+            ArcPhase(phase: .sustain, targetBPMRange: (targetRestBPM - 5)...(targetRestBPM + 10),
+                     targetEnergyRange: 0.1...0.25, songCount: scaled(4, by: scale))
+        ]
+    }
+
+    // MARK: - Emotional Ladder: valence starts at detected negative level,
+    //   increases by ~0.1/track with HRV gates. Energy stays moderate.
+
+    private func generateEmotionalLadderPhases(currentState: StateVector, scale: Double) -> [ArcPhase] {
+        // Start at the user's current (negative) valence, climb gradually
+        let startValence = currentState.valence
+        let startEnergy = clamp(currentState.energy, 0.2, 0.5)
+        let startBPM = estimateBPMFromEnergy(startEnergy)
+
+        // Each step climbs ~0.1 valence; we map valence improvement to slight energy increase
+        let step1Energy = clamp(startEnergy + 0.05, 0.0, 1.0)
+        let step2Energy = clamp(startEnergy + 0.1, 0.0, 1.0)
+        let targetEnergy = clamp(startEnergy + 0.15, 0.0, 1.0)
+
+        let step1BPM = estimateBPMFromEnergy(step1Energy)
+        let step2BPM = estimateBPMFromEnergy(step2Energy)
+        let targetBPM = estimateBPMFromEnergy(targetEnergy)
+
+        return [
+            // Match: meet user at current emotional state
+            ArcPhase(phase: .match, targetBPMRange: (startBPM - 5)...(startBPM + 5),
+                     targetEnergyRange: clamp(startEnergy - 0.05, 0, 1)...clamp(startEnergy + 0.05, 0, 1),
+                     songCount: scaled(2, by: scale)),
+            // Shift 1: first valence rung (+0.1-0.2 valence, slight energy lift)
+            ArcPhase(phase: .shift, targetBPMRange: (step1BPM - 5)...(step1BPM + 10),
+                     targetEnergyRange: clamp(step1Energy - 0.05, 0, 1)...clamp(step1Energy + 0.1, 0, 1),
+                     songCount: scaled(3, by: scale), bpmDeltaPerSong: 2.0),
+            // Shift 2: second valence rung (+0.2-0.3 valence, moderate energy)
+            ArcPhase(phase: .shift, targetBPMRange: (step2BPM - 5)...(step2BPM + 10),
+                     targetEnergyRange: clamp(step2Energy - 0.05, 0, 1)...clamp(step2Energy + 0.1, 0, 1),
+                     songCount: scaled(3, by: scale), bpmDeltaPerSong: 2.0),
+            // Arrive: reach positive valence zone
+            ArcPhase(phase: .arrive, targetBPMRange: (targetBPM - 5)...(targetBPM + 10),
+                     targetEnergyRange: clamp(targetEnergy - 0.05, 0, 1)...clamp(targetEnergy + 0.1, 0, 1),
+                     songCount: scaled(2, by: scale)),
+            // Sustain: hold positive state
+            ArcPhase(phase: .sustain, targetBPMRange: (targetBPM - 10)...(targetBPM + 10),
+                     targetEnergyRange: clamp(targetEnergy - 0.1, 0, 1)...clamp(targetEnergy + 0.1, 0, 1),
+                     songCount: scaled(5, by: scale))
+        ]
+    }
+
+    // MARK: - Commute Decompress: evening commute, decreasing energy from work-stress to calm
+
+    private func generateCommuteDecompressPhases(currentState: StateVector, scale: Double) -> [ArcPhase] {
+        // Start at work-stress energy level, descend to calm
+        let startEnergy = clamp(currentState.energy, 0.4, 0.8)
+        let startBPM = estimateBPMFromEnergy(startEnergy)
+        let midBPM = estimateBPMFromEnergy(0.35)
+        let targetBPM = estimateBPMFromEnergy(0.2)
+
+        return [
+            // Match: meet user at current work-stress level
+            ArcPhase(phase: .match, targetBPMRange: (startBPM - 5)...(startBPM + 5),
+                     targetEnergyRange: clamp(startEnergy - 0.05, 0, 1)...clamp(startEnergy + 0.05, 0, 1),
+                     songCount: scaled(2, by: scale)),
+            // Shift: gradually decrease energy and BPM
+            ArcPhase(phase: .shift, targetBPMRange: (midBPM - 5)...(midBPM + 10),
+                     targetEnergyRange: 0.25...0.4, songCount: scaled(4, by: scale),
+                     bpmDeltaPerSong: -5.0),
+            // Arrive: reach calm state
+            ArcPhase(phase: .arrive, targetBPMRange: (targetBPM - 5)...(targetBPM + 10),
+                     targetEnergyRange: 0.15...0.3, songCount: scaled(3, by: scale)),
+            // Sustain: hold calm for remainder of commute
+            ArcPhase(phase: .sustain, targetBPMRange: 70...90,
+                     targetEnergyRange: 0.1...0.25, songCount: scaled(6, by: scale))
         ]
     }
 

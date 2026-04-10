@@ -96,6 +96,21 @@ public final class SharedDecisionEngine: @unchecked Sendable {
     /// True when stress > 0.7 and the Brain is doing calming autonomously.
     private var _useEntrainmentMode = false
 
+    // MARK: - E1: ADHD Focus Mode
+
+    /// Whether ADHD focus mode is currently active.
+    private var _isADHDFocusActive = false
+
+    /// Set to true when the FocusStateDetector fires a distraction callback,
+    /// signalling that the next song selection should use emergency weights.
+    private var _distractionTriggeredRescore = false
+
+    // MARK: - E3: NL Scoring Overrides
+
+    /// Temporary scoring weight overrides from NL commands (E3).
+    /// When non-nil and not expired, overrides apply to each selectSong call.
+    private var _scoringOverrides: ScoringOverrides?
+
     // MARK: - Thread-Safe Accessors
 
     /// The currently active session arc, if any.
@@ -112,6 +127,12 @@ public final class SharedDecisionEngine: @unchecked Sendable {
 
     /// BPM of the most recently selected song.
     public var lastSelectedBPM: Double? { lock.withLock { _lastSelectedBPM } }
+
+    /// Whether ADHD focus mode is currently active (E1).
+    public var isADHDFocusActive: Bool { lock.withLock { _isADHDFocusActive } }
+
+    /// Current NL scoring overrides, if any (E3).
+    public var scoringOverrides: ScoringOverrides? { lock.withLock { _scoringOverrides } }
 
     // MARK: - Initialization
 
@@ -167,6 +188,75 @@ public final class SharedDecisionEngine: @unchecked Sendable {
                 currentArcPhase = nil
             }
 
+            // E1: Determine ADHD focus mode for this scoring pass
+            let adhdFocusActive = _isADHDFocusActive
+
+            // E1: When distraction was detected, apply emergency weight overrides.
+            // These temporarily boost familiarity and historical weights to anchor
+            // the listener with highly familiar music during attentional disruption.
+            var effectiveContext = context
+            if _distractionTriggeredRescore && adhdFocusActive {
+                var emergencyPrefs = context.preferences
+                emergencyPrefs.familiarityWeight = 0.40
+                emergencyPrefs.historicalWeight = 0.35
+                // Redistribute remaining weight proportionally among other factors
+                let remaining = 1.0 - 0.40 - 0.35  // 0.25
+                emergencyPrefs.bpmWeight = 0.08
+                emergencyPrefs.energyWeight = 0.10
+                emergencyPrefs.contextWeight = 0.07
+                effectiveContext = DecisionContext(
+                    stateVector: context.stateVector,
+                    activePlaylistId: context.activePlaylistId,
+                    activePlaylistName: context.activePlaylistName,
+                    candidateSongIds: context.candidateSongIds,
+                    recentlyPlayed: context.recentlyPlayed,
+                    currentTime: context.currentTime,
+                    currentSessionSongIds: context.currentSessionSongIds,
+                    preferences: emergencyPrefs,
+                    isSessionStart: context.isSessionStart,
+                    moodTrajectory: context.moodTrajectory
+                )
+                _distractionTriggeredRescore = false
+
+                logInfo(
+                    "SharedDecisionEngine: distraction emergency weights applied "
+                    + "(fam=0.40, hist=0.35)",
+                    category: .decisionEngine
+                )
+            }
+
+            // E3: Apply NL scoring overrides if active and not expired
+            if var overrides = _scoringOverrides, !overrides.isExpired {
+                var overriddenPrefs = effectiveContext.preferences
+                if let bw = overrides.bpmWeight { overriddenPrefs.bpmWeight = bw }
+                if let ew = overrides.energyWeight { overriddenPrefs.energyWeight = ew }
+                if let fw = overrides.familiarityWeight { overriddenPrefs.familiarityWeight = fw }
+                if let hw = overrides.historicalWeight { overriddenPrefs.historicalWeight = hw }
+                if let cw = overrides.contextWeight { overriddenPrefs.contextWeight = cw }
+                if let eb = overrides.explorationBias { overriddenPrefs.explorationBias = eb }
+                effectiveContext = DecisionContext(
+                    stateVector: effectiveContext.stateVector,
+                    activePlaylistId: effectiveContext.activePlaylistId,
+                    activePlaylistName: effectiveContext.activePlaylistName,
+                    candidateSongIds: effectiveContext.candidateSongIds,
+                    recentlyPlayed: effectiveContext.recentlyPlayed,
+                    currentTime: effectiveContext.currentTime,
+                    currentSessionSongIds: effectiveContext.currentSessionSongIds,
+                    preferences: overriddenPrefs,
+                    isSessionStart: effectiveContext.isSessionStart,
+                    moodTrajectory: effectiveContext.moodTrajectory
+                )
+                // Decrement remaining songs
+                _scoringOverrides = overrides.decremented()
+                if _scoringOverrides?.isExpired == true {
+                    _scoringOverrides = nil
+                    logInfo(
+                        "SharedDecisionEngine: NL scoring overrides expired",
+                        category: .decisionEngine
+                    )
+                }
+            }
+
             // Score all candidates, passing the arc phase to the scorer
             var scores = candidateFeatures.map { candidate in
                 scorer.score(
@@ -176,13 +266,14 @@ public final class SharedDecisionEngine: @unchecked Sendable {
                     albumName: candidate.album,
                     features: candidate.features,
                     playCount: candidate.playCount,
-                    context: context,
+                    context: effectiveContext,
                     arousalState: arousalState,
                     isSleepPrepActive: isSleepPrep,
                     arousalBPMAdjustment: bpmAdjustment,
                     isoModeActive: _isIsoModeActive,
                     isoTargetBPM: effectiveIsoTargetBPM,
-                    arcPhase: currentArcPhase
+                    arcPhase: currentArcPhase,
+                    isADHDFocusMode: adhdFocusActive
                 )
             }
 
@@ -210,6 +301,7 @@ public final class SharedDecisionEngine: @unchecked Sendable {
                 + "top=\(scores.first?.songTitle ?? "none") "
                 + "(score=\(String(format: "%.3f", scores.first?.finalScore ?? 0))), "
                 + "isoMode=\(_isIsoModeActive), isoCount=\(_isoModeSongCount), "
+                + "adhdFocus=\(adhdFocusActive), "
                 + "arcPhase=\(currentArcPhase?.phase.rawValue ?? "none"), "
                 + "arcSong=\(_arcSongsPlayed)",
                 category: .decisionEngine
@@ -231,8 +323,81 @@ public final class SharedDecisionEngine: @unchecked Sendable {
             _currentArc = nil
             _arcSongsPlayed = 0
             _useEntrainmentMode = false
+            _isADHDFocusActive = false
+            _distractionTriggeredRescore = false
+            _scoringOverrides = nil
         }
+        stateEngine.focusDetector.clearDistractionCallback()
         logInfo("SharedDecisionEngine: state reset", category: .decisionEngine)
+    }
+
+    // MARK: - E1: ADHD Focus Mode
+
+    /// Activates ADHD focus mode. Registers a distraction callback on the
+    /// state engine's focus detector so that distraction events trigger
+    /// emergency re-scoring with high familiarity weights.
+    public func activateADHDFocus() {
+        lock.withLock {
+            _isADHDFocusActive = true
+            _distractionTriggeredRescore = false
+        }
+
+        // Register distraction callback (focusDetector is thread-safe via stateEngine's lock)
+        stateEngine.focusDetector.setDistractionCallback { [weak self] in
+            self?.handleDistractionDetected()
+        }
+
+        logInfo("SharedDecisionEngine: ADHD focus mode activated", category: .decisionEngine)
+    }
+
+    /// Deactivates ADHD focus mode and clears the distraction callback.
+    public func deactivateADHDFocus() {
+        lock.withLock {
+            _isADHDFocusActive = false
+            _distractionTriggeredRescore = false
+        }
+
+        stateEngine.focusDetector.clearDistractionCallback()
+
+        logInfo("SharedDecisionEngine: ADHD focus mode deactivated", category: .decisionEngine)
+    }
+
+    /// Called by the FocusStateDetector when a distraction event is detected.
+    /// Sets a flag so the next selectSong call uses emergency weights.
+    private func handleDistractionDetected() {
+        lock.withLock {
+            _distractionTriggeredRescore = true
+        }
+
+        logInfo(
+            "SharedDecisionEngine: distraction detected, emergency rescore queued",
+            category: .decisionEngine
+        )
+    }
+
+    // MARK: - E3: NL Scoring Overrides
+
+    /// Applies temporary NL scoring overrides. The overrides will be active
+    /// for `overrides.remainingSongs` song selections, then auto-expire.
+    public func applyScoringOverrides(_ overrides: ScoringOverrides) {
+        lock.withLock {
+            _scoringOverrides = overrides
+        }
+
+        logInfo(
+            "SharedDecisionEngine: NL scoring overrides applied "
+            + "for \(overrides.remainingSongs) songs: \(overrides.description)",
+            category: .decisionEngine
+        )
+    }
+
+    /// Clears any active NL scoring overrides immediately.
+    public func clearScoringOverrides() {
+        lock.withLock {
+            _scoringOverrides = nil
+        }
+
+        logInfo("SharedDecisionEngine: NL scoring overrides cleared", category: .decisionEngine)
     }
 
     // MARK: - Session Arc Management (WS-4)

@@ -1,0 +1,11 @@
+prompts
+
+walkman
+
+I want the UI / UX to look like an actual mixtape player (like a WALKMAN)- like the entire scren should have glowy AI looking music player yes, but the center should have a 3d casette player with the album art of the song playing being shown on the inside of that casette and the actual physical buttons on top of that on the screen which do what they represent - pause / play whatever - pure from a UI perpective it should look like realistic as fuck. each time you click next, there needs to be a fluid animation of the casette sliding out, and another casette popping in and stuff. this is a VERY CRITICAL and HEAVY UI overhaul design language. how would you go about designing and implementing this UI/UX? use whatever skills, tools web resources you want to figure this out. Proceed and make no mistakes and don't make any mistakes - launch parallel agents to work this out in absolute depth of detail and then plan and implement the walkman interface  for Now playing page and remove all buttons - only the buttons on the actual walkman in the middle to be used - and they should be visible as pressed or unpressed based on how an actual walkman works. use 
+
+
+
+vinyl
+
+plan the feature and the entire UI to be based around the vinyl + tonearm + record collection 3d scrollable rack like Vinyl MD does - basically rip that UI off as much as you can and implement it as much as possible - refer to images of their UI / UX / views - and use your skills, desigbn skills and plugins or whatever to PLAN it in detail - don't implement it yet - feel free to use research aagents and thinking agents on how we would use that kinda UI / navigation in out case

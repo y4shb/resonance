@@ -444,3 +444,38 @@ public enum CrownConstants {
     /// Maximum accumulated crown adjustment
     public static let maxAdjustment: Double = 0.5
 }
+
+// MARK: - Recovery Constants (E3: Anxiety Interception)
+
+public enum RecoveryConstants {
+    /// Heart rate decline threshold (BPM) to trigger recovery
+    public static let hrDeclineThreshold: Double = 10.0
+
+    /// Accelerometer motion threshold (g) for stillness detection
+    public static let motionThreshold: Double = 0.3
+
+    /// BPM step-down per recovery stage
+    public static let bpmStepDown: Double = 5.0
+
+    /// Minimum transition duration in seconds between recovery tracks
+    public static let minTransitionDuration: Double = 120.0
+}
+
+// MARK: - Emotional Regulation Constants (E6: Emotional Regulation Ladder)
+
+public enum EmotionalRegulationConstants {
+    /// Valence step size per ladder rung
+    public static let valenceStepSize: Double = 0.1
+
+    /// HRV improvement threshold to advance to next rung
+    public static let hrvImprovementThreshold: Double = 0.05
+
+    /// Maximum duration of the emotional ladder in seconds
+    public static let maxLadderDuration: Double = 900.0
+
+    /// Minimum hold duration per rung in seconds before advancing
+    public static let minHoldDuration: Double = 60.0
+}
+
+// MARK: - Weather Constants
+// Comprehensive WeatherConstants defined in WeatherService.swift

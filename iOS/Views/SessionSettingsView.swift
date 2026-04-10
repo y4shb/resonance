@@ -19,6 +19,8 @@ struct SessionSettingsView: View {
             defaultsSection
             crossfadeSection
             transitionsSection
+            sleepWindDownSection
+            commuteSection
         }
         .listStyle(.insetGrouped)
         .navigationTitle("My Sessions")
@@ -117,6 +119,54 @@ struct SessionSettingsView: View {
             Text("Transitions")
         } footer: {
             Text("When enabled, the AI avoids jarring BPM or energy jumps between consecutive songs.")
+        }
+    }
+
+    // MARK: - Sleep Wind-Down (E7)
+
+    private var sleepWindDownSection: some View {
+        Section {
+            Toggle("Auto-Detect Bedtime", isOn: $preferences.sleepWindDownAutoDetect)
+                .onChange(of: preferences.sleepWindDownAutoDetect) { _, _ in
+                    onSave()
+                }
+
+            if preferences.sleepWindDownAutoDetect {
+                Picker("Volume Fade Duration", selection: $preferences.sleepWindDownVolumeFadeDuration) {
+                    Text("5 min").tag(5)
+                    Text("10 min").tag(10)
+                    Text("15 min").tag(15)
+                    Text("20 min").tag(20)
+                    Text("30 min").tag(30)
+                }
+                .onChange(of: preferences.sleepWindDownVolumeFadeDuration) { _, _ in
+                    onSave()
+                }
+            }
+        } header: {
+            Text("Sleep Wind-Down")
+        } footer: {
+            Text("Automatically detects when you're winding down for sleep and gradually lowers volume and shifts to calmer music.")
+        }
+    }
+
+    // MARK: - Commute (E10)
+
+    private var commuteSection: some View {
+        Section {
+            Toggle("CarPlay Auto-Commute", isOn: $preferences.carPlayAutoCommute)
+                .onChange(of: preferences.carPlayAutoCommute) { _, _ in
+                    onSave()
+                }
+
+            Toggle("Drowsiness Detection", isOn: $preferences.drowsinessDetectionEnabled)
+                .onChange(of: preferences.drowsinessDetectionEnabled) { _, _ in
+                    onSave()
+                }
+        } header: {
+            Text("Commute")
+        } footer: {
+            Text("When connected to CarPlay, automatically starts a commute-optimized session. Drowsiness detection uses biometrics to shift to more energizing music when it senses you're getting drowsy.")
         }
     }
 }

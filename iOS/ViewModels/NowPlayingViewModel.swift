@@ -151,6 +151,126 @@ final class NowPlayingViewModel {
     /// Calendar context service for pre-session priming (optional, permission-gated).
     let calendarService = CalendarContextService()
 
+    // MARK: - E1: ADHD Focus
+
+    /// Whether the Pomodoro timer is in an active focus phase (ADHD mode proxy).
+    var isADHDFocusActive: Bool { pomodoroTimer.phase == .focus }
+
+    /// Historical focus streaks from the state engine's focus detector.
+    var focusStreaks: [FocusStreak] { stateEngine?.focusStreaks ?? [] }
+
+    /// The currently active focus streak, if the user is in one.
+    var currentFocusStreak: FocusStreak? { stateEngine?.currentFocusStreak }
+
+    /// Total minutes spent in deep or light focus across all recorded streaks.
+    var totalFocusMinutes: Double { stateEngine?.totalFocusMinutes ?? 0 }
+
+    /// Starts an ADHD-optimized focus session: activates Pomodoro in focus phase
+    /// and nudges the decision engine toward high-familiarity, low-novelty selections.
+    func startADHDFocusSession() {
+        pomodoroTimer.start()
+        decisionEngine?.activateADHDFocus()
+        logInfo("ADHD focus session started", category: .general)
+    }
+
+    // MARK: - E2: Workout Recovery
+
+    /// Whether the state engine has detected a post-workout recovery phase.
+    var isInRecoveryMode: Bool { stateEngine?.isInRecoveryMode ?? false }
+
+    /// Current workout recovery metrics (HR decline, motion level, recovery stage).
+    var recoveryMetrics: WorkoutRecoveryMetrics? { stateEngine?.recoveryMetrics }
+
+    // MARK: - E3: Natural Language DJ
+
+    /// Lazy-initialized NL DJ service (iOS 26+ only for on-device Foundation Models).
+    private var _nlDJService: NaturalLanguageDJService?
+    var nlDJService: NaturalLanguageDJService? {
+        if _nlDJService == nil {
+            if #available(iOS 26, *) {
+                _nlDJService = NaturalLanguageDJService()
+            }
+        }
+        return _nlDJService
+    }
+
+    /// Processes a natural language DJ request (e.g., "play something chill")
+    /// and applies scoring overrides to the decision engine.
+    func processNaturalLanguageRequest(_ text: String) async {
+        guard let service = nlDJService else {
+            logDebug("NL DJ service unavailable (requires iOS 26+)", category: .decisionEngine)
+            return
+        }
+        do {
+            let overrides = try await service.parseRequest(text: text, currentState: stateEngine?.currentState ?? .empty)
+            decisionEngine?.applyScoringOverrides(overrides)
+            logInfo("NL DJ request applied: \(text)", category: .decisionEngine)
+        } catch {
+            logError("NL DJ request failed", error: error, category: .decisionEngine)
+            errorMessage = "Could not process request: \(error.localizedDescription)"
+        }
+    }
+
+    // MARK: - E4: Anxiety Interception
+
+    /// Current anxiety level derived from stress and HRV signals in the state engine.
+    var currentAnxietyLevel: AnxietyLevel { stateEngine?.currentAnxietyLevel ?? .calm }
+
+    /// Whether an anxiety-reduction intervention is currently active.
+    var anxietyInterventionActive: Bool = false
+
+    // MARK: - E5: Sleep Wind-Down
+
+    /// Manages the gradual BPM / volume ramp-down for sleep preparation.
+    let sleepWindDownManager = SleepWindDownManager()
+
+    /// Whether sleep wind-down mode is currently active.
+    var isSleepModeActive: Bool { sleepWindDownManager.isActive }
+
+    // MARK: - E6: Emotional Regulation (ISO Principle Mood Ladder)
+
+    /// Engine that drives multi-step emotional regulation via the ISO principle.
+    let emotionalRegulationEngine = EmotionalRegulationEngine()
+
+    /// Whether a mood ladder session is currently running.
+    var isMoodLadderActive: Bool { emotionalRegulationEngine.isLadderActive }
+
+    /// The currently active mood ladder session, if any.
+    var currentMoodLadderSession: MoodLadderSession? { emotionalRegulationEngine.activeSession }
+
+    /// Begins an ISO-principle mood ladder session that gradually shifts the user's
+    /// emotional state through a sequence of valence-stepped musical selections.
+    func startMoodLadder() {
+        guard let state = stateEngine?.currentState else { return }
+        let level: NegativeStateLevel = state.valence < 0.25 ? .acuteDistress
+            : state.valence < 0.35 ? .moderateDistress
+            : .mildDistress
+        emotionalRegulationEngine.startLadder(level: level, currentValence: state.valence)
+        logInfo("Mood ladder started at valence \(String(format: "%.2f", state.valence))", category: .general)
+    }
+
+    // MARK: - E8: DJ Commentary
+
+    /// Generates warm, personality-driven commentary between track transitions.
+    let commentaryService = DJCommentaryService()
+
+    /// The most recently generated DJ commentary (shown by CommentaryToastView).
+    var currentCommentary: DJCommentary?
+
+    /// Controls visibility of the commentary toast overlay.
+    var showCommentaryToast: Bool = false
+
+    // MARK: - E9: Weather-Responsive Mixing
+
+    /// Lazy-initialized weather service for location-based atmospheric context.
+    private var _weatherService: WeatherService?
+    var weatherService: WeatherService? {
+        if _weatherService == nil {
+            _weatherService = WeatherService()
+        }
+        return _weatherService
+    }
+
     /// Calendar context message for the explanation area.
     var calendarContextMessage: String? { calendarService.contextMessage }
 
@@ -809,6 +929,40 @@ final class NowPlayingViewModel {
             // Sync explanation to Watch
             sendNowPlayingToWatch()
 
+            // E8: Generate DJ commentary for the track transition (fire-and-forget)
+            Task { [weak self] in
+                guard let self else { return }
+                // Categorize heart rate for privacy-safe commentary context
+                let hr = self.stateEngine?.contextCollector.latestBiometric?.heartRate ?? 0
+                let hrCategory: String = {
+                    if hr > 100 { return "elevated" }
+                    if hr < 55 { return "low" }
+                    return "normal"
+                }()
+                let commentaryContext = CommentaryContext(
+                    previousTrackTitle: self.decisionEngine?.lastDecision?.score.songTitle,
+                    previousTrackArtist: self.decisionEngine?.lastDecision?.score.artistName,
+                    previousTrackBPM: self.decisionEngine?.lastDecision?.score.bpm,
+                    currentTrackTitle: result.score.songTitle,
+                    currentTrackArtist: result.score.artistName,
+                    currentTrackBPM: result.score.bpm,
+                    heartRateCategory: hrCategory,
+                    stress: state.stress,
+                    energy: state.energy,
+                    arousal: state.arousal,
+                    trendDirection: .stable,
+                    activityContext: state.context,
+                    musicNeed: state.inferredNeed,
+                    sessionSongsPlayed: 0,
+                    sessionDurationMinutes: 0,
+                    notableEvents: []
+                )
+                if let commentary = await self.commentaryService.generateCommentary(context: commentaryContext) {
+                    self.currentCommentary = commentary
+                    self.showCommentaryToast = true
+                }
+            }
+
             Resonance.logInfo(
                 "AI selected: '\(result.score.songTitle)' — \(result.explanation.short)",
                 category: .decisionEngine
@@ -878,6 +1032,53 @@ final class NowPlayingViewModel {
         }
     }
 
+    // MARK: - NowPlayingView Bridge Properties
+
+    /// Whether weather influence is enabled in user preferences.
+    var weatherInfluenceEnabled: Bool { UserPreferences.load().weatherInfluenceEnabled }
+
+    /// Cached weather condition (updated periodically to avoid actor isolation issues).
+    var cachedWeatherCondition: WeatherConditionCategory?
+
+    /// SF Symbol representing the current weather condition.
+    var currentWeatherSymbol: String {
+        guard let condition = cachedWeatherCondition else { return "cloud.sun" }
+        switch condition {
+        case .clear:   return "sun.max"
+        case .cloudy:  return "cloud"
+        case .rain:    return "cloud.rain"
+        case .storm:   return "cloud.bolt"
+        case .snow:    return "cloud.snow"
+        case .fog:     return "cloud.fog"
+        case .wind:    return "wind"
+        case .extreme: return "exclamationmark.triangle"
+        }
+    }
+
+    /// Human-readable description of the current weather condition.
+    var currentWeatherDescription: String {
+        cachedWeatherCondition?.displayName ?? ""
+    }
+
+    /// Submits a natural language request to the AI DJ (called from NowPlayingView).
+    func submitNLRequest(_ text: String) {
+        Task { await processNaturalLanguageRequest(text) }
+    }
+
+    /// Total focus minutes as a streak progress value (for progress ring).
+    var focusStreakMinutes: Double { totalFocusMinutes }
+
+    /// Default focus streak goal in minutes.
+    var focusStreakGoal: Double { 45.0 }
+
+    /// The text of the current DJ commentary, if any.
+    var commentaryMessage: String? { currentCommentary?.text }
+
+    /// Dismisses the commentary toast overlay.
+    func dismissCommentary() {
+        showCommentaryToast = false
+        currentCommentary = nil
+    }
 }
 
 // MARK: - AI Queue Management Extension

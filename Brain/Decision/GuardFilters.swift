@@ -24,6 +24,7 @@ enum FilterReason: String {
     case noValidId = "Song has no valid identifier"
     case vocalsInFocusMode = "Vocal track filtered in focus mode"
     case unsafeForDriving = "Song too intense or distracting for driving"
+    case anxiolyticOverride = "Song filtered by anxiolytic profile (BPM/key/familiarity)"
 }
 
 /// Result of applying guard filters to a candidate list.
@@ -57,11 +58,13 @@ final class GuardFilters {
     ///   - context: The current decision context.
     ///   - recentArtists: Trailing list of artist names from the current session (most recent last).
     ///   - isDriving: Whether the user is currently driving (Workstream 3.5).
+    ///   - anxietyLevel: Current detected anxiety level for anxiolytic filtering.
     func apply(
         candidates: [Song],
         context: DecisionContext,
         recentArtists: [String] = [],
-        isDriving: Bool = false
+        isDriving: Bool = false,
+        anxietyLevel: AnxietyLevel = .calm
     ) -> FilterResult {
         var accepted: [Song] = []
         var rejected: [(song: Song, reason: FilterReason)] = []
@@ -111,9 +114,22 @@ final class GuardFilters {
             accepted.append(song)
         }
 
+        // Filter 7: Anxiolytic profile filter
+        // Applied after standard filters to ensure we can guarantee minimum track count.
+        // Gradual: .elevated = soft preference, .anxious = hard filter, .acute = strictest
+        if anxietyLevel.severity >= AnxietyLevel.elevated.severity {
+            let anxiolyticResult = applyAnxiolyticFilter(
+                accepted: accepted,
+                anxietyLevel: anxietyLevel
+            )
+            accepted = anxiolyticResult.accepted
+            rejected.append(contentsOf: anxiolyticResult.rejected)
+        }
+
         logDebug(
             "GuardFilters: \(accepted.count)/\(candidates.count) candidates accepted, "
-            + "\(rejected.count) filtered",
+            + "\(rejected.count) filtered"
+            + (anxietyLevel != .calm ? " (anxiety: \(anxietyLevel.rawValue))" : ""),
             category: .decisionEngine
         )
 
@@ -238,6 +254,114 @@ final class GuardFilters {
         // Hard cap with generous buffer (30 BPM above the nightMaxBPM)
         let hardCap = context.preferences.nightMaxBPM + 30
         return songBPM > hardCap
+    }
+
+    // MARK: - Anxiolytic Profile Filter
+
+    /// Filters candidates based on anxiety level to promote calming music.
+    ///
+    /// Gradual filtering:
+    /// - `.elevated`: Soft preference — rank songs but don't hard-reject.
+    ///   BPM cap at 100, instrumentalness threshold 0.3 (lenient).
+    /// - `.anxious`: Hard filter — BPM 60-80, prefer major keys, high familiarity,
+    ///   instrumentalness > 0.5.
+    /// - `.acute`: Strictest — BPM 60-75, instrumentalness > 0.6, familiarity > 0.4.
+    ///
+    /// Safety net: Always allows at least the top 3 most familiar tracks through,
+    /// even if they fail the anxiolytic criteria.
+    private func applyAnxiolyticFilter(
+        accepted: [Song],
+        anxietyLevel: AnxietyLevel
+    ) -> (accepted: [Song], rejected: [(song: Song, reason: FilterReason)]) {
+        guard anxietyLevel.severity >= AnxietyLevel.elevated.severity else {
+            return (accepted: accepted, rejected: [])
+        }
+
+        // Determine thresholds based on anxiety severity
+        let bpmCap: Double
+        let instrumentalnessThreshold: Double
+        let familiarityThreshold: Double
+
+        switch anxietyLevel {
+        case .elevated:
+            // Soft preference: generous BPM cap, minimal instrumentalness requirement
+            bpmCap = 100.0
+            instrumentalnessThreshold = 0.3
+            familiarityThreshold = 0.0
+        case .anxious:
+            // Hard filter: restrict to calming range
+            bpmCap = 80.0
+            instrumentalnessThreshold = 0.5
+            familiarityThreshold = 0.2
+        case .acute:
+            // Strictest: maximum calming constraints
+            bpmCap = 75.0
+            instrumentalnessThreshold = 0.6
+            familiarityThreshold = 0.4
+        case .calm:
+            return (accepted: accepted, rejected: [])
+        }
+
+        var passed: [Song] = []
+        var failed: [(song: Song, reason: FilterReason)] = []
+
+        for song in accepted {
+            let songBPM = song.bpm
+            let songInstrumentalness = song.instrumentalness
+
+            // BPM check (skip if BPM unknown)
+            let bpmOK = songBPM <= 0 || songBPM <= bpmCap
+
+            // Instrumentalness check
+            let instrumentalOK = songInstrumentalness >= instrumentalnessThreshold
+
+            // Familiarity check
+            let familiarityOK = song.familiarityScore >= familiarityThreshold
+
+            // For elevated level, only filter if BOTH BPM and instrumentalness fail
+            if anxietyLevel == .elevated {
+                if bpmOK || instrumentalOK {
+                    passed.append(song)
+                } else {
+                    failed.append((song: song, reason: .anxiolyticOverride))
+                }
+            } else {
+                // For anxious/acute, require BPM compliance AND at least one of
+                // instrumentalness or familiarity
+                if bpmOK && (instrumentalOK || familiarityOK) {
+                    passed.append(song)
+                } else {
+                    failed.append((song: song, reason: .anxiolyticOverride))
+                }
+            }
+        }
+
+        // Safety net: always allow at least the top 3 most familiar tracks through.
+        // This prevents the filter from being too aggressive and leaving no candidates.
+        let minimumPassthrough = 3
+        if passed.count < minimumPassthrough {
+            // Sort failed songs by familiarity (highest first) and rescue the top ones
+            let sortedFailed = failed.sorted { $0.song.familiarityScore > $1.song.familiarityScore }
+            let rescueCount = min(minimumPassthrough - passed.count, sortedFailed.count)
+
+            for i in 0..<rescueCount {
+                passed.append(sortedFailed[i].song)
+            }
+
+            // Remove rescued songs from the failed list
+            let rescuedIds = Set(sortedFailed.prefix(rescueCount).compactMap { $0.song.id })
+            failed.removeAll { rescuedIds.contains($0.song.id ?? UUID()) }
+
+            if rescueCount > 0 {
+                logDebug(
+                    "Anxiolytic filter: rescued \(rescueCount) familiar tracks "
+                    + "(safety net, \(anxietyLevel.rawValue) level)",
+                    category: .decisionEngine
+                )
+            }
+        }
+
+        return (accepted: passed, rejected: failed)
     }
 }
 

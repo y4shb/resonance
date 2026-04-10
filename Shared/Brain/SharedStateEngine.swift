@@ -67,6 +67,11 @@ public final class SharedStateEngine: @unchecked Sendable {
     /// Circadian profile manager for personalized energy and context inference.
     private let _circadianManager: CircadianProfileManager
 
+    // MARK: - E1: Focus State Detection
+
+    /// Focus state detector for ADHD focus mode (E1).
+    private let _focusDetector = FocusStateDetector()
+
     // MARK: - State
 
     private var _currentState: StateVector
@@ -90,6 +95,12 @@ public final class SharedStateEngine: @unchecked Sendable {
     public var isSleepPrepActive: Bool { lock.withLock { _isSleepPrepActive } }
 
     public var lastHRAcceleration: Double { lock.withLock { _lastHRAcceleration } }
+
+    /// Public accessor for the focus state detector (E1).
+    public var focusDetector: FocusStateDetector { _focusDetector }
+
+    /// Current focus level derived from HRV signals (E1).
+    public var currentFocusLevel: FocusLevel { _focusDetector.currentFocusLevel }
 
     // MARK: - Initialization
 
@@ -127,6 +138,8 @@ public final class SharedStateEngine: @unchecked Sendable {
             // Track biometric history
             if let hrv = context.biometric?.hrv {
                 _appendRMSSD(hrv)
+                // E1: Update focus state detector with latest RMSSD
+                _focusDetector.update(rmssd: hrv, timestamp: Date())
             }
             if let hr = context.biometric?.heartRate {
                 _appendHeartRate(hr)

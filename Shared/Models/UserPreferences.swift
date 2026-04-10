@@ -132,6 +132,41 @@ public struct UserPreferences: Codable, Sendable {
     /// Default session intent (raw value of SessionIntent)
     public var defaultSessionIntent: String
 
+    // MARK: - E1-E10 Feature Preferences
+
+    /// Whether weather data influences music selection
+    public var weatherInfluenceEnabled: Bool
+
+    /// How much weather influences music selection (0.0 - 1.0)
+    public var weatherInfluenceWeight: Double
+
+    /// Whether anxiety interception is enabled
+    public var anxietyInterceptionEnabled: Bool
+
+    /// Sensitivity for anxiety interception (0.0 - 1.0)
+    public var anxietyInterceptionSensitivity: Double
+
+    /// Commentary frequency: everyTrack, everyThird, significantOnly, off
+    public var commentaryFrequency: String
+
+    /// Whether AI DJ voice commentary is enabled
+    public var commentaryVoiceEnabled: Bool
+
+    /// Whether sleep wind-down auto-detection is enabled
+    public var sleepWindDownAutoDetect: Bool
+
+    /// Whether emotional regulation ladder is enabled
+    public var emotionalRegulationEnabled: Bool
+
+    /// Whether CarPlay auto-commute mode is enabled
+    public var carPlayAutoCommute: Bool
+
+    /// Whether drowsiness detection is enabled
+    public var drowsinessDetectionEnabled: Bool
+
+    /// Volume fade duration for sleep wind-down in minutes (5-60)
+    public var sleepWindDownVolumeFadeDuration: Int
+
     // MARK: - Initialization
 
     public init(
@@ -168,7 +203,18 @@ public struct UserPreferences: Codable, Sendable {
         djAutonomy: Double = 0.7,
         aiVerbosity: Int = 1,
         defaultSessionDuration: Int = 60,
-        defaultSessionIntent: String = "Auto-Detect"
+        defaultSessionIntent: String = "Auto-Detect",
+        weatherInfluenceEnabled: Bool = false,
+        weatherInfluenceWeight: Double = 0.25,
+        anxietyInterceptionEnabled: Bool = true,
+        anxietyInterceptionSensitivity: Double = 0.5,
+        commentaryFrequency: String = "significantOnly",
+        commentaryVoiceEnabled: Bool = false,
+        sleepWindDownAutoDetect: Bool = true,
+        emotionalRegulationEnabled: Bool = true,
+        carPlayAutoCommute: Bool = true,
+        drowsinessDetectionEnabled: Bool = true,
+        sleepWindDownVolumeFadeDuration: Int = 15
     ) {
         self.bpmWeight = bpmWeight
         self.energyWeight = energyWeight
@@ -204,6 +250,17 @@ public struct UserPreferences: Codable, Sendable {
         self.aiVerbosity = aiVerbosity
         self.defaultSessionDuration = defaultSessionDuration
         self.defaultSessionIntent = defaultSessionIntent
+        self.weatherInfluenceEnabled = weatherInfluenceEnabled
+        self.weatherInfluenceWeight = weatherInfluenceWeight
+        self.anxietyInterceptionEnabled = anxietyInterceptionEnabled
+        self.anxietyInterceptionSensitivity = anxietyInterceptionSensitivity
+        self.commentaryFrequency = commentaryFrequency
+        self.commentaryVoiceEnabled = commentaryVoiceEnabled
+        self.sleepWindDownAutoDetect = sleepWindDownAutoDetect
+        self.emotionalRegulationEnabled = emotionalRegulationEnabled
+        self.carPlayAutoCommute = carPlayAutoCommute
+        self.drowsinessDetectionEnabled = drowsinessDetectionEnabled
+        self.sleepWindDownVolumeFadeDuration = sleepWindDownVolumeFadeDuration
     }
 
     // MARK: - Codable (Backward Compatible)
@@ -220,6 +277,12 @@ public struct UserPreferences: Codable, Sendable {
         case biometricSensitivity
         case explorationBias, bodyVsMindWeight, djAutonomy, aiVerbosity
         case defaultSessionDuration, defaultSessionIntent
+        case weatherInfluenceEnabled, weatherInfluenceWeight
+        case anxietyInterceptionEnabled, anxietyInterceptionSensitivity
+        case commentaryFrequency, commentaryVoiceEnabled
+        case sleepWindDownAutoDetect, emotionalRegulationEnabled
+        case carPlayAutoCommute, drowsinessDetectionEnabled
+        case sleepWindDownVolumeFadeDuration
     }
 
     /// Custom decoder that handles missing fields from older saved JSON.
@@ -268,6 +331,19 @@ public struct UserPreferences: Codable, Sendable {
         // Session defaults
         defaultSessionDuration = try c.decodeIfPresent(Int.self, forKey: .defaultSessionDuration) ?? 60
         defaultSessionIntent = try c.decodeIfPresent(String.self, forKey: .defaultSessionIntent) ?? "Auto-Detect"
+
+        // E1-E10 feature preferences
+        weatherInfluenceEnabled = try c.decodeIfPresent(Bool.self, forKey: .weatherInfluenceEnabled) ?? false
+        weatherInfluenceWeight = try c.decodeIfPresent(Double.self, forKey: .weatherInfluenceWeight) ?? 0.25
+        anxietyInterceptionEnabled = try c.decodeIfPresent(Bool.self, forKey: .anxietyInterceptionEnabled) ?? true
+        anxietyInterceptionSensitivity = try c.decodeIfPresent(Double.self, forKey: .anxietyInterceptionSensitivity) ?? 0.5
+        commentaryFrequency = try c.decodeIfPresent(String.self, forKey: .commentaryFrequency) ?? "significantOnly"
+        commentaryVoiceEnabled = try c.decodeIfPresent(Bool.self, forKey: .commentaryVoiceEnabled) ?? false
+        sleepWindDownAutoDetect = try c.decodeIfPresent(Bool.self, forKey: .sleepWindDownAutoDetect) ?? true
+        emotionalRegulationEnabled = try c.decodeIfPresent(Bool.self, forKey: .emotionalRegulationEnabled) ?? true
+        carPlayAutoCommute = try c.decodeIfPresent(Bool.self, forKey: .carPlayAutoCommute) ?? true
+        drowsinessDetectionEnabled = try c.decodeIfPresent(Bool.self, forKey: .drowsinessDetectionEnabled) ?? true
+        sleepWindDownVolumeFadeDuration = try c.decodeIfPresent(Int.self, forKey: .sleepWindDownVolumeFadeDuration) ?? 15
     }
 
     // MARK: - Defaults

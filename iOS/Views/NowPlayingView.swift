@@ -51,6 +51,11 @@ struct NowPlayingView: View {
     @State private var animatePulse = false
     @State private var playPauseTrigger = 0
 
+    // E3: Natural language request input
+    @State private var isNLInputExpanded = false
+    @State private var nlRequestText = ""
+    @FocusState private var isNLFieldFocused: Bool
+
     /// Enlarged artwork size for the decluttered Now Playing layout
     private let artworkDisplaySize: CGFloat = 340
 
@@ -62,84 +67,7 @@ struct NowPlayingView: View {
                 if viewModel.activePlaylistName == nil && viewModel.currentSong == .placeholder {
                     emptyStateView
                 } else {
-                    ZStack {
-                        // P2-20: Dark mode palette background
-                        ResonanceColors.adaptiveBackground(for: colorScheme)
-                            .ignoresSafeArea()
-
-                        // P2-21: Ambient glow behind artwork
-                        if let glowColor = dominantGlowColor {
-                            AmbientGlowView(
-                                color: ResonanceColors.darkModeAdjusted(glowColor, for: colorScheme),
-                                reduceMotion: reduceMotion
-                            )
-                        }
-
-                        VStack(spacing: 0) {
-                            // Compact status pill (replaces HRV/state/playlist bars)
-                            StatusPillView(
-                                stateEngine: stateEngine,
-                                activePlaylistName: viewModel.activePlaylistName
-                            )
-                            .padding(.top, 8)
-
-                            Spacer(minLength: 4)
-
-                            // Large artwork with skeleton overlay
-                            ZStack {
-                                artworkView
-
-                                if viewModel.isLoadingAISelection {
-                                    TimedSkeletonView(message: "AI is analyzing your state and library...") {
-                                        RoundedRectangle(cornerRadius: 16)
-                                            .fill(.ultraThinMaterial)
-                                            .frame(
-                                                width: artworkDisplaySize,
-                                                height: artworkDisplaySize
-                                            )
-                                            .overlay(
-                                                VStack(spacing: 16) {
-                                                    SkeletonShape(width: 120, height: 14, cornerRadius: 4)
-                                                    SkeletonShape(width: 80, height: 10, cornerRadius: 3)
-                                                }
-                                                .shimmer()
-                                            )
-                                    }
-                                    .accessibilityLabel("Loading next song")
-                                }
-                            }
-                            .padding(.bottom, 24)
-
-                            // Song info
-                            songInfoView
-                                .padding(.bottom, 12)
-
-                            // Progress scrubber
-                            progressView
-                                .padding(.horizontal, 24)
-                                .padding(.bottom, 20)
-
-                            // Transport controls (glass capsule)
-                            transportControls
-                                .padding(.bottom, 16)
-
-                            // Bottom action row: Why this song + Queue
-                            bottomActionRow
-                                .padding(.horizontal, 24)
-                                .padding(.bottom, 8)
-
-                            Spacer(minLength: 4)
-                        }
-                        .padding(.horizontal, 20)
-                        .background(artworkBackgroundGradient)
-                    }
-                    .onChange(of: viewModel.artworkAccentColor) {
-                        updateDominantGlowColor()
-                    }
-                    .onAppear {
-                        updateDominantGlowColor()
-                        explorationSliderValue = viewModel.explorationBias
-                    }
+                    mainPlayerContent
                 }
             }
             .navigationTitle("Resonance")
@@ -157,6 +85,24 @@ struct NowPlayingView: View {
 
                 ToolbarItem(placement: .topBarTrailing) {
                     HStack(spacing: 12) {
+                        // E3: Natural language request button
+                        Button {
+                            withAnimation(reduceMotion ? .none : .spring(response: 0.35, dampingFraction: 0.8)) {
+                                isNLInputExpanded.toggle()
+                                if isNLInputExpanded {
+                                    isNLFieldFocused = true
+                                } else {
+                                    isNLFieldFocused = false
+                                    nlRequestText = ""
+                                }
+                            }
+                        } label: {
+                            Image(systemName: isNLInputExpanded ? "xmark.circle.fill" : "text.bubble")
+                                .contentTransition(.symbolEffect(.replace))
+                        }
+                        .accessibilityLabel(isNLInputExpanded ? "Close text request" : "Make a request")
+                        .accessibilityHint("Ask the DJ for something specific")
+
                         Button { showTuning = true } label: {
                             Image(systemName: "slider.horizontal.3")
                         }
@@ -477,6 +423,187 @@ struct NowPlayingView: View {
             return ResonanceColors.accent
         } else {
             return .purple.opacity(0.7 + bias * 0.3)
+        }
+    }
+
+    // MARK: - Main Player Content
+
+    @ViewBuilder
+    private var mainPlayerContent: some View {
+        ZStack {
+            ResonanceColors.adaptiveBackground(for: colorScheme)
+                .ignoresSafeArea()
+
+            if let glowColor = dominantGlowColor {
+                AmbientGlowView(
+                    color: ResonanceColors.darkModeAdjusted(glowColor, for: colorScheme),
+                    reduceMotion: reduceMotion
+                )
+            }
+
+            mainPlayerVStack
+                .padding(.horizontal, 20)
+                .background(artworkBackgroundGradient)
+        }
+        .overlay(alignment: .top) {
+            commentaryOverlay
+        }
+        .onChange(of: viewModel.artworkAccentColor) {
+            updateDominantGlowColor()
+        }
+        .onAppear {
+            updateDominantGlowColor()
+            explorationSliderValue = viewModel.explorationBias
+        }
+    }
+
+    @ViewBuilder
+    private var mainPlayerVStack: some View {
+        VStack(spacing: 0) {
+            statusAndInputSection
+            Spacer(minLength: 4)
+            artworkSection
+                .padding(.bottom, 24)
+            songInfoView
+                .padding(.bottom, 12)
+            progressView
+                .padding(.horizontal, 24)
+                .padding(.bottom, 20)
+            transportControls
+                .padding(.bottom, 16)
+            bottomActionRow
+                .padding(.horizontal, 24)
+                .padding(.bottom, 8)
+            Spacer(minLength: 4)
+        }
+    }
+
+    @ViewBuilder
+    private var statusAndInputSection: some View {
+        HStack(spacing: 0) {
+            StatusPillView(
+                stateEngine: stateEngine,
+                activePlaylistName: viewModel.activePlaylistName
+            )
+            if viewModel.weatherInfluenceEnabled {
+                Image(systemName: viewModel.currentWeatherSymbol)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.leading, 6)
+                    .transition(.opacity)
+                    .accessibilityLabel("Weather: \(viewModel.currentWeatherDescription)")
+            }
+        }
+        .padding(.top, 8)
+
+        if isNLInputExpanded {
+            nlInputBar
+        }
+
+        if viewModel.isADHDFocusActive {
+            FocusStreakView(
+                streaks: viewModel.focusStreaks,
+                currentStreak: viewModel.currentFocusStreak,
+                pomodoroPhase: viewModel.pomodoroTimer.phase,
+                pomodoroProgress: viewModel.pomodoroTimer.progress,
+                totalFocusMinutes: viewModel.totalFocusMinutes
+            )
+            .padding(.horizontal, 20)
+            .padding(.top, 4)
+            .transition(.opacity)
+            .accessibilityLabel("Focus streak: \(Int(viewModel.totalFocusMinutes)) minutes")
+        }
+    }
+
+    @ViewBuilder
+    private var artworkSection: some View {
+        ZStack {
+            artworkView
+            if viewModel.isLoadingAISelection {
+                TimedSkeletonView(message: "AI is analyzing your state and library...") {
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(.ultraThinMaterial)
+                        .frame(width: artworkDisplaySize, height: artworkDisplaySize)
+                        .overlay(
+                            VStack(spacing: 16) {
+                                SkeletonShape(width: 120, height: 14, cornerRadius: 4)
+                                SkeletonShape(width: 80, height: 10, cornerRadius: 3)
+                            }
+                            .shimmer()
+                        )
+                }
+                .accessibilityLabel("Loading next song")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var commentaryOverlay: some View {
+        if let commentary = viewModel.commentaryMessage {
+            CommentaryToastView(text: commentary, onDismiss: {
+                viewModel.dismissCommentary()
+            })
+            .padding(.top, 60)
+            .padding(.horizontal, 20)
+            .transition(.opacity.combined(with: .move(edge: .top)))
+            .animation(
+                reduceMotion ? .none : .spring(response: 0.35, dampingFraction: 0.8),
+                value: viewModel.commentaryMessage
+            )
+            .accessibilityLabel("DJ Commentary: \(commentary)")
+            .accessibilityAddTraits(.updatesFrequently)
+        }
+    }
+
+    // MARK: - Natural Language Input Bar (E3)
+
+    private var nlInputBar: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "text.bubble")
+                .font(.caption)
+                .foregroundStyle(ResonanceColors.accent)
+
+            TextField("Ask the DJ anything...", text: $nlRequestText)
+                .font(.subheadline)
+                .textFieldStyle(.plain)
+                .focused($isNLFieldFocused)
+                .submitLabel(.send)
+                .onSubmit {
+                    submitAndCloseNL()
+                }
+
+            if !nlRequestText.isEmpty {
+                Button {
+                    submitAndCloseNL()
+                } label: {
+                    Image(systemName: "arrow.up.circle.fill")
+                        .font(.subheadline)
+                        .foregroundStyle(ResonanceColors.accent)
+                }
+                .accessibilityLabel("Send request")
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(.ultraThinMaterial)
+        )
+        .padding(.horizontal, 20)
+        .padding(.top, 4)
+        .transition(.opacity.combined(with: .move(edge: .top)))
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Natural language request field")
+    }
+
+    private func submitAndCloseNL() {
+        let text = nlRequestText.trimmingCharacters(in: .whitespaces)
+        guard !text.isEmpty else { return }
+        viewModel.submitNLRequest(text)
+        nlRequestText = ""
+        let anim: Animation? = reduceMotion ? .none : .spring(response: 0.35, dampingFraction: 0.8)
+        withAnimation(anim) {
+            isNLInputExpanded = false
         }
     }
 

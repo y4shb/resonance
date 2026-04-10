@@ -839,6 +839,43 @@ final class DecisionEngine: ObservableObject {
 
         return result
     }
+
+    // MARK: - E1: ADHD Focus Mode
+
+    /// Whether ADHD focus mode is currently active.
+    private var isADHDFocusActive = false
+
+    /// Activates ADHD-optimized scoring: high-familiarity, low-novelty selections.
+    func activateADHDFocus() {
+        isADHDFocusActive = true
+        logInfo("DecisionEngine: ADHD focus mode activated", category: .decisionEngine)
+    }
+
+    /// Deactivates ADHD focus mode.
+    func deactivateADHDFocus() {
+        isADHDFocusActive = false
+        logInfo("DecisionEngine: ADHD focus mode deactivated", category: .decisionEngine)
+    }
+
+    // MARK: - E3: NL Scoring Overrides
+
+    /// Active natural language scoring overrides, if any.
+    private var scoringOverrides: ScoringOverrides?
+
+    /// Applies temporary NL scoring overrides from NaturalLanguageDJService.
+    func applyScoringOverrides(_ overrides: ScoringOverrides) {
+        scoringOverrides = overrides
+        logInfo(
+            "DecisionEngine: NL scoring overrides applied for \(overrides.remainingSongs) songs",
+            category: .decisionEngine
+        )
+    }
+
+    /// Clears any active NL scoring overrides.
+    func clearScoringOverrides() {
+        scoringOverrides = nil
+        logInfo("DecisionEngine: NL scoring overrides cleared", category: .decisionEngine)
+    }
 }
 
 #endif

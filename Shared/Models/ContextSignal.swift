@@ -387,6 +387,20 @@ public struct AggregatedContext: Sendable {
     /// Sleep baseline for morning energy adjustment (Workstream 3.2).
     public var sleepBaseline: SleepBaseline?
 
+    // MARK: - Weather Context (E4: Weather-Responsive Mixing)
+
+    /// Current weather condition string (e.g., "rain", "sunny", "cloudy")
+    public var weatherCondition: String?
+
+    /// Weather-derived valence modifier (-1.0 to 1.0)
+    public var weatherValenceModifier: Double
+
+    /// Weather-derived energy modifier (-1.0 to 1.0)
+    public var weatherEnergyModifier: Double
+
+    /// Weather-derived tempo modifier (-1.0 to 1.0)
+    public var weatherTempoModifier: Double
+
     public init(
         timestamp: Date = Date(),
         biometric: BiometricSignal? = nil,
@@ -394,7 +408,11 @@ public struct AggregatedContext: Sendable {
         isDriving: Bool = false,
         audioRoute: AudioRoute = .unknown,
         isFocusModeActive: Bool = false,
-        sleepBaseline: SleepBaseline? = nil
+        sleepBaseline: SleepBaseline? = nil,
+        weatherCondition: String? = nil,
+        weatherValenceModifier: Double = 0,
+        weatherEnergyModifier: Double = 0,
+        weatherTempoModifier: Double = 0
     ) {
         self.timestamp = timestamp
         self.biometric = biometric
@@ -403,6 +421,10 @@ public struct AggregatedContext: Sendable {
         self.audioRoute = audioRoute
         self.isFocusModeActive = isFocusModeActive
         self.sleepBaseline = sleepBaseline
+        self.weatherCondition = weatherCondition
+        self.weatherValenceModifier = weatherValenceModifier
+        self.weatherEnergyModifier = weatherEnergyModifier
+        self.weatherTempoModifier = weatherTempoModifier
 
         let calendar = Calendar.current
         let hour = calendar.component(.hour, from: timestamp)

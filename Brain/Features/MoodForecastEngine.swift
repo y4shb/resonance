@@ -319,6 +319,10 @@ final class MoodForecastEngine {
         case .sleepWindDown:          return (60, 80)
         case .morningRise:            return (70, 120)
         case .commuteEnergize:        return (90, 130)
+        case .adhdPomodoro:           return (80, 105)
+        case .recoveryArc:            return (60, 100)
+        case .emotionalLadder:        return (70, 110)
+        case .commuteDecompress:      return (70, 100)
         }
     }
 

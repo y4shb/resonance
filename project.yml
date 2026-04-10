@@ -57,6 +57,8 @@ targets:
         com.apple.developer.healthkit: true
         com.apple.developer.healthkit.access: []
         com.apple.developer.healthkit.background-delivery: true
+        # com.apple.developer.carplay-audio: true  # Requires CarPlay Developer Program enrollment
+        com.apple.developer.weatherkit: true
         com.apple.developer.icloud-services:
           - CloudKit
         com.apple.developer.icloud-container-identifiers:
@@ -67,6 +69,7 @@ targets:
         NSAppleMusicUsageDescription: "Resonance needs access to Apple Music to play and analyze your music library."
         NSHealthShareUsageDescription: "Resonance reads your heart rate, heart rate variability (HRV), resting heart rate, VO2 Max, respiratory rate, step count, active energy, sleep stages, irregular heart rhythm events, wrist temperature, and workout data to personalize music selection based on your current physiological state. All health data is processed on-device and never leaves your device."
         NSCalendarsFullAccessUsageDescription: "Resonance reads your upcoming calendar events to adjust music energy before meetings and suggest focus sessions during free blocks. Calendar data stays on your device."
+        NSLocationWhenInUseUsageDescription: "Resonance uses your location to check weather conditions and adapt your music accordingly. Your location is never stored or shared."
         NSFocusStatusUsageDescription: "Resonance detects Focus mode to adjust music for work, sleep, or relaxation contexts."
         UIBackgroundModes:
           - audio

@@ -201,6 +201,10 @@ struct DataSettingsView: View {
             appGroupDefaults?.removeObject(forKey: key)
         }
 
+        // E5 Sleep Wind-Down data
+        appGroupDefaults?.removeObject(forKey: "com.y4sh.resonance.sleepWindDown.lastReport")
+        appGroupDefaults?.removeObject(forKey: "com.y4sh.resonance.sleepWindDown.lastSessionDate")
+
         // 3. Clear standard UserDefaults
         let standardKeys = [
             "sonic_bookmarks_v1",

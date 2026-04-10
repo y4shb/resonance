@@ -41,7 +41,9 @@ public struct SharedSongScorer: Sendable {
         arousalBPMAdjustment: Double = 0.0,
         isoModeActive: Bool = false,
         isoTargetBPM: Double? = nil,
-        arcPhase: ArcPhase? = nil
+        arcPhase: ArcPhase? = nil,
+        isADHDFocusMode: Bool = false,
+        weatherModifiers: WeatherModifiers? = nil
     ) -> SongScore {
         let preferences = context.preferences
 
@@ -59,10 +61,17 @@ public struct SharedSongScorer: Sendable {
                 isSleepPrep: isSleepPrepActive
             )
         }
-        let bpmScore = calculateBPMMatchScore(songBPM: features.bpm, targetBPM: targetBPM)
+        // E2: Blend weather modifier into target BPM when present
+        let weatherAdjustedTargetBPM: Double
+        if let weather = weatherModifiers {
+            weatherAdjustedTargetBPM = targetBPM + weather.bpmAdjustment * weather.weight
+        } else {
+            weatherAdjustedTargetBPM = targetBPM
+        }
+        let bpmScore = calculateBPMMatchScore(songBPM: features.bpm, targetBPM: weatherAdjustedTargetBPM)
 
         // Arc phase (WS-4) overrides energy target when present.
-        let energyScore: Double
+        var energyScore: Double
         if let phase = arcPhase {
             energyScore = calculateArcPhaseEnergyScore(
                 songEnergy: features.energy,
@@ -75,17 +84,34 @@ public struct SharedSongScorer: Sendable {
                 isSleepPrep: isSleepPrepActive
             )
         }
-        let familiarityScore = calculateFamiliarityScore(
+        // E2: Blend weather energy adjustment into energy score
+        if let weather = weatherModifiers {
+            let weatherEnergyTarget = max(0.0, min(1.0, features.energy + weather.energyAdjustment))
+            let weatherEnergyDiff = abs(features.energy - weatherEnergyTarget)
+            let weatherEnergyBonus = (1.0 - weatherEnergyDiff) * 0.1 * weather.weight
+            energyScore = max(0.0, min(1.0, energyScore + weatherEnergyBonus))
+        }
+        var familiarityScore = calculateFamiliarityScore(
             playCount: playCount,
             context: context
         )
+        // E1: ADHD focus mode boosts familiarity 2.0x (vs standard 1.5x in focus context)
+        if isADHDFocusMode {
+            familiarityScore = min(1.0, familiarityScore * 2.0)
+        }
         let historicalScore = DecisionEngineConstants.defaultHistoricalScore
-        let contextScore = calculateContextAlignmentScore(
-            features: features,
-            context: context,
-            isSleepPrep: isSleepPrepActive,
-            arousalState: arousalState
-        )
+        // E1: Use ADHD-specific context scoring when in ADHD focus mode
+        let contextScore: Double
+        if isADHDFocusMode {
+            contextScore = calculateADHDFocusContextScore(features: features)
+        } else {
+            contextScore = calculateContextAlignmentScore(
+                features: features,
+                context: context,
+                isSleepPrep: isSleepPrepActive,
+                arousalState: arousalState
+            )
+        }
         let recencyPenalty = calculateRecencyPenalty(
             songId: songId,
             context: context
@@ -132,7 +158,7 @@ public struct SharedSongScorer: Sendable {
         explanations.append(ExplanationComponent(
             factor: "BPM Match",
             contribution: bpmScore * preferences.bpmWeight,
-            description: "Tempo \(Int(features.bpm)) BPM vs target \(Int(targetBPM))"
+            description: "Tempo \(Int(features.bpm)) BPM vs target \(Int(weatherAdjustedTargetBPM))"
         ))
         explanations.append(ExplanationComponent(
             factor: "Energy Match",
@@ -164,6 +190,23 @@ public struct SharedSongScorer: Sendable {
                 factor: "Session Arc",
                 contribution: arcPhaseBonus,
                 description: "Phase: \(phase.phase.rawValue) (\(Int(phase.targetBPM)) BPM target)"
+            ))
+        }
+
+        // E1: ADHD focus mode explanation
+        if isADHDFocusMode {
+            explanations.append(ExplanationComponent(
+                factor: "ADHD Focus",
+                contribution: contextScore * 0.1,
+                description: "ADHD focus mode: boosted familiarity, instrumental preference"
+            ))
+        }
+        // E2: Weather modifier explanation
+        if let weather = weatherModifiers, weather.weight > 0 {
+            explanations.append(ExplanationComponent(
+                factor: "Weather",
+                contribution: weather.bpmAdjustment * weather.weight * 0.01,
+                description: "Weather adjustment (weight \(String(format: "%.0f%%", weather.weight * 100)))"
             ))
         }
 
@@ -432,6 +475,49 @@ public struct SharedSongScorer: Sendable {
         if hasVocals { score -= 0.1 } else { score += 0.1 }
         if features.energy >= 0.3 && features.energy <= 0.6 { score += 0.15 }
         if features.acousticDensity >= 0.3 && features.acousticDensity <= 0.7 { score += 0.1 }
+        return max(0.0, min(1.0, score))
+    }
+
+    // MARK: - ADHD Focus Context Scoring (E1)
+
+    /// ADHD focus mode scoring: strongly prefers instrumental tracks with moderate energy,
+    /// steady BPM in the 80-105 range, and penalizes spectral instability.
+    ///
+    /// Research: Mehta et al., Journal of Consumer Research 2012;
+    ///           Söderlund et al., Journal of Clinical and Experimental Neuropsychology 2007
+    private func calculateADHDFocusContextScore(features: SongFeatures) -> Double {
+        var score = 0.5
+
+        // Instrumentalness: vocals are highly distracting for ADHD focus
+        if features.instrumentalness < 0.5 {
+            score -= 0.35  // Strong penalty for vocal tracks
+        } else if features.instrumentalness >= 0.7 {
+            score += 0.25  // Bonus for strongly instrumental tracks
+        } else {
+            score += 0.10  // Moderate bonus for partially instrumental
+        }
+
+        // Energy sweet spot: 0.25-0.45 (not too stimulating, not too sedating)
+        if features.energy >= 0.25 && features.energy <= 0.45 {
+            score += 0.20
+        } else if features.energy < 0.15 {
+            score -= 0.10  // Too low may cause drowsiness
+        } else if features.energy > 0.55 {
+            score -= 0.15  // Too high may overstimulate
+        }
+
+        // BPM sweet spot: 80-105 BPM (moderate, steady pace)
+        if features.bpm >= 80 && features.bpm <= 105 {
+            score += 0.15
+        } else if features.bpm > 120 {
+            score -= 0.10  // Fast tempo can be overstimulating
+        }
+
+        // Spectral flux: high flux = frequent spectral changes = distracting
+        if let flux = features.spectralFlux, flux > 0.15 {
+            score -= 0.10
+        }
+
         return max(0.0, min(1.0, score))
     }
 

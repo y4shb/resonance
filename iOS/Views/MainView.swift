@@ -32,6 +32,7 @@ struct MainView: View {
         case nowPlaying
         case mood
         case playlists
+        case insights
         case settings
 
         var title: String {
@@ -39,6 +40,7 @@ struct MainView: View {
             case .nowPlaying: return "Now Playing"
             case .mood: return "Mood"
             case .playlists: return "Playlists"
+            case .insights: return "Insights"
             case .settings: return "Settings"
             }
         }
@@ -48,6 +50,7 @@ struct MainView: View {
             case .nowPlaying: return "play.circle"
             case .mood: return "face.smiling"
             case .playlists: return "music.note.list"
+            case .insights: return "chart.bar.xaxis"
             case .settings: return "gear"
             }
         }
@@ -85,6 +88,12 @@ struct MainView: View {
                 Label(Tab.playlists.title, systemImage: Tab.playlists.systemImage)
             }
             .tag(Tab.playlists)
+
+            InsightsView()
+            .tabItem {
+                Label(Tab.insights.title, systemImage: Tab.insights.systemImage)
+            }
+            .tag(Tab.insights)
 
             SettingsView(
                 musicService: musicService,

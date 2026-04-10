@@ -20,6 +20,9 @@ enum SessionIntent: String, CaseIterable, Identifiable, Codable {
     case morningRampUp = "Morning Ramp-Up"
     case creativeFlow = "Creative Flow"
     case autoDetect = "Auto-Detect"
+    case adhdFocus = "ADHD Focus"
+    case sleepWindDown = "Sleep Wind-Down"
+    case commuteEnergize = "Commute"
 
     var id: String { rawValue }
 
@@ -31,6 +34,9 @@ enum SessionIntent: String, CaseIterable, Identifiable, Codable {
         case .morningRampUp: return "sunrise.fill"
         case .creativeFlow: return "paintpalette.fill"
         case .autoDetect: return "waveform.badge.magnifyingglass"
+        case .adhdFocus: return "brain.fill"
+        case .sleepWindDown: return "moon.fill"
+        case .commuteEnergize: return "car.fill"
         }
     }
 
@@ -42,6 +48,9 @@ enum SessionIntent: String, CaseIterable, Identifiable, Codable {
         case .morningRampUp: return .orange
         case .creativeFlow: return .pink
         case .autoDetect: return ResonanceColors.accent
+        case .adhdFocus: return .teal
+        case .sleepWindDown: return .indigo
+        case .commuteEnergize: return .orange
         }
     }
 
@@ -53,6 +62,9 @@ enum SessionIntent: String, CaseIterable, Identifiable, Codable {
         case .morningRampUp: return "Gentle start building to your peak energy"
         case .creativeFlow: return "Varied, inspiring tracks at moderate energy"
         case .autoDetect: return "Let your biometrics guide the music"
+        case .adhdFocus: return "High familiarity, proven tracks, HRV-guided distraction recovery"
+        case .sleepWindDown: return "Gradual relaxation arc toward restful sleep"
+        case .commuteEnergize: return "Auto-adapts between morning energize and evening decompress"
         }
     }
 
@@ -65,6 +77,9 @@ enum SessionIntent: String, CaseIterable, Identifiable, Codable {
         case .morningRampUp: return (0.20, 0.25, 0.15, 0.20, 0.20)
         case .creativeFlow: return (0.10, 0.20, 0.20, 0.25, 0.25)
         case .autoDetect: return (0.15, 0.20, 0.15, 0.25, 0.25)
+        case .adhdFocus: return (0.05, 0.10, 0.30, 0.30, 0.25)
+        case .sleepWindDown: return (0.10, 0.15, 0.25, 0.25, 0.25)
+        case .commuteEnergize: return (0.20, 0.25, 0.15, 0.20, 0.20)
         }
     }
 
@@ -77,6 +92,9 @@ enum SessionIntent: String, CaseIterable, Identifiable, Codable {
         case .morningRampUp:  return .transition
         case .creativeFlow:   return .maintain
         case .autoDetect:     return .maintain
+        case .adhdFocus:      return .focus
+        case .sleepWindDown:  return .calm
+        case .commuteEnergize: return .energize
         }
     }
 }

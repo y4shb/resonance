@@ -31,6 +31,8 @@
 	<string>Resonance reads your upcoming calendar events to adjust music energy before meetings and suggest focus sessions during free blocks. Calendar data stays on your device.</string>
 	<key>NSFocusStatusUsageDescription</key>
 	<string>Resonance detects Focus mode to adjust music for work, sleep, or relaxation contexts.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Resonance uses your location to check weather conditions and adapt your music accordingly. Your location is never stored or shared.</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>Resonance reads your heart rate, heart rate variability (HRV), resting heart rate, VO2 Max, respiratory rate, step count, active energy, sleep stages, irregular heart rhythm events, wrist temperature, and workout data to personalize music selection based on your current physiological state. All health data is processed on-device and never leaves your device.</string>
 	<key>UIBackgroundModes</key>

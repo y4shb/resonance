@@ -41,4 +41,34 @@ struct EstimateResult: Sendable {
     let confidence: Double
 }
 
+// MARK: - Weather State Modifiers
+
+/// Modifiers derived from current weather conditions by WeatherService.
+/// Blended into the state vector at a configurable weight (20-30%).
+struct WeatherStateModifiers: Sendable {
+    /// Energy modifier (-0.3 to +0.3). Positive = weather energizing (sunny, warm).
+    let energyModifier: Double
+
+    /// Valence modifier (-0.3 to +0.3). Positive = weather mood-lifting.
+    let valenceModifier: Double
+
+    /// Confidence in the weather data (0.0 - 1.0).
+    let confidence: Double
+
+    /// When these modifiers were computed.
+    let timestamp: Date
+
+    init(
+        energyModifier: Double = 0.0,
+        valenceModifier: Double = 0.0,
+        confidence: Double = 0.5,
+        timestamp: Date = Date()
+    ) {
+        self.energyModifier = energyModifier
+        self.valenceModifier = valenceModifier
+        self.confidence = confidence
+        self.timestamp = timestamp
+    }
+}
+
 #endif

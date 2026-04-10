@@ -42,6 +42,30 @@ final class StateEngine: ObservableObject {
     /// Refines Watch-side emotion classification with iPhone context.
     let emotionRefinementEngine: EmotionRefinementEngine
 
+    /// Composite anxiety detection engine using weighted biometric signals.
+    let anxietyDetector: AnxietyDetector
+
+    /// Manages post-workout recovery state tracking.
+    let workoutRecoveryManager: WorkoutRecoveryManager
+
+    /// Detects focus/distraction states from HRV for ADHD Focus Mode (E1).
+    let focusDetector = FocusStateDetector()
+
+    // MARK: - Weather Context
+
+    /// Current weather-based state modifiers, updated externally by WeatherService.
+    /// Blended into the state vector at the configured weight (20-30%).
+    private(set) var weatherModifiers: WeatherStateModifiers?
+
+    /// Weight applied when blending weather context into the state vector.
+    private let weatherBlendWeight: Double = 0.25
+
+    // MARK: - Pre-Sleep Detection
+
+    /// Flag indicating pre-sleep conditions are detected (hour > 21, HRV rising, motion low).
+    /// Consumed by SleepWindDownManager to trigger gradual wind-down arc.
+    @Published private(set) var preSleepDetected: Bool = false
+
     // MARK: - Internal State
 
     var manualMood: ManualMoodInput?
@@ -105,13 +129,17 @@ final class StateEngine: ObservableObject {
         healthKitService: HealthKitService,
         personalBaseline: PersonalBaseline = PersonalBaseline(),
         circadianManager: CircadianProfileManager = CircadianProfileManager(),
-        emotionRefinementEngine: EmotionRefinementEngine = EmotionRefinementEngine()
+        emotionRefinementEngine: EmotionRefinementEngine = EmotionRefinementEngine(),
+        workoutRecoveryManager: WorkoutRecoveryManager? = nil
     ) {
         self.contextCollector = contextCollector
         self.healthKitService = healthKitService
         self.personalBaseline = personalBaseline
         self.circadianManager = circadianManager
         self.emotionRefinementEngine = emotionRefinementEngine
+        self.anxietyDetector = AnxietyDetector(personalBaseline: personalBaseline)
+        self.workoutRecoveryManager = workoutRecoveryManager
+            ?? WorkoutRecoveryManager(personalBaseline: personalBaseline)
         logInfo("StateEngine initialized", category: .stateEngine)
     }
 
@@ -226,6 +254,20 @@ final class StateEngine: ObservableObject {
         Task { await updateState() }
     }
 
+    // MARK: - Weather Context
+
+    /// Accepts weather modifiers from WeatherService and stores them for blending
+    /// into the next state vector update at the configured weight (20-30%).
+    func updateWeatherModifiers(_ modifiers: WeatherStateModifiers) {
+        weatherModifiers = modifiers
+        logInfo(
+            "Weather modifiers updated: energy=\(String(format: "%.2f", modifiers.energyModifier)), "
+            + "valence=\(String(format: "%.2f", modifiers.valenceModifier))",
+            category: .stateEngine
+        )
+        Task { await updateState() }
+    }
+
     // MARK: - Core Update
 
     private func updateState() async {
@@ -254,6 +296,24 @@ final class StateEngine: ObservableObject {
 
         let context = contextCollector.aggregatedContext
         let biometric = context.biometric
+
+        // Update AnxietyDetector with current biometric reading
+        anxietyDetector.processReading(
+            biometric: biometric,
+            restingHeartRate: restingHeartRate ?? 65.0,
+            wristTemperature: emotionRefinementEngine.latestOvernightTemp?.deviation
+        )
+
+        // Update WorkoutRecoveryManager with current biometric data
+        workoutRecoveryManager.processBiometricUpdate(
+            biometric: biometric,
+            restingHeartRate: restingHeartRate
+        )
+
+        // E1: Update FocusStateDetector with HRV data for ADHD focus tracking
+        if let hrv = biometric?.hrv, hrv > 0 {
+            focusDetector.update(rmssd: hrv, timestamp: Date())
+        }
 
         // R3: Track HR history for acceleration-based transition detection
         if let hr = biometric?.heartRate, hr > 0 {
@@ -326,7 +386,7 @@ final class StateEngine: ObservableObject {
         previousState = currentState
 
         // 6. Synthesize full StateVector
-        let state = synthesizeStateVector(
+        var state = synthesizeStateVector(
             arousal: arousalResult,
             stress: stressResult,
             activityContext: activityContext,
@@ -334,6 +394,53 @@ final class StateEngine: ObservableObject {
             macOS: context.macOS,
             timeSlot: context.timeSlot
         )
+
+        // 6a. Blend weather modifiers into state vector if available
+        if let weather = weatherModifiers {
+            state.energy = Self.blend(
+                state.energy,
+                state.energy + weather.energyModifier,
+                weight: weatherBlendWeight
+            )
+            state.valence = Self.blend(
+                state.valence,
+                state.valence + weather.valenceModifier,
+                weight: weatherBlendWeight
+            )
+            state.energy = Self.clamp(state.energy, 0.0, 1.0)
+            state.valence = Self.clamp(state.valence, 0.0, 1.0)
+
+            logDebug(
+                "Weather modifiers blended: energy adj=\(String(format: "%.2f", weather.energyModifier)), "
+                + "valence adj=\(String(format: "%.2f", weather.valenceModifier)) "
+                + "at weight=\(String(format: "%.0f%%", weatherBlendWeight * 100))",
+                category: .stateEngine
+            )
+        }
+
+        // 6b. Pre-sleep detection: hour > 21, HRV rising, motion low
+        let currentHourForSleep = Calendar.current.component(.hour, from: Date())
+        let hrvRising: Bool = {
+            guard recentHRSamples.count >= 2 else { return false }
+            // Check if HRV trend is upward (parasympathetic dominance)
+            if let currentHRV = biometric?.hrv, currentHRV > (personalBaseline.currentBaseline * 1.05) {
+                return true
+            }
+            return false
+        }()
+        let motionLow = biometric?.isStationary == true
+            || (biometric?.accelerometerMagnitude ?? 0.0) < 0.1
+
+        let newPreSleepDetected = currentHourForSleep >= 21 && hrvRising && motionLow
+        if newPreSleepDetected != preSleepDetected {
+            preSleepDetected = newPreSleepDetected
+            if newPreSleepDetected {
+                logInfo(
+                    "Pre-sleep state detected: hour=\(currentHourForSleep), HRV rising, motion low",
+                    category: .stateEngine
+                )
+            }
+        }
 
         // 7. Publish
         currentState = state
