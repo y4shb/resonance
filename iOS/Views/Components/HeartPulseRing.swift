@@ -2,11 +2,14 @@
 //  HeartPulseRing.swift
 //  Resonance
 //
-//  Pulsing ring overlay that beats at the user's heart rate.
+//  Vinyl platter ring overlay that beats at the user's heart rate.
+//  Renders concentric groove-like rings around the vinyl record that
+//  respond to BPM entrainment with the user's heart rate.
+//
 //  Three distinct visual states:
-//    - Calm:         Gentle breathing glow in album-art accent color
-//    - Synced:       Bright, tight pulse shifting toward gold
-//    - Transitioning: Outward ripple effect when AI is selecting next track
+//    - Calm:         Subtle groove glow in album-art accent color
+//    - Synced:       Bright groove illumination shifting toward gold
+//    - Transitioning: Outward ripple across grooves when AI selects next track
 //
 
 import SwiftUI
@@ -68,31 +71,29 @@ struct HeartPulseRing: View {
         case .calm, .transitioning:
             return accentColor
         case .synced:
-            // Blend toward gold based on how far above the 0.7 threshold we are.
-            // At entrainment 0.7 we start blending; at 1.0 we are fully gold.
             let blendFactor = min((entrainment - 0.7) / 0.3, 1.0)
             return interpolateColor(from: accentColor, to: HeartPulseRing.syncGold, factor: blendFactor)
         }
     }
 
-    /// Base opacity for the ring stroke.
-    private var ringOpacity: Double {
+    /// Base opacity for the groove glow.
+    private var grooveGlowOpacity: Double {
         switch pulseState {
         case .calm:
-            return 0.15 + entrainment * 0.35
+            return 0.05 + entrainment * 0.15
         case .synced:
-            return 0.55 + entrainment * 0.25   // Brighter when synced
+            return 0.25 + entrainment * 0.25
         case .transitioning:
-            return 0.35
+            return 0.15
         }
     }
 
     /// Scale range for the pulse animation.
     private var pulseScaleHigh: CGFloat {
         switch pulseState {
-        case .calm:        return 1.08
-        case .synced:      return 1.03  // Tighter, more controlled pulse
-        case .transitioning: return 1.05
+        case .calm:          return 1.04
+        case .synced:        return 1.02  // Tighter, more controlled
+        case .transitioning: return 1.03
         }
     }
 
@@ -100,34 +101,32 @@ struct HeartPulseRing: View {
     private var stateAccessibilityLabel: String {
         switch pulseState {
         case .calm:
-            return "Heart pulse ring, calm state"
+            return "Platter ring, calm state"
         case .synced:
-            return "Heart pulse ring, synced with music"
+            return "Platter ring, synced with music"
         case .transitioning:
-            return "Heart pulse ring, AI selecting next track"
+            return "Platter ring, AI selecting next track"
         }
     }
 
     // MARK: - Constants
 
-    /// The gold/warm color used at full sync.
     private static let syncGold = Color(red: 1.0, green: 0.84, blue: 0.35)
-
-    /// Duration of the ripple expand/fade animation.
     private static let rippleDuration: Double = 1.5
+    private static let grooveRingCount: Int = 6
 
     // MARK: - Body
 
     var body: some View {
         ZStack {
-            // Layer 1: Ripple ring (transitioning state only)
+            // Layer 1: Ripple wave across grooves (transitioning state)
             rippleRing
 
-            // Layer 2: Outer pulse ring
-            outerPulseRing
+            // Layer 2: Concentric groove rings (platter style)
+            grooveRings
 
             // Layer 3: Inner glow ring (visible during entrainment or sync)
-            innerGlowRing
+            innerGrooveGlow
         }
         .animation(
             reduceMotion ? .none :
@@ -150,51 +149,59 @@ struct HeartPulseRing: View {
         .accessibilityLabel(stateAccessibilityLabel)
     }
 
-    // MARK: - Ring Layers
+    // MARK: - Groove Rings (Vinyl Platter Style)
 
-    /// Outer stroke circle that pulses with the heartbeat.
-    private var outerPulseRing: some View {
-        Circle()
-            .stroke(
-                ringColor.opacity(ringOpacity),
-                lineWidth: isPulsed ? 2 : 4
-            )
-            .scaleEffect(isPulsed ? pulseScaleHigh : 1.0)
-            .opacity(isPulsed ? 0.3 : ringOpacity)
+    /// Concentric rings that mimic record grooves around the platter edge.
+    /// Each ring has alternating opacity for depth, and the entire set
+    /// pulses/glows based on entrainment state.
+    private var grooveRings: some View {
+        ForEach(0..<HeartPulseRing.grooveRingCount, id: \.self) { index in
+            let ringProgress = Double(index) / Double(HeartPulseRing.grooveRingCount - 1)
+            let ringScale = 1.0 + ringProgress * 0.12
+            let isEvenRing = index % 2 == 0
+
+            Circle()
+                .stroke(
+                    ringColor.opacity(
+                        grooveGlowOpacity * (isEvenRing ? 1.0 : 0.5)
+                    ),
+                    lineWidth: isEvenRing ? 1.5 : 0.75
+                )
+                .scaleEffect(isPulsed ? ringScale * pulseScaleHigh : ringScale)
+                .opacity(isPulsed ? 0.6 : 1.0)
+        }
     }
 
-    /// Inner glow circle, more prominent in synced state.
+    /// Inner glow that intensifies during sync — simulates groove specular highlight.
     @ViewBuilder
-    private var innerGlowRing: some View {
+    private var innerGrooveGlow: some View {
         if entrainment > 0.5 || pulseState == .synced {
             let glowOpacity: Double = pulseState == .synced
-                ? entrainment * 0.6   // More prominent in sync
-                : entrainment * 0.4
+                ? entrainment * 0.5
+                : entrainment * 0.3
             let glowWidth: CGFloat = pulseState == .synced ? 3 : 2
 
             Circle()
                 .stroke(ringColor.opacity(glowOpacity), lineWidth: glowWidth)
-                .scaleEffect(isPulsed ? 1.04 : 1.0)
-                .blur(radius: pulseState == .synced ? 6 : 4)
+                .scaleEffect(isPulsed ? 1.03 : 1.0)
+                .blur(radius: pulseState == .synced ? 8 : 5)
         }
     }
 
-    /// Expanding ripple ring that fades as it grows (transitioning state).
+    /// Expanding ripple ring that sweeps outward across the grooves.
     @ViewBuilder
     private var rippleRing: some View {
         if pulseState == .transitioning && !reduceMotion {
             Circle()
                 .stroke(accentColor.opacity(rippleOpacity), lineWidth: 2)
-                .scaleEffect(1.0 + ripplePhase * 0.3)
-                .blur(radius: ripplePhase * 3)
+                .scaleEffect(1.0 + ripplePhase * 0.2)
+                .blur(radius: ripplePhase * 4)
         }
     }
 
     // MARK: - State Transitions
 
-    /// Handles visual and haptic responses to state changes.
     private func handleStateTransition(from oldState: PulseState, to newState: PulseState) {
-        // Announce state change to VoiceOver
         UIAccessibility.post(
             notification: .announcement,
             argument: stateAccessibilityLabel
@@ -202,7 +209,6 @@ struct HeartPulseRing: View {
 
         switch newState {
         case .synced:
-            // Fire haptic once on entering sync (not continuously)
             if oldState != .synced {
                 syncHapticFired = false
             }
@@ -220,25 +226,22 @@ struct HeartPulseRing: View {
         }
     }
 
-    /// Restarts the pulse animation when heart rate changes significantly.
     private func restartPulseAnimation() {
         guard !reduceMotion else { return }
         isPulsed = false
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(50))
             isPulsed = true
         }
     }
 
     // MARK: - Ripple Animation
 
-    /// Launches the repeating ripple expand-and-fade cycle.
     private func startRipple() {
         guard !reduceMotion else { return }
-        // Reset to start
         ripplePhase = 0
-        rippleOpacity = 0.6
+        rippleOpacity = 0.5
 
-        // Animate outward expansion with fade
         withAnimation(
             .easeOut(duration: HeartPulseRing.rippleDuration)
             .repeatForever(autoreverses: false)
@@ -248,7 +251,6 @@ struct HeartPulseRing: View {
         }
     }
 
-    /// Stops the ripple and resets its state.
     private func stopRipple() {
         withAnimation(.easeOut(duration: 0.3)) {
             ripplePhase = 0
@@ -258,7 +260,6 @@ struct HeartPulseRing: View {
 
     // MARK: - Haptic Feedback
 
-    /// Fires a single light impact when entering the synced state.
     private func fireSyncHaptic() {
         let generator = UIImpactFeedbackGenerator(style: .light)
         generator.prepare()
@@ -267,8 +268,6 @@ struct HeartPulseRing: View {
 
     // MARK: - Color Interpolation
 
-    /// Linearly interpolates between two SwiftUI Colors in RGB space.
-    /// `factor` is clamped to 0...1 where 0 = `from`, 1 = `to`.
     private func interpolateColor(from: Color, to: Color, factor: Double) -> Color {
         let f = min(max(factor, 0), 1)
         let fromComponents = UIColor(from).rgbaComponents
@@ -286,7 +285,6 @@ struct HeartPulseRing: View {
 // MARK: - UIColor RGBA Helper
 
 private extension UIColor {
-    /// Extracts RGBA components as Doubles in [0, 1].
     var rgbaComponents: (r: Double, g: Double, b: Double, a: Double) {
         var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
         getRed(&r, green: &g, blue: &b, alpha: &a)

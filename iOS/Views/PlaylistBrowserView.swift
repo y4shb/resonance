@@ -20,6 +20,9 @@ struct PlaylistBrowserView: View {
     /// Callback invoked when a playlist is selected (used by parent to switch tabs).
     var onPlaylistSelected: ((PlaylistDisplayInfo) -> Void)?
 
+    /// Optional namespace for hero transitions from carousel to turntable.
+    var heroNamespace: Namespace.ID?
+
     // Haptic feedback trigger for playlist selection
     @State private var selectionTrigger = 0
 
@@ -31,6 +34,9 @@ struct PlaylistBrowserView: View {
 
     // Mood playlist song counts (loaded from Core Data)
     @State private var moodPlaylistCounts: [MoodPlaylist: Int] = [:]
+
+    // Carousel albums derived from playlists
+    @State private var carouselAlbums: [AlbumDisplayInfo] = []
 
     private let songRepository = SongRepository()
 
@@ -67,7 +73,7 @@ struct PlaylistBrowserView: View {
                     playlistList
                 }
             }
-            .navigationTitle("Your Playlists")
+            .navigationTitle("Record Collection")
             .searchable(text: $searchText, prompt: "Search playlists")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -113,6 +119,10 @@ struct PlaylistBrowserView: View {
                     viewModel.fetchPlaylists()
                 }
                 loadMoodPlaylistCounts()
+                updateCarouselAlbums()
+            }
+            .onChange(of: viewModel.playlists) {
+                updateCarouselAlbums()
             }
             .navigationDestination(item: $selectedMoodPlaylist) { moodPlaylist in
                 MoodDetailView(
@@ -184,6 +194,18 @@ struct PlaylistBrowserView: View {
         return (try? context.fetch(request)) ?? []
     }
 
+    /// Builds AlbumDisplayInfo items from playlists for the carousel.
+    private func updateCarouselAlbums() {
+        carouselAlbums = viewModel.playlists.prefix(12).map { playlist in
+            AlbumDisplayInfo(
+                id: playlist.id.rawValue,
+                title: playlist.name,
+                artistName: playlist.songCount.map { "\($0) songs" } ?? "Playlist",
+                artwork: playlist.artwork
+            )
+        }
+    }
+
     /// Maps a mood playlist's accent color string to a SwiftUI Color.
     private func moodPlaylistAccentColor(_ moodPlaylist: MoodPlaylist) -> Color {
         switch moodPlaylist.accentColor {
@@ -201,6 +223,32 @@ struct PlaylistBrowserView: View {
 
     private var playlistList: some View {
         List {
+            // MARK: - Record Carousel Hero
+
+            if !carouselAlbums.isEmpty {
+                Section {
+                    RecordCarouselView(
+                        albums: carouselAlbums,
+                        onAlbumSelected: { album in
+                            // Find matching playlist and navigate
+                            if let playlist = viewModel.playlists.first(where: {
+                                $0.id.rawValue == album.id
+                            }) {
+                                selectionTrigger += 1
+                                onPlaylistSelected?(playlist)
+                            }
+                        },
+                        heroNamespace: heroNamespace
+                    )
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+                } header: {
+                    Label("Crate Digging", systemImage: "opticaldisc.fill")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                }
+            }
+
             // MARK: - Resonance Mixes
 
             Section {
@@ -230,7 +278,6 @@ struct PlaylistBrowserView: View {
                             isActive: viewModel.activePlaylistName == playlistInfo.name
                         )
                     }
-                    .sensoryFeedback(.selection, trigger: selectionTrigger)
                 }
             } header: {
                 if viewModel.isLoading {
@@ -244,6 +291,7 @@ struct PlaylistBrowserView: View {
                     Text("\(filteredPlaylists.count) playlists")
                 }
             }
+            .sensoryFeedback(.selection, trigger: selectionTrigger)
         }
         .listStyle(.insetGrouped)
         .navigationDestination(for: PlaylistDisplayInfo.self) { playlistInfo in
@@ -267,6 +315,11 @@ private struct PlaylistRow: View {
 
     var body: some View {
         HStack(spacing: 14) {
+            // Vinyl disc edge accent
+            RoundedRectangle(cornerRadius: 2)
+                .fill(VinylConstants.vinylBlack)
+                .frame(width: 3, height: UIConstants.ArtworkSize.small - 8)
+
             // Playlist artwork
             playlistArtwork
                 .frame(width: UIConstants.ArtworkSize.small, height: UIConstants.ArtworkSize.small)

@@ -323,10 +323,41 @@ struct SessionIntentCard: View {
     var body: some View {
         Button(action: action) {
             VStack(spacing: 10) {
-                Image(systemName: intent.icon)
-                    .font(.title)
-                    .foregroundStyle(intent.color)
-                    .frame(height: 36)
+                // Vinyl label icon background
+                ZStack {
+                    // Outer ring (record grooves)
+                    Circle()
+                        .stroke(intent.color.opacity(0.3), lineWidth: 1)
+                        .frame(width: 52, height: 52)
+
+                    Circle()
+                        .stroke(intent.color.opacity(0.15), lineWidth: 0.5)
+                        .frame(width: 44, height: 44)
+
+                    // Colored label center
+                    Circle()
+                        .fill(
+                            RadialGradient(
+                                colors: [intent.color.opacity(0.8), intent.color.opacity(0.4)],
+                                center: .center,
+                                startRadius: 2,
+                                endRadius: 18
+                            )
+                        )
+                        .frame(width: 36, height: 36)
+
+                    // Intent icon centered like a label graphic
+                    Image(systemName: intent.icon)
+                        .font(.body)
+                        .foregroundStyle(.white)
+
+                    // Center spindle dot
+                    Circle()
+                        .fill(Color(white: 0.3))
+                        .frame(width: 4, height: 4)
+                        .offset(y: -14)
+                }
+                .frame(height: 52)
 
                 Text(intent.rawValue)
                     .font(.subheadline)

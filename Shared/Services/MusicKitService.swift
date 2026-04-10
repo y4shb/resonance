@@ -411,21 +411,45 @@ public final class MusicKitService: MusicKitServiceProtocol {
         }
     }
 
+    /// Maximum songs to load into the initial queue to avoid XPC timeouts.
+    /// Remaining songs are appended after playback starts.
+    private static let initialQueueBatchSize = 100
+
     public func setQueue(songs: [MusicKit.Song]) async throws {
         guard authorizationStatus == .authorized else {
             throw MusicKitServiceError.notAuthorized
         }
 
-        guard !songs.isEmpty else {
-            logWarning("Attempted to set empty queue", category: .musicKit)
+        // Filter out songs that lack play parameters (DRM/unavailable tracks)
+        let playableSongs = songs.filter { $0.playParameters != nil }
+
+        let skipped = songs.count - playableSongs.count
+        if skipped > 0 {
+            logWarning("Skipped \(skipped) songs without play parameters", category: .musicKit)
+        }
+
+        guard !playableSongs.isEmpty else {
+            logWarning("No playable songs in queue (all \(songs.count) lacked play parameters)", category: .musicKit)
             throw MusicKitServiceError.queueEmpty
         }
 
-        logInfo("Setting queue with \(songs.count) songs", category: .musicKit)
+        // Batch: load first N songs to start playback quickly, append rest after
+        let initialBatch = Array(playableSongs.prefix(Self.initialQueueBatchSize))
+        let remaining = Array(playableSongs.dropFirst(Self.initialQueueBatchSize))
+
+        logInfo("Setting queue with \(playableSongs.count) playable songs (batch: \(initialBatch.count), deferred: \(remaining.count))", category: .musicKit)
 
         do {
-            player.queue = ApplicationMusicPlayer.Queue(for: songs)
+            player.queue = ApplicationMusicPlayer.Queue(for: initialBatch)
             try await player.play()
+
+            // Append remaining songs after playback has started
+            if !remaining.isEmpty {
+                logDebug("Appending \(remaining.count) deferred songs to queue", category: .musicKit)
+                for song in remaining {
+                    try await player.queue.insert(song, position: .tail)
+                }
+            }
         } catch {
             logError("Failed to set queue", error: error, category: .musicKit)
             throw MusicKitServiceError.playbackFailed(underlying: error)

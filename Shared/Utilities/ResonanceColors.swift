@@ -31,4 +31,21 @@ enum ResonanceColors {
 
     /// Secondary accent for subtle highlights on glass surfaces
     static let accentSubtle = Color(red: 0.35, green: 0.55, blue: 1.0).opacity(0.6)
+
+    // MARK: - Vinyl Record Player Palette
+
+    /// Near-black vinyl disc surface
+    static let vinylBlack = Color(white: 0.08)
+
+    /// Chrome highlight for tonearm and metallic elements
+    static let chromeHighlight = Color(white: 0.85)
+
+    /// Chrome shadow for darker metallic regions
+    static let chromeShadow = Color(white: 0.45)
+
+    /// Turntable platter base gray
+    static let platterGray = Color(white: 0.12)
+
+    /// Specular groove highlight on vinyl surface
+    static let grooveSpecular = Color.white.opacity(0.08)
 }

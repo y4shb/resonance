@@ -32,14 +32,8 @@ struct NowPlayingView: View {
     // Dark mode detection (P2-20)
     @Environment(\.colorScheme) private var colorScheme
 
-    // Track whether user is actively scrubbing the slider
-    @State private var isScrubbing = false
-    @State private var scrubProgress = 0.0
     @State private var showMoodInput = false
     @State private var isExplanationExpanded = false
-
-    // Dominant color for ambient glow (P2-21)
-    @State private var dominantGlowColor: Color?
 
     // Haptic feedback triggers for transport controls
     @State private var skipTrigger = 0
@@ -56,8 +50,8 @@ struct NowPlayingView: View {
     @State private var nlRequestText = ""
     @FocusState private var isNLFieldFocused: Bool
 
-    /// Enlarged artwork size for the decluttered Now Playing layout
-    private let artworkDisplaySize: CGFloat = 340
+    // Vinyl rotation engine
+    @State private var rotationController = VinylRotationController()
 
     // MARK: - Body
 
@@ -168,53 +162,76 @@ struct NowPlayingView: View {
         )
     }
 
-    // MARK: - Artwork View
+    // MARK: - Turntable Section
 
     /// Approximate heart rate derived from arousal (maps 0-1 to 50-130 BPM range)
     private var approximateHeartRate: Double {
         stateEngine.currentState.arousal * 80 + 50
     }
 
-    private var artworkView: some View {
-        ZStack {
-            // Heart pulse ring behind artwork
-            HeartPulseRing(
-                heartRate: approximateHeartRate,
-                musicBPM: viewModel.currentSongBPM,
-                accentColor: viewModel.artworkAccentColor ?? ResonanceColors.accent,
-                reduceMotion: reduceMotion,
-                isTransitioning: viewModel.isTransitioningTrack
-            )
-            .frame(
-                width: artworkDisplaySize + 24,
-                height: artworkDisplaySize + 24
-            )
-
-            // Artwork
-            Group {
-                if let artwork = viewModel.currentSong.artwork {
-                    ArtworkImage(artwork, width: artworkDisplaySize)
-                        .cornerRadius(12)
-                        .shadow(color: .black.opacity(0.3), radius: 12, x: 0, y: 6)
-                } else {
-                    // Placeholder artwork
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(.ultraThinMaterial)
+    private var turntableSection: some View {
+        TimelineView(.animation(paused: !rotationController.isPlaying)) { timeline in
+            VStack(spacing: 8) {
+                ZStack(alignment: .topTrailing) {
+                    // Platter base
+                    Circle()
+                        .fill(VinylConstants.platterBase)
                         .frame(
-                            width: artworkDisplaySize,
-                            height: artworkDisplaySize
+                            width: VinylConstants.recordDiameterLarge + 20,
+                            height: VinylConstants.recordDiameterLarge + 20
                         )
-                        .overlay(
-                            Image(systemName: "music.note")
-                                .font(.system(size: 60))
-                                .foregroundStyle(.white.opacity(0.7))
-                        )
-                        .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
+                        .shadow(color: .black.opacity(0.4), radius: 20, x: 0, y: 12)
+
+                    // Spinning vinyl record
+                    VinylRecordView(
+                        artwork: viewModel.currentSong.artwork,
+                        diameter: VinylConstants.recordDiameterLarge,
+                        rotationDegrees: rotationController.degrees(at: timeline.date)
+                    )
+                    .modifier(HeroArtworkModifier(namespace: heroNamespace))
+                    .position(
+                        x: (VinylConstants.recordDiameterLarge + 80) / 2,
+                        y: (VinylConstants.recordDiameterLarge + 40) / 2
+                    )
+
+                    // Tonearm
+                    TonearmView(
+                        progress: viewModel.playbackProgress,
+                        isPlaying: viewModel.isPlaying,
+                        onSeek: { progress in
+                            viewModel.seek(to: progress)
+                        },
+                        onSeekStarted: {
+                            viewModel.seekStarted()
+                        }
+                    )
+                    .frame(width: 160, height: 200)
+                    .offset(x: 10, y: -10)
                 }
+                .frame(
+                    width: VinylConstants.recordDiameterLarge + 80,
+                    height: VinylConstants.recordDiameterLarge + 40
+                )
+                .coordinateSpace(name: "turntable")
+
+                // Time labels below turntable
+                HStack {
+                    Text(viewModel.currentTime.formattedMinutesSeconds)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+
+                    Spacer()
+
+                    Text(viewModel.duration.formattedMinutesSeconds)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                }
+                .padding(.horizontal, 40)
             }
-            .modifier(HeroArtworkModifier(namespace: heroNamespace))
         }
-        .accessibilityLabel("Album art: \(viewModel.currentSong.title) by \(viewModel.currentSong.artistName)")
+        .accessibilityLabel("Vinyl record playing \(viewModel.currentSong.title) by \(viewModel.currentSong.artistName)")
     }
 
     // MARK: - Song Info View
@@ -235,46 +252,15 @@ struct NowPlayingView: View {
         .padding(.horizontal, 20)
     }
 
-    // MARK: - Progress View
+    // MARK: - Play State Sound Effects
 
-    private var progressView: some View {
-        VStack(spacing: 4) {
-            Slider(
-                value: isScrubbing
-                    ? $scrubProgress
-                    : Binding(
-                        get: { viewModel.playbackProgress },
-                        set: { viewModel.playbackProgress = $0 }
-                    ),
-                in: 0...1,
-                onEditingChanged: { editing in
-                    isScrubbing = editing
-                    if editing {
-                        scrubProgress = viewModel.playbackProgress
-                        viewModel.seekStarted()
-                    } else {
-                        viewModel.seek(to: scrubProgress)
-                    }
-                }
-            )
-            .tint(ResonanceColors.accent)
-            .accessibilityLabel("Playback progress")
-            .accessibilityValue("\(viewModel.currentTime.formattedMinutesSeconds) of \(viewModel.duration.formattedMinutesSeconds)")
-
-            HStack {
-                Text((isScrubbing ? scrubProgress * viewModel.duration : viewModel.currentTime)
-                    .formattedMinutesSeconds)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .monospacedDigit()
-
-                Spacer()
-
-                Text(viewModel.duration.formattedMinutesSeconds)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .monospacedDigit()
-            }
+    private func handlePlayStateChange(_ playing: Bool) {
+        if playing {
+            VinylSFXPlayer.shared.playNeedleDrop()
+            VinylSFXPlayer.shared.startCrackle()
+        } else {
+            VinylSFXPlayer.shared.playNeedleLift()
+            VinylSFXPlayer.shared.stopCrackle()
         }
     }
 
@@ -431,29 +417,28 @@ struct NowPlayingView: View {
     @ViewBuilder
     private var mainPlayerContent: some View {
         ZStack {
-            ResonanceColors.adaptiveBackground(for: colorScheme)
-                .ignoresSafeArea()
-
-            if let glowColor = dominantGlowColor {
-                AmbientGlowView(
-                    color: ResonanceColors.darkModeAdjusted(glowColor, for: colorScheme),
-                    reduceMotion: reduceMotion
-                )
-            }
+            // Full-bleed blurred artwork background
+            turntableBackground
 
             mainPlayerVStack
                 .padding(.horizontal, 20)
-                .background(artworkBackgroundGradient)
         }
         .overlay(alignment: .top) {
             commentaryOverlay
         }
-        .onChange(of: viewModel.artworkAccentColor) {
-            updateDominantGlowColor()
+        .onChange(of: viewModel.isPlaying) { _, playing in
+            rotationController.sync(with: playing)
+            handlePlayStateChange(playing)
         }
         .onAppear {
-            updateDominantGlowColor()
             explorationSliderValue = viewModel.explorationBias
+            rotationController.sync(with: viewModel.isPlaying)
+            if viewModel.isPlaying {
+                VinylSFXPlayer.shared.startCrackle()
+            }
+        }
+        .onDisappear {
+            VinylSFXPlayer.shared.stopCrackle()
         }
     }
 
@@ -462,13 +447,10 @@ struct NowPlayingView: View {
         VStack(spacing: 0) {
             statusAndInputSection
             Spacer(minLength: 4)
-            artworkSection
-                .padding(.bottom, 24)
+            turntableSection
+                .padding(.bottom, 8)
             songInfoView
                 .padding(.bottom, 12)
-            progressView
-                .padding(.horizontal, 24)
-                .padding(.bottom, 20)
             transportControls
                 .padding(.bottom, 16)
             bottomActionRow
@@ -518,12 +500,15 @@ struct NowPlayingView: View {
     @ViewBuilder
     private var artworkSection: some View {
         ZStack {
-            artworkView
+            turntableSection
             if viewModel.isLoadingAISelection {
                 TimedSkeletonView(message: "AI is analyzing your state and library...") {
-                    RoundedRectangle(cornerRadius: 16)
+                    Circle()
                         .fill(.ultraThinMaterial)
-                        .frame(width: artworkDisplaySize, height: artworkDisplaySize)
+                        .frame(
+                            width: VinylConstants.recordDiameterLarge,
+                            height: VinylConstants.recordDiameterLarge
+                        )
                         .overlay(
                             VStack(spacing: 16) {
                                 SkeletonShape(width: 120, height: 14, cornerRadius: 4)
@@ -887,35 +872,30 @@ struct NowPlayingView: View {
         }
     }
 
-    // MARK: - Album Art Background Gradient
+    // MARK: - Turntable Background
 
-    /// Linear gradient tinted by the artwork accent color.
-    /// In dark mode (P2-20), saturation is reduced by 15-20% to prevent
-    /// oversaturated gradients on the dark palette.
-    private var artworkBackgroundGradient: some View {
-        Group {
-            if let accentColor = viewModel.artworkAccentColor {
-                let adjustedColor = ResonanceColors.darkModeAdjusted(accentColor, for: colorScheme)
-                LinearGradient(
-                    colors: [adjustedColor.opacity(0.15), .clear],
-                    startPoint: .top,
-                    endPoint: .center
-                )
+    /// Full-bleed blurred artwork background for the vinyl turntable view.
+    private var turntableBackground: some View {
+        ZStack {
+            ResonanceColors.adaptiveBackground(for: colorScheme)
                 .ignoresSafeArea()
-                .animation(reduceMotion ? .none : .easeInOut(duration: 0.6), value: viewModel.artworkAccentColor)
-            } else {
-                Color.clear
+
+            if let artwork = viewModel.currentSong.artwork {
+                ArtworkImage(artwork, width: 600)
+                    .blur(radius: 60)
+                    .opacity(0.4)
+                    .scaleEffect(1.2)
+                    .ignoresSafeArea()
+                    .animation(
+                        reduceMotion ? .none : .easeInOut(duration: 0.8),
+                        value: viewModel.currentSong.appleMusicId
+                    )
             }
+
+            // Dark scrim for readability
+            Color.black.opacity(0.3)
+                .ignoresSafeArea()
         }
-    }
-
-    // MARK: - Dominant Color Extraction (P2-21)
-
-    /// Syncs the ambient glow color with the ViewModel's accent color.
-    /// The accent color is already extracted by the ViewModel; we use it
-    /// directly for the ambient glow to avoid duplicate extraction work.
-    private func updateDominantGlowColor() {
-        dominantGlowColor = viewModel.artworkAccentColor
     }
 
     // MARK: - State Info Bar

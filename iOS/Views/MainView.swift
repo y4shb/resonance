@@ -24,6 +24,7 @@ struct MainView: View {
     /// Optional namespace for matchedGeometryEffect transition from landing screen
     var heroNamespace: Namespace.ID?
 
+    @Namespace private var carouselNamespace
     @State private var selectedTab: Tab = .nowPlaying
 
     // MARK: - Tab Definition
@@ -47,7 +48,7 @@ struct MainView: View {
 
         var systemImage: String {
             switch self {
-            case .nowPlaying: return "play.circle"
+            case .nowPlaying: return "record.circle"
             case .mood: return "face.smiling"
             case .playlists: return "music.note.list"
             case .insights: return "chart.bar.xaxis"
@@ -82,7 +83,8 @@ struct MainView: View {
                 onPlaylistSelected: { _ in
                     // Switch to Now Playing tab after selecting a playlist
                     selectedTab = .nowPlaying
-                }
+                },
+                heroNamespace: carouselNamespace
             )
             .tabItem {
                 Label(Tab.playlists.title, systemImage: Tab.playlists.systemImage)
@@ -107,7 +109,7 @@ struct MainView: View {
         }
         .safeAreaInset(edge: .bottom) {
             if shouldShowMiniPlayer {
-                MiniPlayerView(
+                VinylMiniPlayerView(
                     viewModel: nowPlayingViewModel,
                     onTapNavigate: {
                         selectedTab = .nowPlaying

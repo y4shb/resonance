@@ -79,11 +79,11 @@ struct QueueView: View {
 
     private var queueListView: some View {
         List {
-            // Now Playing section
+            // Now Spinning section
             Section {
                 nowPlayingRow
             } header: {
-                Text("Now Playing")
+                Text("Now Spinning")
             }
 
             // AI Queue section
@@ -169,11 +169,20 @@ struct QueueView: View {
 
             Spacer()
 
-            // Animated now-playing indicator
-            Image(systemName: viewModel.isPlaying ? "speaker.wave.2.fill" : "speaker.fill")
-                .font(.caption)
-                .foregroundStyle(ResonanceColors.accent)
-                .symbolEffect(.variableColor.iterative, isActive: viewModel.isPlaying)
+            // Tiny spinning record indicator (replaces speaker icon)
+            if viewModel.isPlaying {
+                VinylRecordView(
+                    artwork: viewModel.currentSong.artwork,
+                    diameter: 24,
+                    rotationDegrees: Date.now.timeIntervalSince1970.truncatingRemainder(dividingBy: 360) * 200,
+                    isMini: true
+                )
+                .frame(width: 24, height: 24)
+            } else {
+                Image(systemName: "speaker.fill")
+                    .font(.caption)
+                    .foregroundStyle(ResonanceColors.accent)
+            }
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Now playing: \(viewModel.currentSong.title) by \(viewModel.currentSong.artistName)")
@@ -183,9 +192,17 @@ struct QueueView: View {
 
     private func aiQueueRow(item: QueueItem) -> some View {
         HStack(spacing: 12) {
-            // Album artwork thumbnail (48pt)
-            ArtworkView(appleMusicId: item.appleMusicId, size: 48)
-                .cornerRadius(8)
+            // Album artwork with vinyl disc peeking behind (record crate style)
+            ZStack(alignment: .trailing) {
+                // Vinyl disc edge behind artwork
+                Circle()
+                    .fill(VinylConstants.vinylBlack)
+                    .frame(width: 44, height: 44)
+                    .offset(x: 4)
+
+                ArtworkView(appleMusicId: item.appleMusicId, size: 48)
+                    .cornerRadius(8)
+            }
 
             // Song info + AI reasoning
             VStack(alignment: .leading, spacing: 3) {

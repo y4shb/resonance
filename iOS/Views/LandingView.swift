@@ -27,6 +27,8 @@ struct LandingView: View {
     @State private var isPulsing = false
     @State private var isVisible = false
     @State private var buttonPressed = false
+    @State private var vinylSpinDegrees: Double = 0
+    @State private var vinylOpacity: Double = 0
 
     // MARK: - Body
 
@@ -77,10 +79,10 @@ struct LandingView: View {
 
     private var brainOrbView: some View {
         ZStack {
-            // Outer pulse ring
+            // Outer pulse ring (ambient glow behind the record)
             Circle()
                 .fill(ResonanceColors.accent.opacity(0.15))
-                .frame(width: 200, height: 200)
+                .frame(width: 220, height: 220)
                 .blur(radius: 40)
                 .scaleEffect(isPulsing ? 1.15 : 1.0)
                 .animation(
@@ -88,26 +90,17 @@ struct LandingView: View {
                     value: isPulsing
                 )
 
-            // Inner glow
-            Circle()
-                .fill(Color.purple.opacity(0.1))
-                .frame(width: 160, height: 160)
-                .blur(radius: 30)
-
-            // Brain icon with gradient
-            Image(systemName: "brain.head.profile")
-                .font(.system(size: 80))
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [ResonanceColors.accent, .purple],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .matchedGeometryEffect(id: "heroArtwork", in: animationNamespace)
+            // Spinning vinyl record (spins up from 0 RPM)
+            VinylRecordView(
+                artwork: nil,
+                diameter: 180,
+                rotationDegrees: reduceMotion ? 0 : vinylSpinDegrees
+            )
+            .opacity(vinylOpacity)
+            .matchedGeometryEffect(id: "heroArtwork", in: animationNamespace)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Resonance brain icon")
+        .accessibilityLabel("Resonance vinyl record")
     }
 
     // MARK: - Title
@@ -162,8 +155,22 @@ struct LandingView: View {
     private func startAnimations() {
         withAnimation(reduceMotion ? .none : .easeIn(duration: 0.6)) {
             isVisible = true
+            vinylOpacity = 1.0
         }
         isPulsing = true
+
+        // Spin-up animation: 0 → continuous rotation over 1.5s
+        if !reduceMotion {
+            withAnimation(.easeOut(duration: 1.5)) {
+                vinylSpinDegrees = 360
+            }
+            // After initial spin-up, continue with continuous slow rotation
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                withAnimation(.linear(duration: 1.8).repeatForever(autoreverses: false)) {
+                    vinylSpinDegrees = 720
+                }
+            }
+        }
     }
 
     private func handleStart() {
