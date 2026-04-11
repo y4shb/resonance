@@ -2,11 +2,11 @@
 //  LandingView.swift
 //  Resonance
 //
-//  Animated landing screen with glowing brain orb shown after onboarding
-//  but before the first DJ session. Features a pulsing brain icon with
-//  blue-purple gradient, app title, and a "Let's Resonate" call-to-action.
+//  Retro power-on boot sequence landing screen shown after onboarding
+//  but before the first DJ session. Features a typewriter boot LCD panel,
+//  flanking VU meters, and a retro ENGAGE push button.
 //
-//  The brain orb uses matchedGeometryEffect to enable a smooth transition
+//  The boot LED uses matchedGeometryEffect to enable a smooth transition
 //  into the main Now Playing artwork area.
 //
 
@@ -24,151 +24,131 @@ struct LandingView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     // Animation state
-    @State private var isPulsing = false
     @State private var isVisible = false
-    @State private var buttonPressed = false
+    @State private var bootText = ""
+    @State private var showMeters = false
+    @State private var showButton = false
+    @State private var meterValue: Double = 0
 
     // MARK: - Body
 
     var body: some View {
         ZStack {
-            backgroundGradient
+            ResonanceColors.panelBg
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
                 Spacer()
 
-                brainOrbView
-                    .padding(.bottom, 32)
+                // Boot LED
+                RetroLEDIndicator(isOn: isVisible, color: ResonanceColors.ledGreen, size: 12)
+                    .padding(.bottom, 24)
+                    .matchedGeometryEffect(id: "heroArtwork", in: animationNamespace)
 
-                titleSection
-                    .padding(.bottom, 12)
+                // Boot LCD panel
+                RetroLCDPanel(title: "SYSTEM STATUS") {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(bootText)
+                            .font(RetroTypography.lcdBody)
+                            .lineLimit(nil)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .padding(.horizontal, 32)
+                .padding(.bottom, 24)
 
-                subtitleSection
+                // Flanking VU meters
+                if showMeters {
+                    HStack(spacing: 20) {
+                        RetroVUMeter(value: meterValue, label: "SYS", size: 100)
+                        RetroVUMeter(value: meterValue * 0.8, label: "BIO", size: 100)
+                    }
+                    .padding(.bottom, 24)
+                    .transition(.opacity)
+                }
 
                 Spacer()
 
-                startButton
+                // Engage button
+                if showButton {
+                    RetroPushButton(label: "ENGAGE", icon: "power") {
+                        handleStart()
+                    }
+                    .transition(.scale.combined(with: .opacity))
                     .padding(.bottom, 60)
+                }
             }
-            .padding(.horizontal, 32)
         }
         .opacity(isVisible ? 1 : 0)
         .onAppear {
-            startAnimations()
+            startBootSequence()
         }
     }
 
-    // MARK: - Background
+    // MARK: - Boot Sequence
 
-    private var backgroundGradient: some View {
-        LinearGradient(
-            colors: [
-                ResonanceColors.adaptiveBackground(for: colorScheme),
-                ResonanceColors.adaptiveSecondaryBackground(for: colorScheme),
-                ResonanceColors.adaptiveBackground(for: colorScheme)
-            ],
-            startPoint: .top,
-            endPoint: .bottom
-        )
-    }
+    private func startBootSequence() {
+        let bootLines = [
+            "RESONANCE AI DJ SYSTEM",
+            "v2.0 \u{25A0}\u{25A0}\u{25A0}\u{25A0}\u{25A0}\u{25A0}\u{25A0}\u{25A0} OK",
+            "INITIALIZING NEURAL ENGINE...",
+            "BIOMETRIC LINK: CONNECTED",
+            "LIBRARY SCAN: 1,247 TRACKS",
+            "STATUS: READY"
+        ]
 
-    // MARK: - Brain Orb
-
-    private var brainOrbView: some View {
-        ZStack {
-            // Outer pulse ring
-            Circle()
-                .fill(ResonanceColors.accent.opacity(0.15))
-                .frame(width: 200, height: 200)
-                .blur(radius: 40)
-                .scaleEffect(isPulsing ? 1.15 : 1.0)
-                .animation(
-                    reduceMotion ? .none : .easeInOut(duration: 2.0).repeatForever(autoreverses: true),
-                    value: isPulsing
-                )
-
-            // Inner glow
-            Circle()
-                .fill(Color.purple.opacity(0.1))
-                .frame(width: 160, height: 160)
-                .blur(radius: 30)
-
-            // Brain icon with gradient
-            Image(systemName: "brain.head.profile")
-                .font(.system(size: 80))
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [ResonanceColors.accent, .purple],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .matchedGeometryEffect(id: "heroArtwork", in: animationNamespace)
+        if reduceMotion {
+            // Skip animation, show everything immediately
+            isVisible = true
+            bootText = bootLines.joined(separator: "\n")
+            showMeters = true
+            meterValue = 0.7
+            showButton = true
+            return
         }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Resonance brain icon")
-    }
 
-    // MARK: - Title
-
-    private var titleSection: some View {
-        Text("Resonance")
-            .font(.largeTitle)
-            .bold()
-            .foregroundStyle(.primary)
-    }
-
-    // MARK: - Subtitle
-
-    private var subtitleSection: some View {
-        Text("Your AI-Powered DJ")
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
-    }
-
-    // MARK: - Start Button
-
-    private var startButton: some View {
-        Button {
-            handleStart()
-        } label: {
-            Text("Let's Resonate")
-                .font(.headline)
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(
-                    Capsule()
-                        .fill(
-                            LinearGradient(
-                                colors: [ResonanceColors.accent, .purple],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                )
+        withAnimation(.easeIn(duration: 0.3)) {
+            isVisible = true
         }
-        .buttonStyle(.plain)
-        .scaleEffect(buttonPressed ? 0.96 : 1.0)
-        .opacity(isVisible ? 1 : 0)
-        .offset(y: isVisible ? 0 : 20)
-        .accessibilityLabel("Start your first DJ session")
-        .accessibilityHint("Transitions to the main app")
+
+        // Typewriter boot text
+        var delay: Double = 0.5
+        for line in bootLines {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                withAnimation(.easeIn(duration: 0.1)) {
+                    if bootText.isEmpty {
+                        bootText = line
+                    } else {
+                        bootText += "\n" + line
+                    }
+                }
+            }
+            delay += 0.3
+        }
+
+        // Show meters
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+            withAnimation(.spring(RetroAnimation.needleBounce)) {
+                showMeters = true
+                meterValue = 0.7
+            }
+        }
+
+        // Show button
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay + 0.5) {
+            withAnimation(.spring(RetroAnimation.buttonPress)) {
+                showButton = true
+            }
+        }
     }
 
     // MARK: - Actions
 
-    private func startAnimations() {
-        withAnimation(reduceMotion ? .none : .easeIn(duration: 0.6)) {
-            isVisible = true
-        }
-        isPulsing = true
-    }
-
     private func handleStart() {
         withAnimation(reduceMotion ? .none : .spring(response: 0.3, dampingFraction: 0.7)) {
-            buttonPressed = true
+            // Brief visual feedback handled by RetroPushButton internally
         }
 
         // Brief delay to show button press, then transition

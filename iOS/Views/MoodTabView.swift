@@ -15,14 +15,40 @@ struct MoodTabView: View {
     // MARK: - Properties
     @ObservedObject var stateEngine: StateEngine
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.retroAccentColor) private var accentColor
 
     // MARK: - State
     @State private var currentEnergy = Defaults.initialCurrentEnergy
     @State private var currentValence = Defaults.initialCurrentValence
     @State private var targetEnergy = Defaults.initialTargetEnergy
     @State private var targetValence = Defaults.initialTargetValence
-    @State private var hasStartedJourney = false
     @State private var hasInitialized = false
+    @State private var selectedPreset: MoodPreset = .calm
+
+    private enum MoodPreset: String, CaseIterable {
+        case calm = "CALM"
+        case focus = "FOCUS"
+        case energy = "ENERGY"
+        case upbeat = "UPBEAT"
+
+        var energy: Double {
+            switch self {
+            case .calm: return 0.2
+            case .focus: return 0.5
+            case .energy: return 0.85
+            case .upbeat: return 0.75
+            }
+        }
+
+        var valence: Double {
+            switch self {
+            case .calm: return 0.7
+            case .focus: return 0.6
+            case .energy: return 0.75
+            case .upbeat: return 0.9
+            }
+        }
+    }
 
     // MARK: - Constants
     private enum Defaults {
@@ -40,208 +66,154 @@ struct MoodTabView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 28) {
-                    moodOrbSection
-                    currentMoodSection
-                    targetMoodSection
-                    presetButtonsSection
-                    suggestionPreview
-                    if let trajectory = stateEngine.moodTrajectory {
-                        journeyProgressSection(trajectory: trajectory)
-                    } else {
-                        startJourneyButton
+                BrushedMetalSurface(showScrews: true) {
+                    VStack(spacing: 20) {
+                        moodOrbSection
+                        currentMoodSection
+                        targetMoodSection
+                        presetButtonsSection
+                        suggestionPreview
+                        if let trajectory = stateEngine.moodTrajectory {
+                            journeyProgressSection(trajectory: trajectory)
+                        } else {
+                            startJourneyButton
+                        }
                     }
+                    .padding(.vertical, 16)
                 }
                 .padding(.horizontal)
                 .padding(.bottom, 32)
             }
+            .background(ResonanceColors.panelBg)
             .navigationTitle("Mood")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
             .onAppear {
                 initializeFromState()
             }
         }
     }
 
-    // MARK: - Mood Orb
+    // MARK: - Mood VU Meters
 
     private var moodOrbSection: some View {
-        ZStack {
-            Circle()
-                .fill(
-                    RadialGradient(
-                        gradient: Gradient(colors: orbGradientColors),
-                        center: .center,
-                        startRadius: 5,
-                        endRadius: 70
-                    )
-                )
-                .frame(width: 140, height: 140)
-                .blur(radius: 20)
-                .opacity(0.6)
-
-            Circle()
-                .fill(
-                    RadialGradient(
-                        gradient: Gradient(colors: orbGradientColors),
-                        center: .center,
-                        startRadius: 2,
-                        endRadius: 50
-                    )
-                )
-                .frame(width: 100, height: 100)
-
-            VStack(spacing: 2) {
-                Image(systemName: moodSystemImage)
-                    .font(.system(size: 28))
-                    .foregroundStyle(.white)
-                Text(moodSummaryLabel)
-                    .font(.caption2)
-                    .fontWeight(.medium)
-                    .foregroundStyle(.white)
-            }
+        HStack(spacing: 20) {
+            RetroVUMeter(value: currentEnergy, label: "ENERGY", showPeakHold: true, size: 140)
+            RetroVUMeter(value: currentValence, label: "VALENCE", showPeakHold: true, size: 140)
         }
-        .padding(.top, 8)
+        .padding(.vertical, 12)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Mood indicator: \(moodSummaryLabel)")
+        .accessibilityLabel("Mood meters: Energy \(Int(currentEnergy * 100))%, Valence \(Int(currentValence * 100))%")
     }
 
     // MARK: - Current Mood Section
 
     private var currentMoodSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("How are you feeling right now?")
-                .font(.headline)
+        VStack(alignment: .leading, spacing: 12) {
+            Text("CURRENT STATE")
+                .retroEngravedLabel()
 
-            sliderRow(
-                label: "Energy",
-                value: $currentEnergy,
-                lowLabel: "Low",
-                highLabel: "High",
-                tint: .orange,
-                displayText: energyLabel(for: currentEnergy)
-            )
+            RetroLCDPanel(title: "ENERGY / VALENCE") {
+                HStack(spacing: 24) {
+                    RetroKnob(value: $currentEnergy, detents: 10, label: "ENERGY", size: 56)
+                    RetroKnob(value: $currentValence, detents: 10, label: "VALENCE", size: 56)
+                }
+                .padding(16)
+            }
 
-            sliderRow(
-                label: "Mood",
-                value: $currentValence,
-                lowLabel: "Down",
-                highLabel: "Great",
-                tint: ResonanceColors.accent,
-                displayText: valenceLabel(for: currentValence)
-            )
+            // Current state readout
+            HStack(spacing: 16) {
+                RetroLCDPanel {
+                    Text("E: \(String(format: "%.2f", currentEnergy))")
+                        .font(RetroTypography.lcdBody)
+                        .padding(8)
+                }
+                RetroLCDPanel {
+                    Text("V: \(String(format: "%.2f", currentValence))")
+                        .font(RetroTypography.lcdBody)
+                        .padding(8)
+                }
+            }
         }
-        .padding()
-        .glassEffect(.regular)
+        .padding(16)
     }
 
     // MARK: - Target Mood Section
 
     private var targetMoodSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("How would you like to feel?")
-                .font(.headline)
-
-            sliderRow(
-                label: "Target Energy",
-                value: $targetEnergy,
-                lowLabel: "Low",
-                highLabel: "High",
-                tint: .orange,
-                displayText: energyLabel(for: targetEnergy)
-            )
-
-            sliderRow(
-                label: "Target Mood",
-                value: $targetValence,
-                lowLabel: "Down",
-                highLabel: "Great",
-                tint: ResonanceColors.accent,
-                displayText: valenceLabel(for: targetValence)
-            )
-        }
-        .padding()
-        .glassEffect(.regular)
-    }
-
-    // MARK: - Preset Buttons
-
-    private var presetButtonsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Quick Presets")
-                .font(.headline)
+            Text("TARGET STATE")
+                .retroEngravedLabel()
 
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                presetButton(
-                    title: "Energized",
-                    icon: "bolt.fill",
-                    energy: 0.85,
-                    valence: 0.75,
-                    color: .orange
-                )
-                presetButton(
-                    title: "Calm & Relaxed",
-                    icon: "leaf.fill",
-                    energy: 0.2,
-                    valence: 0.7,
-                    color: .green
-                )
-                presetButton(
-                    title: "Focused",
-                    icon: "eye.fill",
-                    energy: 0.5,
-                    valence: 0.6,
-                    color: .purple
-                )
-                presetButton(
-                    title: "Happy & Upbeat",
-                    icon: "sun.max.fill",
-                    energy: 0.75,
-                    valence: 0.9,
-                    color: .yellow
-                )
+            RetroLCDPanel(title: "TARGET ENERGY / VALENCE") {
+                HStack(spacing: 24) {
+                    RetroKnob(value: $targetEnergy, detents: 10, label: "ENERGY", size: 56)
+                    RetroKnob(value: $targetValence, detents: 10, label: "VALENCE", size: 56)
+                }
+                .padding(16)
+            }
+
+            // Delta readout
+            RetroLCDPanel(title: "DELTA") {
+                HStack(spacing: 16) {
+                    Text("ΔE: \(formatDelta(targetEnergy - currentEnergy))")
+                        .font(RetroTypography.lcdBody)
+                    Text("ΔV: \(formatDelta(targetValence - currentValence))")
+                        .font(RetroTypography.lcdBody)
+                }
+                .padding(8)
             }
         }
+        .padding(16)
+    }
+
+    // MARK: - Preset Selector
+
+    private var presetButtonsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("PRESETS")
+                .retroEngravedLabel()
+
+            RetroSegmentedSelector(
+                selection: $selectedPreset,
+                options: MoodPreset.allCases,
+                label: { $0.rawValue }
+            )
+            .onChange(of: selectedPreset) { _, newPreset in
+                withAnimation(.spring(RetroAnimation.knobRotation)) {
+                    targetEnergy = newPreset.energy
+                    targetValence = newPreset.valence
+                }
+            }
+        }
+        .padding(.horizontal, 16)
     }
 
     // MARK: - Suggestion Preview
 
     private var suggestionPreview: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Music Suggestion")
-                .font(.headline)
-
-            Text(suggestionText)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+        RetroLCDPanel(title: "AI RECOMMENDATION") {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(suggestionText)
+                    .font(RetroTypography.lcdBody)
+                    .lineLimit(3)
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
-        .glassEffect(.regular)
+        .padding(.horizontal, 16)
     }
 
     // MARK: - Start Journey Button
 
     private var startJourneyButton: some View {
-        Button {
-            startJourney()
-        } label: {
-            HStack {
-                Image(systemName: "arrow.right.circle.fill")
-                Text("Start Journey")
+        HStack {
+            Spacer()
+            RetroPushButton(label: "START JOURNEY", icon: "play.fill") {
+                startJourney()
             }
-            .font(.headline)
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(ResonanceColors.accent.gradient)
-            .foregroundStyle(.white)
-            .glassEffect(.regular)
+            Spacer()
         }
-        .accessibilityLabel("Start mood journey")
-        .accessibilityHint(
-            "Begin a music journey from your current mood to your target mood"
-        )
+        .padding(.horizontal, 16)
     }
 
     // MARK: - Journey Progress
@@ -249,123 +221,50 @@ struct MoodTabView: View {
     private func journeyProgressSection(trajectory: MoodTrajectory) -> some View {
         VStack(spacing: 16) {
             HStack {
-                Image(systemName: "music.note.tv.fill")
-                    .foregroundStyle(.green)
-                Text("Journey Active")
-                    .font(.headline)
+                RetroLEDIndicator(isOn: true, color: ResonanceColors.ledGreen, blinkRate: 1)
+                Text("JOURNEY ACTIVE")
+                    .retroEngravedLabel()
                 Spacer()
             }
 
-            VStack(alignment: .leading, spacing: 8) {
-                journeyInfoRow("From:", value: "\(energyLabel(for: trajectory.currentEnergy)), \(valenceLabel(for: trajectory.currentValence))")
-                journeyInfoRow("To:", value: "\(energyLabel(for: trajectory.targetEnergy)), \(valenceLabel(for: trajectory.targetValence))")
-                journeyInfoRow("Estimated songs:", value: "~\(trajectory.estimatedSongsToTarget)", bold: true)
-            }
+            // Tape counter showing progress
+            RetroLCDPanel(title: "PROGRESS") {
+                VStack(spacing: 8) {
+                    // 4-digit counter
+                    Text(String(format: "%04d", Int(journeyProgress(trajectory: trajectory) * 9999)))
+                        .font(RetroTypography.ledDigit)
+                        .padding(.vertical, 8)
 
-            // Progress bar visualization
-            ProgressView(value: journeyProgress(trajectory: trajectory))
-                .tint(.green)
-                .accessibilityLabel(
-                    "Journey progress: \(Int(journeyProgress(trajectory: trajectory) * 100))%"
-                )
+                    // LED bar graph
+                    HStack(spacing: 2) {
+                        ForEach(0..<10, id: \.self) { i in
+                            let threshold = Double(i) / 10.0
+                            let progress = journeyProgress(trajectory: trajectory)
+                            RetroLEDIndicator(
+                                isOn: progress > threshold,
+                                color: i < 6 ? ResonanceColors.ledGreen : (i < 8 ? ResonanceColors.ledAmber : ResonanceColors.ledRed),
+                                size: 6
+                            )
+                        }
+                    }
 
-            Button(role: .destructive) {
-                stateEngine.clearMoodTrajectory()
-            } label: {
-                HStack {
-                    Image(systemName: "xmark.circle.fill")
-                    Text("End Journey")
+                    // Journey info
+                    HStack(spacing: 12) {
+                        Text("FROM: \(energyLabel(for: trajectory.currentEnergy))")
+                            .font(RetroTypography.lcdCaption)
+                        Text("TO: \(energyLabel(for: trajectory.targetEnergy))")
+                            .font(RetroTypography.lcdCaption)
+                    }
+                    .padding(.top, 4)
                 }
-                .font(.subheadline)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 10)
-                .background(Color(.systemGray5))
-                .foregroundStyle(.red)
-                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .padding(12)
             }
-            .accessibilityLabel("End mood journey")
-            .accessibilityHint("Stops the current mood journey and clears the trajectory")
+
+            RetroPushButton(label: "STOP", icon: "stop.fill") {
+                stateEngine.clearMoodTrajectory()
+            }
         }
-        .padding()
-        .glassEffect(.regular)
-    }
-
-    // MARK: - Journey Info Row
-
-    private func journeyInfoRow(_ label: String, value: String, bold: Bool = false) -> some View {
-        HStack {
-            Text(label).font(.subheadline).foregroundStyle(.secondary)
-            Spacer()
-            Text(value).font(.subheadline).fontWeight(bold ? .medium : .regular)
-        }
-    }
-
-    // MARK: - Shared Slider Row
-
-    private func sliderRow(
-        label: String,
-        value: Binding<Double>,
-        lowLabel: String,
-        highLabel: String,
-        tint: Color,
-        displayText: String
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text(label)
-                    .font(.subheadline)
-                Spacer()
-                Text(displayText)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-
-            Slider(value: value, in: 0...1, step: 0.05) {
-                Text(label)
-            } minimumValueLabel: {
-                Text(lowLabel)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            } maximumValueLabel: {
-                Text(highLabel)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
-            .tint(tint)
-            .accessibilityLabel(label)
-            .accessibilityValue(displayText)
-        }
-    }
-
-    // MARK: - Preset Button
-
-    private func presetButton(
-        title: String,
-        icon: String,
-        energy: Double,
-        valence: Double,
-        color: Color
-    ) -> some View {
-        Button {
-            withAnimation(reduceMotion ? .none : .easeInOut(duration: 0.3)) {
-                targetEnergy = energy
-                targetValence = valence
-            }
-        } label: {
-            HStack(spacing: 6) {
-                Image(systemName: icon)
-                    .font(.caption)
-                Text(title)
-                    .font(.caption)
-                    .fontWeight(.medium)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 10)
-            .foregroundStyle(color)
-            .glassEffect(.regular)
-        }
-        .accessibilityLabel("Set target to \(title)")
-        .accessibilityHint("Sets target energy to \(energyLabel(for: energy)) and mood to \(valenceLabel(for: valence))")
+        .padding(16)
     }
 
     // MARK: - Actions
@@ -388,40 +287,9 @@ struct MoodTabView: View {
             current: (energy: currentEnergy, valence: currentValence),
             target: (energy: targetEnergy, valence: targetValence)
         )
-        hasStartedJourney = true
     }
 
     // MARK: - Computed Helpers
-
-    private var orbGradientColors: [Color] {
-        let energyHue = currentEnergy * 0.12  // 0=red-ish, 1=orange-yellow
-        let valenceShift = currentValence * 0.55 // shifts toward blue/purple
-        let hue = energyHue + valenceShift
-        let saturation = 0.5 + currentEnergy * 0.4
-        let brightness = 0.5 + currentValence * 0.4
-        return [
-            Color(hue: hue, saturation: saturation, brightness: brightness),
-            Color(hue: hue + 0.1, saturation: saturation * 0.8, brightness: brightness * 0.7)
-        ]
-    }
-
-    private var moodSystemImage: String {
-        switch (currentEnergy > 0.5, currentValence > 0.5) {
-        case (true, true): return "bolt.heart.fill"
-        case (true, false): return "exclamationmark.triangle.fill"
-        case (false, true): return "leaf.fill"
-        case (false, false): return "moon.zzz.fill"
-        }
-    }
-
-    private var moodSummaryLabel: String {
-        switch (currentEnergy > 0.5, currentValence > 0.5) {
-        case (true, true): return "Energized"
-        case (true, false): return "Tense"
-        case (false, true): return "Calm"
-        case (false, false): return "Tired"
-        }
-    }
 
     private var suggestionText: String {
         let eDelta = targetEnergy - currentEnergy
@@ -458,6 +326,11 @@ struct MoodTabView: View {
         let dV = trajectory.targetValence - s.valence
         let remaining = (dE * dE + dV * dV).squareRoot()
         return min(max(1.0 - (remaining / totalGap), 0.0), 1.0)
+    }
+
+    private func formatDelta(_ delta: Double) -> String {
+        let sign = delta >= 0 ? "+" : ""
+        return "\(sign)\(String(format: "%.2f", delta))"
     }
 
     // MARK: - Labels

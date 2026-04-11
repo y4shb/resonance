@@ -119,109 +119,129 @@ struct PlaylistDetailView: View {
         )
     }
 
-    // MARK: - Song List
+    // MARK: - 3D Cassette Carousel
 
+    /// Songs displayed as a 3D vertical carousel of cassette tapes.
+    /// Center cassette is front-facing; above/below tilt away in perspective.
     private var songList: some View {
-        List {
-            // Header section with artwork and action buttons
-            playlistHeader
-                .listRowSeparator(.hidden)
-                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+        VStack(spacing: 0) {
+            // Header with playlist cassette + action buttons
+            cassettePlaylistHeader
+                .padding(.bottom, 8)
 
-            // Song rows
-            Section {
-                if !searchText.isEmpty && filteredSongs.isEmpty {
-                    ContentUnavailableView.search(text: searchText)
-                } else {
-                    ForEach(filteredSongs) { item in
-                        SongRow(item: item)
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                playSong(item.song)
-                            }
-                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                Button {
-                                    playSong(item.song)
-                                } label: {
-                                    Label("Play", systemImage: "play.fill")
-                                }
-                                .tint(ResonanceColors.accent)
-                                .accessibilityLabel("Play \(item.song.title)")
-                            }
-                    }
-                }
-            } header: {
+            // Song count
+            HStack {
                 Text("\(filteredSongs.count) \(filteredSongs.count == 1 ? "song" : "songs")")
+                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .foregroundStyle(.secondary)
+                    .tracking(1)
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 4)
+
+            // 3D carousel
+            if !searchText.isEmpty && filteredSongs.isEmpty {
+                ContentUnavailableView.search(text: searchText)
+            } else {
+                cassetteCarousel
             }
         }
-        .listStyle(.insetGrouped)
     }
 
-    // MARK: - Playlist Header
+    // MARK: - Playlist Header (Cassette Style)
 
-    private var playlistHeader: some View {
-        VStack(spacing: 16) {
-            // Playlist artwork
-            if let artwork = playlistInfo.artwork {
-                ArtworkImage(artwork, width: 180, height: 180)
-                    .cornerRadius(12)
-                    .shadow(radius: 4)
-                    .accessibilityLabel("Playlist artwork for \(playlistInfo.name)")
-            } else {
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(.ultraThinMaterial)
-                    .frame(width: 180, height: 180)
-                    .overlay(
-                        Image(systemName: "music.note.list")
-                            .font(.system(size: 48))
-                            .foregroundStyle(.secondary)
-                            .accessibilityHidden(true)
-                    )
-                    .shadow(radius: 4)
-                    .accessibilityLabel("Playlist artwork placeholder")
-            }
+    private var cassettePlaylistHeader: some View {
+        VStack(spacing: 14) {
+            // Playlist shown as a large cassette
+            MiniCassetteView(
+                artwork: playlistInfo.artwork,
+                title: playlistInfo.name,
+                subtitle: "\(songs.count) songs",
+                width: 220
+            )
+            .rotation3DEffect(.degrees(5), axis: (x: 1, y: 0, z: 0), perspective: 0.5)
+            .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 6)
+            .accessibilityLabel("Playlist: \(playlistInfo.name)")
 
             // Playlist description
             if let description = playlistInfo.description, !description.isEmpty {
                 Text(description)
-                    .font(.subheadline)
+                    .font(.caption)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
-                    .lineLimit(3)
-                    .padding(.horizontal, 32)
+                    .lineLimit(2)
+                    .padding(.horizontal, 40)
             }
 
             // Action buttons
-            HStack(spacing: 16) {
+            HStack(spacing: 12) {
                 Button {
                     playAll(shuffle: false)
                 } label: {
                     Label("Play All", systemImage: "play.fill")
+                        .font(.subheadline)
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
-                .controlSize(.regular)
+                .controlSize(.small)
                 .disabled(songs.isEmpty)
                 .accessibilityLabel("Play all songs")
-                .accessibilityHint("Plays all \(songs.count) songs in order")
 
                 Button {
                     playAll(shuffle: true)
                 } label: {
                     Label("Shuffle", systemImage: "shuffle")
+                        .font(.subheadline)
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
-                .controlSize(.regular)
+                .controlSize(.small)
                 .disabled(songs.isEmpty)
                 .accessibilityLabel("Shuffle all songs")
-                .accessibilityHint("Plays all \(songs.count) songs in random order")
             }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 8)
+            .padding(.horizontal, 32)
         }
         .frame(maxWidth: .infinity)
-        .padding(.top, 16)
+        .padding(.top, 12)
+    }
+
+    // MARK: - Cassette Carousel
+
+    /// 3D vertical carousel using .scrollTransition for GPU-composited
+    /// transforms without GeometryReader layout side effects.
+    /// phase.value: -1 (above) → 0 (center) → 1 (below)
+    private var cassetteCarousel: some View {
+        ScrollView(.vertical, showsIndicators: false) {
+            LazyVStack(spacing: 14) {
+                ForEach(filteredSongs) { item in
+                    MiniCassetteView(
+                        artwork: item.song.artwork,
+                        title: item.song.title,
+                        subtitle: item.song.artistName,
+                        width: 280
+                    )
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 180)
+                    .scrollTransition(.interactive, axis: .vertical) { content, phase in
+                        content
+                            .rotation3DEffect(
+                                .degrees(phase.value * 40),
+                                axis: (x: 1, y: 0, z: 0),
+                                perspective: 0.35
+                            )
+                            .scaleEffect(max(0.7, 1 - abs(phase.value) * 0.3))
+                            .opacity(max(0.3, 1 - abs(phase.value) * 0.5))
+                    }
+                    .onTapGesture { playSong(item.song) }
+                    .accessibilityLabel("\(item.song.title) by \(item.song.artistName)")
+                    .accessibilityHint("Tap to play")
+                }
+            }
+            .scrollTargetLayout()
+            .padding(.vertical, 60)
+        }
+        .scrollTargetBehavior(.viewAligned)
     }
 
     // MARK: - Actions

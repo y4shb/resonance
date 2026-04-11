@@ -58,23 +58,9 @@ struct MusicConnectionPage: View {
 
                 // Continue button (appears after analysis progress threshold)
                 if analysisViewModel.canContinue || isDenied {
-                    Button(action: onContinue) {
-                        Text("Continue")
-                            .font(.headline)
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .background(
-                                Capsule().fill(
-                                    LinearGradient(
-                                        colors: [ResonanceColors.accent, .purple],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                            )
+                    RetroPushButton(label: "CONTINUE", icon: "arrow.right") {
+                        onContinue()
                     }
-                    .buttonStyle(.plain)
                     .padding(.horizontal, 32)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
@@ -102,21 +88,8 @@ struct MusicConnectionPage: View {
                 .fontWeight(.bold)
                 .multilineTextAlignment(.center)
 
-            Button {
+            RetroPushButton(label: "CONNECT APPLE MUSIC", icon: "music.note") {
                 requestMusicAccess()
-            } label: {
-                HStack(spacing: 8) {
-                    if isRequesting {
-                        ProgressView().tint(.white)
-                    }
-                    Text("Connect Apple Music")
-                        .font(.headline)
-                }
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .background(Color.pink)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
             }
             .disabled(isRequesting)
             .padding(.horizontal, 8)
@@ -157,10 +130,9 @@ struct MusicConnectionPage: View {
         VStack(spacing: 16) {
             // Connected badge
             HStack(spacing: 8) {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
-                Text("Apple Music Connected")
-                    .font(.headline)
+                RetroLEDIndicator(isOn: true, color: ResonanceColors.ledGreen, size: 10)
+                Text("CONNECTED")
+                    .font(RetroTypography.lcdBody)
                     .foregroundStyle(.green)
             }
             .padding(.bottom, 8)
@@ -198,22 +170,24 @@ struct MusicConnectionPage: View {
 
     private var emotionTagGrid: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Discovering your music's emotions...")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            Text("DISCOVERING EMOTIONS")
+                .retroEngravedLabel()
                 .padding(.leading, 4)
 
             // Show top 6 categories in a flowing grid
-            LazyVGrid(
-                columns: [GridItem(.flexible()), GridItem(.flexible())],
-                spacing: 8
-            ) {
-                ForEach(Array(analysisViewModel.emotionCounters.prefix(6))) { counter in
-                    EmotionTagRow(
-                        counter: counter,
-                        isHighlighted: counter.category == analysisViewModel.lastUpdatedCategory
-                    )
+            RetroLCDPanel {
+                LazyVGrid(
+                    columns: [GridItem(.flexible()), GridItem(.flexible())],
+                    spacing: 8
+                ) {
+                    ForEach(Array(analysisViewModel.emotionCounters.prefix(6))) { counter in
+                        EmotionTagRow(
+                            counter: counter,
+                            isHighlighted: counter.category == analysisViewModel.lastUpdatedCategory
+                        )
+                    }
                 }
+                .padding(8)
             }
         }
         .padding(.top, 8)

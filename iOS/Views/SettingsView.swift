@@ -23,71 +23,83 @@ struct SettingsView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                settingsRow(
-                    icon: "figure.stand",
-                    color: .red,
-                    title: "My Body",
-                    subtitle: "HealthKit, biometric signals, sensitivity"
-                ) {
-                    BodySettingsView(preferences: $preferences, onSave: savePreferences)
-                }
+            ScrollView {
+                BrushedMetalSurface(showScrews: true) {
+                    VStack(spacing: 16) {
+                        // Header LCD
+                        RetroLCDPanel(title: "SYSTEM") {
+                            Text("CONFIGURATION")
+                                .font(RetroTypography.lcdTitle)
+                                .padding(10)
+                                .frame(maxWidth: .infinity)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.top, 8)
 
-                settingsRow(
-                    icon: "music.note.list",
-                    color: .pink,
-                    title: "My Music",
-                    subtitle: "Apple Music, library, playlists"
-                ) {
-                    MusicSettingsView(
-                        musicService: musicService,
-                        preferences: $preferences,
-                        onSave: savePreferences
-                    )
-                }
+                        // Settings panels
+                        settingsPanel(
+                            icon: "figure.stand",
+                            title: "BODY",
+                            subtitle: "HealthKit, biometric signals, sensitivity"
+                        ) {
+                            BodySettingsView(preferences: $preferences, onSave: savePreferences)
+                        }
 
-                settingsRow(
-                    icon: "brain.head.profile",
-                    color: .purple,
-                    title: "My AI",
-                    subtitle: "Exploration, autonomy, tuning"
-                ) {
-                    AISettingsView(preferences: $preferences, onSave: savePreferences)
-                }
+                        settingsPanel(
+                            icon: "music.note.list",
+                            title: "MUSIC",
+                            subtitle: "Apple Music, library, playlists"
+                        ) {
+                            MusicSettingsView(
+                                musicService: musicService,
+                                preferences: $preferences,
+                                onSave: savePreferences
+                            )
+                        }
 
-                settingsRow(
-                    icon: "clock.fill",
-                    color: .orange,
-                    title: "My Sessions",
-                    subtitle: "Duration, intent, crossfade"
-                ) {
-                    SessionSettingsView(preferences: $preferences, onSave: savePreferences)
-                }
+                        settingsPanel(
+                            icon: "brain.head.profile",
+                            title: "AI",
+                            subtitle: "Exploration, autonomy, tuning"
+                        ) {
+                            AISettingsView(preferences: $preferences, onSave: savePreferences)
+                        }
 
-                settingsRow(
-                    icon: "externaldrive.fill",
-                    color: .blue,
-                    title: "My Data",
-                    subtitle: "Privacy, export, about"
-                ) {
-                    DataSettingsView(
-                        historicalEngine: historicalEngine,
-                        stateEngine: stateEngine,
-                        preferences: $preferences,
-                        onSave: savePreferences
-                    )
+                        settingsPanel(
+                            icon: "clock.fill",
+                            title: "SESSIONS",
+                            subtitle: "Duration, intent, crossfade"
+                        ) {
+                            SessionSettingsView(preferences: $preferences, onSave: savePreferences)
+                        }
+
+                        settingsPanel(
+                            icon: "externaldrive.fill",
+                            title: "DATA",
+                            subtitle: "Privacy, export, about"
+                        ) {
+                            DataSettingsView(
+                                historicalEngine: historicalEngine,
+                                stateEngine: stateEngine,
+                                preferences: $preferences,
+                                onSave: savePreferences
+                            )
+                        }
+                    }
+                    .padding(.vertical, 16)
                 }
+                .padding()
             }
-            .listStyle(.insetGrouped)
+            .background(ResonanceColors.panelBg)
             .navigationTitle("Settings")
+            .navigationBarTitleDisplayMode(.inline)
         }
     }
 
     // MARK: - Helpers
 
-    private func settingsRow<Destination: View>(
+    private func settingsPanel<Destination: View>(
         icon: String,
-        color: Color,
         title: String,
         subtitle: String,
         @ViewBuilder destination: @escaping () -> Destination
@@ -95,25 +107,34 @@ struct SettingsView: View {
         NavigationLink {
             destination()
         } label: {
-            HStack(spacing: 14) {
-                Image(systemName: icon)
-                    .font(.title3)
-                    .foregroundStyle(color)
-                    .frame(width: 32, height: 32)
-                    .background(.ultraThinMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            BrushedMetalSurface(cornerRadius: 8) {
+                HStack(spacing: 14) {
+                    Image(systemName: icon)
+                        .font(.title3)
+                        .foregroundStyle(ResonanceColors.screwChrome)
+                        .frame(width: 32, height: 32)
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .font(.body)
-                        .fontWeight(.medium)
-                    Text(subtitle)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(title)
+                            .retroEngravedLabel()
+                        Text(subtitle)
+                            .font(RetroTypography.lcdCaption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    RetroLEDIndicator(isOn: true, color: ResonanceColors.ledGreen, size: 5)
+
+                    Image(systemName: "chevron.right")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(ResonanceColors.metalMid)
                 }
+                .padding(12)
             }
-            .padding(.vertical, 6)
         }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 16)
     }
 
     private func savePreferences() {

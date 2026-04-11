@@ -1,0 +1,115 @@
+<h2>Resonance UI/UX Overhaul — Design Direction</h2>
+<p class="subtitle">Your Walkman cassette player is already stunning. Let's decide how far the retro-tech aesthetic extends across the rest of the app.</p>
+
+<div class="section">
+  <h3>Current State</h3>
+  <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px;">
+    <div style="text-align: center; padding: 12px 8px; border-radius: 10px; background: rgba(90,140,255,0.15); border: 1px solid rgba(90,140,255,0.3);">
+      <div style="font-size: 28px; margin-bottom: 6px;">📼</div>
+      <div style="font-weight: 600; font-size: 13px;">Now Playing</div>
+      <div style="font-size: 10px; color: #8a8f9d; margin-top: 4px;">✅ Walkman cassette</div>
+    </div>
+    <div style="text-align: center; padding: 12px 8px; border-radius: 10px; background: rgba(90,140,255,0.15); border: 1px solid rgba(90,140,255,0.3);">
+      <div style="font-size: 28px; margin-bottom: 6px;">🎵</div>
+      <div style="font-weight: 600; font-size: 13px;">Playlists</div>
+      <div style="font-size: 10px; color: #8a8f9d; margin-top: 4px;">✅ Cassette grid</div>
+    </div>
+    <div style="text-align: center; padding: 12px 8px; border-radius: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
+      <div style="font-size: 28px; margin-bottom: 6px;">😊</div>
+      <div style="font-weight: 600; font-size: 13px;">Mood</div>
+      <div style="font-size: 10px; color: #8a8f9d; margin-top: 4px;">Standard sliders</div>
+    </div>
+    <div style="text-align: center; padding: 12px 8px; border-radius: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
+      <div style="font-size: 28px; margin-bottom: 6px;">📊</div>
+      <div style="font-weight: 600; font-size: 13px;">Insights</div>
+      <div style="font-size: 10px; color: #8a8f9d; margin-top: 4px;">Standard charts</div>
+    </div>
+    <div style="text-align: center; padding: 12px 8px; border-radius: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
+      <div style="font-size: 28px; margin-bottom: 6px;">⚙️</div>
+      <div style="font-weight: 600; font-size: 13px;">Settings</div>
+      <div style="font-size: 10px; color: #8a8f9d; margin-top: 4px;">Standard list</div>
+    </div>
+  </div>
+</div>
+
+<h3>How far should the Walkman aesthetic extend?</h3>
+<p class="subtitle">Each option represents a different design commitment and complexity level</p>
+
+<div class="cards">
+  <!-- Option A -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding: 20px; text-align: center;">
+      <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+        <div style="width: 60px; height: 40px; border-radius: 6px; background: linear-gradient(135deg, #5A8CFF 0%, #7B4FFF 100%); display: flex; align-items: center; justify-content: center; font-size: 14px; border: 2px solid rgba(90,140,255,0.5);">📼</div>
+        <div style="width: 60px; height: 40px; border-radius: 6px; background: linear-gradient(135deg, #5A8CFF 0%, #7B4FFF 100%); display: flex; align-items: center; justify-content: center; font-size: 14px; border: 2px solid rgba(90,140,255,0.5);">🎵</div>
+        <div style="width: 60px; height: 40px; border-radius: 6px; background: linear-gradient(135deg, #5A8CFF 0%, #7B4FFF 100%); display: flex; align-items: center; justify-content: center; font-size: 14px; border: 2px solid rgba(90,140,255,0.5);">😊</div>
+        <div style="width: 60px; height: 40px; border-radius: 6px; background: linear-gradient(135deg, #5A8CFF 0%, #7B4FFF 100%); display: flex; align-items: center; justify-content: center; font-size: 14px; border: 2px solid rgba(90,140,255,0.5);">📊</div>
+        <div style="width: 60px; height: 40px; border-radius: 6px; background: linear-gradient(135deg, #5A8CFF 0%, #7B4FFF 100%); display: flex; align-items: center; justify-content: center; font-size: 14px; border: 2px solid rgba(90,140,255,0.5);">⚙️</div>
+      </div>
+      <div style="margin-top: 10px; font-size: 11px; font-family: monospace; color: #5A8CFF; letter-spacing: 2px;">ALL RETRO</div>
+    </div>
+    <div class="card-body">
+      <h3>A. Full Retro-Tech Immersion</h3>
+      <p>Every screen becomes part of the Walkman universe. Mood tab gets VU meters and analog dials. Insights shows data on green-phosphor CRT screens. Settings becomes a hardware config panel with toggle switches. Tab bar is a cassette deck control strip.</p>
+      <div class="pros-cons" style="margin-top: 12px;">
+        <div class="pros"><h4>Pros</h4><ul><li>Totally immersive experience</li><li>Unique and memorable</li><li>Strong brand identity</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Highest complexity</li><li>Potential usability trade-offs</li><li>Every new feature must fit the aesthetic</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option B -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding: 20px; text-align: center;">
+      <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+        <div style="width: 60px; height: 40px; border-radius: 6px; background: linear-gradient(135deg, #5A8CFF 0%, #7B4FFF 100%); display: flex; align-items: center; justify-content: center; font-size: 14px; border: 2px solid rgba(90,140,255,0.5);">📼</div>
+        <div style="width: 60px; height: 40px; border-radius: 6px; background: linear-gradient(135deg, #5A8CFF 0%, #7B4FFF 100%); display: flex; align-items: center; justify-content: center; font-size: 14px; border: 2px solid rgba(90,140,255,0.5);">🎵</div>
+        <div style="width: 60px; height: 40px; border-radius: 6px; background: rgba(90,140,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 14px; border: 1px dashed rgba(90,140,255,0.3);">😊</div>
+        <div style="width: 60px; height: 40px; border-radius: 6px; background: rgba(90,140,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 14px; border: 1px dashed rgba(90,140,255,0.3);">📊</div>
+        <div style="width: 60px; height: 40px; border-radius: 6px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; font-size: 14px; border: 1px solid rgba(255,255,255,0.1);">⚙️</div>
+      </div>
+      <div style="margin-top: 10px; font-size: 11px; font-family: monospace; color: #5A8CFF; letter-spacing: 2px;">HYBRID</div>
+    </div>
+    <div class="card-body">
+      <h3>B. Retro Core + Modern Periphery (Recommended)</h3>
+      <p>Music-related screens (Now Playing, Playlists, Queue) are full retro Walkman. Mood and Insights get retro-inspired accents (monospaced type, brushed metal cards, subtle CRT scanlines) but stay functionally modern. Settings remains clean and usable. A custom cassette-styled tab bar ties it all together.</p>
+      <div class="pros-cons" style="margin-top: 12px;">
+        <div class="pros"><h4>Pros</h4><ul><li>Best of both worlds</li><li>Music experience stays immersive</li><li>Data/utility screens stay usable</li><li>Consistent design language throughout</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Requires careful balancing</li><li>Must define clear rules for "how retro"</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Option C -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding: 20px; text-align: center;">
+      <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+        <div style="width: 60px; height: 40px; border-radius: 6px; background: linear-gradient(135deg, #5A8CFF 0%, #7B4FFF 100%); display: flex; align-items: center; justify-content: center; font-size: 14px; border: 2px solid rgba(90,140,255,0.5);">📼</div>
+        <div style="width: 60px; height: 40px; border-radius: 6px; background: linear-gradient(135deg, #5A8CFF 0%, #7B4FFF 100%); display: flex; align-items: center; justify-content: center; font-size: 14px; border: 2px solid rgba(90,140,255,0.5);">🎵</div>
+        <div style="width: 60px; height: 40px; border-radius: 6px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; font-size: 14px; border: 1px solid rgba(255,255,255,0.1);">😊</div>
+        <div style="width: 60px; height: 40px; border-radius: 6px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; font-size: 14px; border: 1px solid rgba(255,255,255,0.1);">📊</div>
+        <div style="width: 60px; height: 40px; border-radius: 6px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; font-size: 14px; border: 1px solid rgba(255,255,255,0.1);">⚙️</div>
+      </div>
+      <div style="margin-top: 10px; font-size: 11px; font-family: monospace; color: #5A8CFF; letter-spacing: 2px;">FOCUSED</div>
+    </div>
+    <div class="card-body">
+      <h3>C. Polish What Exists</h3>
+      <p>Keep the Walkman on Now Playing and cassette grids on Playlists, but don't extend the retro theme further. Focus instead on refining what's already built — smoother animations, better transitions between tabs, micro-interactions, and visual polish. Other tabs get a modern glass-and-gradient treatment.</p>
+      <div class="pros-cons" style="margin-top: 12px;">
+        <div class="pros"><h4>Pros</h4><ul><li>Least work</li><li>Lower risk</li><li>Keeps utility screens clean</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Can feel disjointed</li><li>Two different design languages</li><li>Less impactful overhaul</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top: 24px; padding: 16px; border-radius: 10px; background: rgba(90,140,255,0.08); border: 1px solid rgba(90,140,255,0.15);">
+  <div style="font-size: 12px; font-weight: 600; margin-bottom: 8px; color: #5A8CFF;">DESIGN VOCABULARY IN PLAY</div>
+  <div style="display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: #8a8f9d;">
+    <span>Accent: <span style="color: #5A8CFF;">●</span> Periwinkle #5A8CFF</span>
+    <span>BG: <span style="color: #666;">●</span> #121212 → #1E1E2E</span>
+    <span>Type: Monospaced (Walkman) + System (elsewhere)</span>
+    <span>Materials: .ultraThinMaterial, .glassEffect</span>
+    <span>Motion: Spring, Canvas (reels), scrollTransition (3D carousel)</span>
+  </div>
+</div>

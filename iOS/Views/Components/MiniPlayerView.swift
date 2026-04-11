@@ -28,6 +28,8 @@ struct MiniPlayerView: View {
     // Haptic feedback triggers
     @State private var playPauseTrigger = 0
     @State private var skipTrigger = 0
+    @State private var reelAngle: Double = 0
+    @State private var reelTimer: Timer?
 
     // MARK: - Body
 
@@ -38,7 +40,7 @@ struct MiniPlayerView: View {
     // MARK: - Expanded Layout
 
     /// Artwork size for the mini player thumbnail.
-    private let artworkSize: CGFloat = 48
+    private let artworkSize: CGFloat = 36
 
     /// Full-width layout shown when the tab bar is fully visible.
     /// Displays album art thumbnail, song info, and transport controls.
@@ -55,23 +57,18 @@ struct MiniPlayerView: View {
             .accessibilityLabel("Playback progress")
             .accessibilityValue("\(Int(max(0, min(1, viewModel.playbackProgress)) * 100)) percent")
 
-            HStack(spacing: 12) {
-                // Album art thumbnail (slightly larger)
+            HStack(spacing: 8) {
+                miniReel
                 artworkThumbnail
-                    .frame(width: artworkSize, height: artworkSize)
-
-                // Song info
+                    .frame(width: 36, height: 36)
                 songInfoSection
-
                 Spacer(minLength: 4)
-
-                // Transport controls (play/pause + skip)
                 transportControls
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
         }
-        .glassEffect(.regular)
+        .brushedMetal(cornerRadius: 0)
         .contentShape(Rectangle())
         .simultaneousGesture(
             TapGesture().onEnded {
@@ -89,9 +86,9 @@ struct MiniPlayerView: View {
             if let artwork = viewModel.currentSong.artwork {
                 // Request thumbnail-sized artwork to avoid loading full-resolution images
                 ArtworkImage(artwork, width: artworkSize, height: artworkSize)
-                    .cornerRadius(8)
+                    .cornerRadius(6)
             } else {
-                RoundedRectangle(cornerRadius: 8)
+                RoundedRectangle(cornerRadius: 6)
                     .fill(.ultraThinMaterial)
                     .overlay(
                         Image(systemName: "music.note")
@@ -100,6 +97,10 @@ struct MiniPlayerView: View {
                     )
             }
         }
+        .overlay(
+            RoundedRectangle(cornerRadius: 6)
+                .strokeBorder(ResonanceColors.metalMid, lineWidth: 1)
+        )
         .accessibilityHidden(true)
     }
 
@@ -108,19 +109,71 @@ struct MiniPlayerView: View {
     private var songInfoSection: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(viewModel.currentSong.title)
-                .font(.subheadline)
-                .fontWeight(.semibold)
+                .font(RetroTypography.lcdBody)
                 .lineLimit(1)
                 .foregroundStyle(.primary)
 
             Text(viewModel.currentSong.artistName)
-                .font(.caption)
+                .font(RetroTypography.lcdCaption)
                 .lineLimit(1)
                 .foregroundStyle(.secondary)
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(viewModel.currentSong.title) by \(viewModel.currentSong.artistName)")
         .accessibilityHint("Tap to open Now Playing")
+    }
+
+    // MARK: - Mini Reel
+
+    private var miniReel: some View {
+        Canvas { context, size in
+            let center = CGPoint(x: size.width / 2, y: size.height / 2)
+            let radius = min(size.width, size.height) / 2
+
+            // Hub
+            let hubPath = Path(ellipseIn: CGRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2))
+            context.fill(hubPath, with: .color(ResonanceColors.metalMid))
+
+            // Spokes
+            for i in 0..<3 {
+                let angle = Angle.degrees(reelAngle + Double(i) * 120)
+                let endPoint = CGPoint(
+                    x: center.x + radius * 0.7 * cos(angle.radians),
+                    y: center.y + radius * 0.7 * sin(angle.radians)
+                )
+                var spokePath = Path()
+                spokePath.move(to: center)
+                spokePath.addLine(to: endPoint)
+                context.stroke(spokePath, with: .color(ResonanceColors.metalDark), lineWidth: 1)
+            }
+
+            // Center pin
+            let pinSize: CGFloat = 3
+            let pinPath = Path(ellipseIn: CGRect(x: center.x - pinSize/2, y: center.y - pinSize/2, width: pinSize, height: pinSize))
+            context.fill(pinPath, with: .color(ResonanceColors.screwChrome))
+        }
+        .frame(width: 20, height: 20)
+        .onDisappear { reelTimer?.invalidate(); reelTimer = nil }
+        .onAppear {
+            if viewModel.isPlaying {
+                startReelSpin()
+            }
+        }
+        .onChange(of: viewModel.isPlaying) { _, isPlaying in
+            if isPlaying { startReelSpin() }
+        }
+    }
+
+    private func startReelSpin() {
+        reelTimer?.invalidate()
+        reelTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 30.0, repeats: true) { timer in
+            if !viewModel.isPlaying {
+                timer.invalidate()
+                reelTimer = nil
+                return
+            }
+            reelAngle += 3
+        }
     }
 
     // MARK: - Transport Controls

@@ -21,13 +21,16 @@ struct BodySettingsView: View {
     @State private var healthAuthRequested = false
 
     var body: some View {
-        List {
-            healthKitSection
-            biometricSignalsSection
-            sensitivitySection
-            dataSourcesSection
+        ScrollView {
+            VStack(spacing: 16) {
+                healthKitSection
+                biometricSignalsSection
+                sensitivitySection
+                dataSourcesSection
+            }
+            .padding()
         }
-        .listStyle(.insetGrouped)
+        .background(ResonanceColors.panelBg)
         .navigationTitle("My Body")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -35,95 +38,97 @@ struct BodySettingsView: View {
     // MARK: - HealthKit Permission Section
 
     private var healthKitSection: some View {
-        Section {
-            HStack {
-                Label("HealthKit", systemImage: "heart.fill")
-                Spacer()
-                healthAuthStatusBadge
-            }
+        BrushedMetalSurface(cornerRadius: 10) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("HEALTH INTEGRATION")
+                    .retroEngravedLabel()
 
-            if !healthReadAccessVerified {
-                Button {
-                    requestHealthAuthorization()
-                } label: {
-                    HStack {
-                        Text("Grant Health Access")
-                        if isRequestingHealthAuth {
-                            Spacer()
-                            ProgressView()
+                HStack {
+                    Label("HealthKit", systemImage: "heart.fill")
+                    Spacer()
+                    RetroLEDIndicator(
+                        isOn: true,
+                        color: healthReadAccessVerified ? ResonanceColors.ledGreen : ResonanceColors.ledAmber
+                    )
+                }
+
+                if !healthReadAccessVerified {
+                    Button {
+                        requestHealthAuthorization()
+                    } label: {
+                        HStack {
+                            Text("Grant Health Access")
+                            if isRequestingHealthAuth {
+                                Spacer()
+                                ProgressView()
+                            }
                         }
                     }
+                    .disabled(isRequestingHealthAuth)
                 }
-                .disabled(isRequestingHealthAuth)
+
+                Text("Heart rate and HRV data personalize music selection based on your physiological state.")
+                    .font(RetroTypography.lcdCaption)
+                    .foregroundStyle(.tertiary)
             }
-        } header: {
-            Text("Health Integration")
-        } footer: {
-            Text("Heart rate and HRV data personalize music selection based on your physiological state.")
+            .padding(16)
         }
         .onAppear {
             checkHealthAuthorizationStatus()
         }
     }
 
-    @ViewBuilder
-    private var healthAuthStatusBadge: some View {
-        if healthReadAccessVerified {
-            Label("Connected", systemImage: "checkmark.circle.fill")
-                .font(.caption)
-                .foregroundStyle(.green)
-                .labelStyle(.titleAndIcon)
-        } else {
-            Label("Not Set Up", systemImage: "questionmark.circle")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .labelStyle(.titleAndIcon)
-        }
-    }
-
     // MARK: - Biometric Signals Section
 
     private var biometricSignalsSection: some View {
-        Section {
-            signalToggle(
-                label: "Heart Rate",
-                icon: "waveform.path.ecg",
-                isOn: $preferences.heartRateEnabled
-            )
+        BrushedMetalSurface(cornerRadius: 10) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("BIOMETRIC SIGNALS")
+                    .retroEngravedLabel()
 
-            signalToggle(
-                label: "Heart Rate Variability",
-                icon: "chart.line.uptrend.xyaxis",
-                isOn: $preferences.hrvEnabled
-            )
+                signalToggle(
+                    label: "Heart Rate",
+                    icon: "waveform.path.ecg",
+                    isOn: $preferences.heartRateEnabled
+                )
 
-            signalToggle(
-                label: "Motion & Activity",
-                icon: "figure.walk.motion",
-                isOn: $preferences.motionEnabled
-            )
+                signalToggle(
+                    label: "Heart Rate Variability",
+                    icon: "chart.line.uptrend.xyaxis",
+                    isOn: $preferences.hrvEnabled
+                )
 
-            signalToggle(
-                label: "Sleep Quality",
-                icon: "bed.double.fill",
-                isOn: $preferences.sleepEnabled
-            )
+                signalToggle(
+                    label: "Motion & Activity",
+                    icon: "figure.walk.motion",
+                    isOn: $preferences.motionEnabled
+                )
 
-            signalToggle(
-                label: "Wrist Temperature",
-                icon: "thermometer.medium",
-                isOn: $preferences.temperatureEnabled
-            )
-        } header: {
-            Text("Biometric Signals")
-        } footer: {
-            Text("Choose which body signals influence your music. Disabling a signal removes it from the AI's decision-making.")
+                signalToggle(
+                    label: "Sleep Quality",
+                    icon: "bed.double.fill",
+                    isOn: $preferences.sleepEnabled
+                )
+
+                signalToggle(
+                    label: "Wrist Temperature",
+                    icon: "thermometer.medium",
+                    isOn: $preferences.temperatureEnabled
+                )
+
+                Text("Choose which body signals influence your music. Disabling a signal removes it from the AI's decision-making.")
+                    .font(RetroTypography.lcdCaption)
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(16)
         }
     }
 
     private func signalToggle(label: String, icon: String, isOn: Binding<Bool>) -> some View {
-        Toggle(isOn: isOn) {
+        HStack {
             Label(label, systemImage: icon)
+            Spacer()
+            RetroToggleSwitch(isOn: isOn, label: "")
         }
         .onChange(of: isOn.wrappedValue) { _, _ in
             onSave()
@@ -133,35 +138,47 @@ struct BodySettingsView: View {
     // MARK: - Sensitivity Section
 
     private var sensitivitySection: some View {
-        Section {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("Biometric Sensitivity")
-                        .font(.subheadline)
-                    Spacer()
-                    Text(sensitivityLabel)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+        BrushedMetalSurface(cornerRadius: 10) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("SENSITIVITY")
+                    .retroEngravedLabel()
+
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Biometric Sensitivity")
+                            .font(.subheadline)
+                        Spacer()
+                        Text(sensitivityLabel)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    RetroSliderPot(
+                        value: $preferences.biometricSensitivity,
+                        orientation: .horizontal,
+                        label: sensitivityLabel,
+                        length: 200
+                    )
+                    .onChange(of: preferences.biometricSensitivity) { _, _ in
+                        onSave()
+                    }
+
+                    HStack {
+                        Text("Subtle")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Text("Aggressive")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
                 }
 
-                Slider(value: $preferences.biometricSensitivity, in: 0...1, step: 0.1) { editing in
-                    if !editing { onSave() }
-                }
-
-                HStack {
-                    Text("Subtle")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                    Text("Aggressive")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
+                Text("Controls how strongly biometric changes affect song selection. Lower values mean gentler, slower reactions.")
+                    .font(RetroTypography.lcdCaption)
+                    .foregroundStyle(.tertiary)
             }
-        } header: {
-            Text("Sensitivity")
-        } footer: {
-            Text("Controls how strongly biometric changes affect song selection. Lower values mean gentler, slower reactions.")
+            .padding(16)
         }
     }
 
@@ -176,26 +193,30 @@ struct BodySettingsView: View {
     // MARK: - Data Sources Section
 
     private var dataSourcesSection: some View {
-        Section {
-            if healthReadAccessVerified {
-                Label("Heart Rate: Available", systemImage: "waveform.path.ecg")
-                    .font(.subheadline)
-                    .foregroundStyle(.green)
+        BrushedMetalSurface(cornerRadius: 10) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("CURRENT DATA SOURCES")
+                    .retroEngravedLabel()
 
-                Label("HRV: Available", systemImage: "chart.line.uptrend.xyaxis")
-                    .font(.subheadline)
-                    .foregroundStyle(.green)
+                if healthReadAccessVerified {
+                    Label("Heart Rate: Available", systemImage: "waveform.path.ecg")
+                        .font(.subheadline)
+                        .foregroundStyle(.green)
 
-                Label("Motion: Via CoreMotion", systemImage: "figure.walk.motion")
-                    .font(.subheadline)
-                    .foregroundStyle(.green)
-            } else {
-                Label("No biometric data sources connected", systemImage: "exclamationmark.triangle")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    Label("HRV: Available", systemImage: "chart.line.uptrend.xyaxis")
+                        .font(.subheadline)
+                        .foregroundStyle(.green)
+
+                    Label("Motion: Via CoreMotion", systemImage: "figure.walk.motion")
+                        .font(.subheadline)
+                        .foregroundStyle(.green)
+                } else {
+                    Label("No biometric data sources connected", systemImage: "exclamationmark.triangle")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
             }
-        } header: {
-            Text("Current Data Sources")
+            .padding(16)
         }
     }
 

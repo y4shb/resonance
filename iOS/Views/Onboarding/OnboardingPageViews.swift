@@ -22,90 +22,91 @@ struct BrainOrbWelcomePage: View {
     let onGetStarted: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var isPulsing = false
     @State private var isVisible = false
+    @State private var bootText = ""
 
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
 
-            // Brain orb (reused from LandingView design)
-            ZStack {
-                // Outer pulse ring
-                Circle()
-                    .fill(ResonanceColors.accent.opacity(0.15))
-                    .frame(width: 200, height: 200)
-                    .blur(radius: 40)
-                    .scaleEffect(isPulsing ? 1.15 : 1.0)
-                    .animation(
-                        reduceMotion ? .none :
-                            .easeInOut(duration: 2.0).repeatForever(autoreverses: true),
-                        value: isPulsing
-                    )
+            BrushedMetalSurface(cornerRadius: 12) {
+                VStack(spacing: 16) {
+                    // Boot LED indicator
+                    RetroLEDIndicator(isOn: isVisible, color: ResonanceColors.ledGreen, size: 12)
+                        .padding(.top, 20)
 
-                // Inner glow
-                Circle()
-                    .fill(Color.purple.opacity(0.1))
-                    .frame(width: 160, height: 160)
-                    .blur(radius: 30)
+                    // Title
+                    Text("RESONANCE")
+                        .font(RetroTypography.lcdTitle)
+                        .foregroundStyle(.primary)
 
-                // Brain icon
-                Image(systemName: "brain.head.profile")
-                    .font(.system(size: 80))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [ResonanceColors.accent, .purple],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+                    // Boot LCD panel
+                    RetroLCDPanel(title: "SYSTEM INIT") {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(bootText)
+                                .font(RetroTypography.lcdBody)
+                                .lineLimit(nil)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .padding(12)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .padding(.horizontal, 16)
+
+                    Text("Your AI-Powered DJ")
+                        .font(RetroTypography.lcdCaption)
+                        .foregroundStyle(.secondary)
+                        .padding(.bottom, 16)
+                }
             }
+            .padding(.horizontal, 32)
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel("Resonance brain icon")
+            .accessibilityLabel("Resonance boot screen")
             .padding(.bottom, 32)
-
-            // Title
-            Text("Resonance")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-                .foregroundStyle(.primary)
-
-            // Subtitle
-            Text("Your AI-Powered DJ")
-                .font(.title3)
-                .foregroundStyle(.secondary)
-                .padding(.top, 4)
 
             Spacer()
 
             // Single CTA
-            Button(action: onGetStarted) {
-                Text("Get Started")
-                    .font(.headline)
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(
-                        Capsule().fill(
-                            LinearGradient(
-                                colors: [ResonanceColors.accent, .purple],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                    )
+            RetroPushButton(label: "GET STARTED", icon: "power") {
+                onGetStarted()
             }
-            .buttonStyle(.plain)
-            .padding(.horizontal, 32)
             .padding(.bottom, 48)
             .opacity(isVisible ? 1 : 0)
-            .offset(y: isVisible ? 0 : 20)
         }
         .onAppear {
-            isPulsing = true
-            withAnimation(reduceMotion ? .none : .easeIn(duration: 0.6)) {
-                isVisible = true
+            startBootText()
+        }
+    }
+
+    private func startBootText() {
+        let lines = [
+            "AI DJ ENGINE v2.0",
+            "NEURAL CORE: ONLINE",
+            "READY TO CONFIGURE"
+        ]
+
+        if reduceMotion {
+            isVisible = true
+            bootText = lines.joined(separator: "\n")
+            return
+        }
+
+        withAnimation(.easeIn(duration: 0.3)) {
+            isVisible = true
+        }
+
+        var delay: Double = 0.4
+        for line in lines {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                withAnimation(.easeIn(duration: 0.1)) {
+                    if bootText.isEmpty {
+                        bootText = line
+                    } else {
+                        bootText += "\n" + line
+                    }
+                }
             }
+            delay += 0.3
         }
     }
 }
@@ -138,6 +139,10 @@ struct HealthKitConnectionPage: View {
                         )
                     )
                     .padding(.bottom, 20)
+
+                Text("BIOMETRIC LINK")
+                    .retroEngravedLabel()
+                    .padding(.bottom, 4)
 
                 Text("Now let me tune\ninto your body")
                     .font(.title2)
@@ -201,10 +206,9 @@ struct HealthKitConnectionPage: View {
 
     private var grantedBadge: some View {
         HStack(spacing: 8) {
-            Image(systemName: "checkmark.circle.fill")
-                .foregroundStyle(.green)
-            Text("HealthKit Connected")
-                .font(.headline)
+            RetroLEDIndicator(isOn: true, color: .green, size: 10)
+            Text("CONNECTED")
+                .font(RetroTypography.lcdBody)
                 .foregroundStyle(.green)
         }
         .padding(.vertical, 12)
@@ -214,44 +218,17 @@ struct HealthKitConnectionPage: View {
     }
 
     private var grantButton: some View {
-        Button {
+        RetroPushButton(label: "CONNECT", icon: "heart.fill") {
             requestHealthKitAccess()
-        } label: {
-            HStack(spacing: 8) {
-                if isRequesting {
-                    ProgressView().tint(.white)
-                }
-                Text("Connect HealthKit")
-                    .font(.headline)
-            }
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 14)
-            .background(Color.red)
-            .clipShape(RoundedRectangle(cornerRadius: 14))
         }
         .disabled(isRequesting)
         .padding(.horizontal, 8)
     }
 
     private var continueButton: some View {
-        Button(action: onContinue) {
-            Text("Continue")
-                .font(.headline)
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(
-                    Capsule().fill(
-                        LinearGradient(
-                            colors: [ResonanceColors.accent, .purple],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                )
+        RetroPushButton(label: "CONTINUE", icon: "arrow.right") {
+            onContinue()
         }
-        .buttonStyle(.plain)
         .padding(.horizontal, 8)
     }
 
@@ -338,20 +315,20 @@ struct OnboardingBenefitRow: View {
 
     var body: some View {
         HStack(spacing: 14) {
-            Image(systemName: icon)
-                .font(.title3)
-                .foregroundStyle(iconColor)
-                .frame(width: 36, height: 36)
-                .background(iconColor.opacity(0.12))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+            BrushedMetalSurface(cornerRadius: 8) {
+                Image(systemName: icon)
+                    .font(.title3)
+                    .foregroundStyle(iconColor)
+                    .frame(width: 36, height: 36)
+            }
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.subheadline)
+                    .font(RetroTypography.lcdBody)
                     .fontWeight(.semibold)
 
                 Text(description)
-                    .font(.caption)
+                    .font(RetroTypography.lcdCaption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }

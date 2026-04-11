@@ -23,6 +23,7 @@ struct QueueView: View {
     @Bindable var viewModel: NowPlayingViewModel
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.retroAccentColor) private var accentColor
     @State private var editMode: EditMode = .inactive
 
     var body: some View {
@@ -82,8 +83,9 @@ struct QueueView: View {
             // Now Playing section
             Section {
                 nowPlayingRow
+                    .listRowBackground(ResonanceColors.metalDark.opacity(0.3))
             } header: {
-                Text("Now Playing")
+                Text("NOW PLAYING").retroEngravedLabel()
             }
 
             // AI Queue section
@@ -97,9 +99,10 @@ struct QueueView: View {
                 .onMove { source, destination in
                     viewModel.moveQueueItems(from: source, to: destination)
                 }
+                .listRowBackground(ResonanceColors.metalDark.opacity(0.3))
             } header: {
                 HStack {
-                    Text("AI Queue (\(viewModel.aiQueueItems.count))")
+                    Text("AI QUEUE (\(viewModel.aiQueueItems.count))").retroEngravedLabel()
                     Spacer()
                     if viewModel.isLoadingQueue {
                         ProgressView()
@@ -122,6 +125,7 @@ struct QueueView: View {
                     ForEach(Array(mkEntries.enumerated()), id: \.offset) { _, entry in
                         musicKitEntryRow(entry: entry)
                     }
+                    .listRowBackground(ResonanceColors.metalDark.opacity(0.3))
                 } header: {
                     Text("From Apple Music Queue")
                 }
@@ -135,17 +139,17 @@ struct QueueView: View {
         }
     }
 
-    // MARK: - Now Playing Row
+    // MARK: - Now Playing Row (Cassette Style)
 
     private var nowPlayingRow: some View {
         HStack(spacing: 12) {
-            // Artwork thumbnail
-            if let artwork = viewModel.currentSong.artwork {
-                ArtworkImage(artwork, width: 48, height: 48)
-                    .cornerRadius(8)
-            } else {
-                artworkPlaceholder(size: 48, cornerRadius: 8)
-            }
+            // Mini cassette thumbnail
+            MiniCassetteView(
+                artwork: viewModel.currentSong.artwork,
+                title: "",
+                width: 80
+            )
+            .rotation3DEffect(.degrees(3), axis: (x: 1, y: 0, z: 0), perspective: 0.5)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(viewModel.currentSong.title)
@@ -158,7 +162,6 @@ struct QueueView: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
 
-                // Current explanation if available
                 if let explanation = viewModel.currentExplanation {
                     Text(explanation.short)
                         .font(.caption2)
@@ -169,7 +172,6 @@ struct QueueView: View {
 
             Spacer()
 
-            // Animated now-playing indicator
             Image(systemName: viewModel.isPlaying ? "speaker.wave.2.fill" : "speaker.fill")
                 .font(.caption)
                 .foregroundStyle(ResonanceColors.accent)
@@ -209,15 +211,12 @@ struct QueueView: View {
                     .lineLimit(1)
 
                 // AI reasoning one-liner
-                HStack(spacing: 4) {
-                    Image(systemName: "wand.and.stars")
-                        .font(.system(size: 9))
-                        .foregroundStyle(ResonanceColors.accent)
-
+                RetroLCDPanel {
                     Text(item.shortExplanation)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+                        .font(RetroTypography.lcdCaption)
                         .lineLimit(1)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
                 }
             }
 
@@ -238,33 +237,17 @@ struct QueueView: View {
 
     // MARK: - Confidence Indicator
 
-    /// Small circular gauge showing AI confidence for this pick.
     private func confidenceIndicator(confidence: Double) -> some View {
-        ZStack {
-            Circle()
-                .stroke(Color.secondary.opacity(0.2), lineWidth: 2)
-
-            Circle()
-                .trim(from: 0, to: confidence)
-                .stroke(
-                    confidenceColor(confidence),
-                    style: StrokeStyle(lineWidth: 2, lineCap: .round)
+        HStack(spacing: 2) {
+            ForEach(0..<5, id: \.self) { i in
+                RetroLEDIndicator(
+                    isOn: Double(i) / 5.0 < confidence,
+                    color: i < 3 ? ResonanceColors.ledGreen : (i < 4 ? ResonanceColors.ledAmber : ResonanceColors.ledRed),
+                    size: 5
                 )
-                .rotationEffect(.degrees(-90))
-
-            Text("\(Int(confidence * 100))")
-                .font(.system(size: 8, weight: .medium, design: .rounded))
-                .foregroundStyle(.secondary)
+            }
         }
-        .frame(width: 28, height: 28)
         .accessibilityHidden(true)
-    }
-
-    /// Returns a color based on confidence level.
-    private func confidenceColor(_ confidence: Double) -> Color {
-        if confidence >= 0.7 { return .green }
-        if confidence >= 0.4 { return .yellow }
-        return .orange
     }
 
     // MARK: - MusicKit Queue Entry Row (Fallback)

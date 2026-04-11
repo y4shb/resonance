@@ -20,14 +20,17 @@ struct DataSettingsView: View {
     @State private var isDeleting = false
 
     var body: some View {
-        List {
-            backupSection
-            privacySection
-            analysisSection
-            dangerZoneSection
-            aboutSection
+        ScrollView {
+            VStack(spacing: 16) {
+                backupSection
+                privacySection
+                analysisSection
+                dangerZoneSection
+                aboutSection
+            }
+            .padding()
         }
-        .listStyle(.insetGrouped)
+        .background(ResonanceColors.panelBg)
         .navigationTitle("My Data")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -35,136 +38,192 @@ struct DataSettingsView: View {
     // MARK: - Backup Section
 
     private var backupSection: some View {
-        Section {
-            Toggle("Backup to iCloud", isOn: $preferences.backupToiCloud)
+        BrushedMetalSurface(cornerRadius: 10) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("BACKUP")
+                    .retroEngravedLabel()
+
+                HStack {
+                    Text("Backup to iCloud")
+                    Spacer()
+                    RetroToggleSwitch(
+                        isOn: $preferences.backupToiCloud,
+                        label: ""
+                    )
+                }
                 .onChange(of: preferences.backupToiCloud) { _, _ in
                     onSave()
                 }
-        } header: {
-            Text("Backup")
-        } footer: {
-            Text("Syncs your preferences and listening history to iCloud for restoration on new devices.")
+
+                Text("Syncs your preferences and listening history to iCloud for restoration on new devices.")
+                    .font(RetroTypography.lcdCaption)
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(16)
         }
     }
 
     // MARK: - Privacy Section
 
     private var privacySection: some View {
-        Section {
-            if let privacyURL = URL(string: "https://resonance.app/privacy") {
-                Link(destination: privacyURL) {
-                    HStack {
-                        Text("Privacy Policy")
-                        Spacer()
-                        Image(systemName: "arrow.up.right.square")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+        BrushedMetalSurface(cornerRadius: 10) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("PRIVACY")
+                    .retroEngravedLabel()
+
+                if let privacyURL = URL(string: "https://resonance.app/privacy") {
+                    Link(destination: privacyURL) {
+                        BrushedMetalSurface(cornerRadius: 8) {
+                            HStack {
+                                Text("Privacy Policy")
+                                Spacer()
+                                Image(systemName: "arrow.up.right.square")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding(12)
+                        }
                     }
                 }
             }
-        } header: {
-            Text("Privacy")
+            .padding(16)
         }
     }
 
     // MARK: - Analysis Section
 
     private var analysisSection: some View {
-        Section {
-            NavigationLink {
-                DataAnalysisView(
-                    historicalEngine: historicalEngine,
-                    stateEngine: stateEngine,
-                    preferences: $preferences,
-                    onSave: onSave
-                )
-            } label: {
-                Label("Data & Analysis", systemImage: "chart.bar.xaxis")
-            }
+        BrushedMetalSurface(cornerRadius: 10) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("ANALYSIS & EXPORT")
+                    .retroEngravedLabel()
 
-            Button {
-                exportData()
-            } label: {
-                Label("Export My Data", systemImage: "square.and.arrow.up")
+                NavigationLink {
+                    DataAnalysisView(
+                        historicalEngine: historicalEngine,
+                        stateEngine: stateEngine,
+                        preferences: $preferences,
+                        onSave: onSave
+                    )
+                } label: {
+                    BrushedMetalSurface(cornerRadius: 8) {
+                        HStack {
+                            Label("Data & Analysis", systemImage: "chart.bar.xaxis")
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundStyle(ResonanceColors.metalMid)
+                        }
+                        .padding(12)
+                    }
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    exportData()
+                } label: {
+                    BrushedMetalSurface(cornerRadius: 8) {
+                        HStack {
+                            Label("Export My Data", systemImage: "square.and.arrow.up")
+                            Spacer()
+                        }
+                        .padding(12)
+                    }
+                }
+                .buttonStyle(.plain)
+
+                Text("View listening trends, resonance scores, and export your data.")
+                    .font(RetroTypography.lcdCaption)
+                    .foregroundStyle(.tertiary)
             }
-        } header: {
-            Text("Analysis & Export")
-        } footer: {
-            Text("View listening trends, resonance scores, and export your data.")
+            .padding(16)
         }
     }
 
     // MARK: - Danger Zone Section (moved from SettingsView.privacySection)
 
     private var dangerZoneSection: some View {
-        Section {
-            Button(role: .destructive) {
-                showDeleteConfirmation = true
-            } label: {
-                HStack {
-                    Label("Delete All My Data", systemImage: "trash")
-                    if isDeleting {
-                        Spacer()
-                        ProgressView()
+        BrushedMetalSurface(cornerRadius: 10) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("DANGER ZONE")
+                    .retroEngravedLabel()
+
+                RetroPushButton(label: "DELETE ALL", icon: "trash") {
+                    showDeleteConfirmation = true
+                }
+                .disabled(isDeleting)
+                .confirmationDialog(
+                    "Delete All Data",
+                    isPresented: $showDeleteConfirmation,
+                    titleVisibility: .visible
+                ) {
+                    Button("Delete Everything", role: .destructive) {
+                        performDeleteAllData()
                     }
+                    Button("Cancel", role: .cancel) {}
+                } message: {
+                    Text("This will permanently delete all your listening history, preferences, circadian profile, bookmarks, and learned data. This action cannot be undone.")
+                }
+
+                if isDeleting {
+                    ProgressView()
                 }
             }
-            .disabled(isDeleting)
-            .confirmationDialog(
-                "Delete All Data",
-                isPresented: $showDeleteConfirmation,
-                titleVisibility: .visible
-            ) {
-                Button("Delete Everything", role: .destructive) {
-                    performDeleteAllData()
-                }
-                Button("Cancel", role: .cancel) {}
-            } message: {
-                Text("This will permanently delete all your listening history, preferences, circadian profile, bookmarks, and learned data. This action cannot be undone.")
-            }
-        } header: {
-            Text("Danger Zone")
+            .padding(16)
         }
     }
 
     // MARK: - About Section (moved from SettingsView.aboutSection)
 
     private var aboutSection: some View {
-        Section {
-            HStack {
-                Text("App")
-                Spacer()
-                Text(AppConstants.appName)
-                    .foregroundStyle(.secondary)
-            }
+        BrushedMetalSurface(cornerRadius: 10) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("ABOUT")
+                    .retroEngravedLabel()
 
-            HStack {
-                Text("Version")
-                Spacer()
-                Text(appVersion)
-                    .foregroundStyle(.secondary)
-            }
+                RetroLCDPanel {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Text("APP")
+                                .font(RetroTypography.lcdCaption)
+                            Spacer()
+                            Text(AppConstants.appName)
+                                .font(RetroTypography.lcdBody)
+                        }
+                        HStack {
+                            Text("VER")
+                                .font(RetroTypography.lcdCaption)
+                            Spacer()
+                            Text(appVersion)
+                                .font(RetroTypography.lcdBody)
+                        }
+                        HStack {
+                            Text("BLD")
+                                .font(RetroTypography.lcdCaption)
+                            Spacer()
+                            Text(buildNumber)
+                                .font(RetroTypography.lcdBody)
+                        }
+                    }
+                    .padding(12)
+                }
 
-            HStack {
-                Text("Build")
-                Spacer()
-                Text(buildNumber)
-                    .foregroundStyle(.secondary)
-            }
-
-            if let supportURL = URL(string: "mailto:support@resonance.app") {
-                Link(destination: supportURL) {
-                    HStack {
-                        Text("Contact Support")
-                        Spacer()
-                        Image(systemName: "envelope")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                if let supportURL = URL(string: "mailto:support@resonance.app") {
+                    Link(destination: supportURL) {
+                        BrushedMetalSurface(cornerRadius: 8) {
+                            HStack {
+                                Text("Contact Support")
+                                Spacer()
+                                Image(systemName: "envelope")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding(12)
+                        }
                     }
                 }
             }
-        } header: {
-            Text("About")
+            .padding(16)
         }
     }
 

@@ -105,26 +105,19 @@ struct OnboardingContainerView: View {
     // MARK: - Background
 
     private var backgroundGradient: some View {
-        LinearGradient(
-            colors: [
-                ResonanceColors.adaptiveBackground(for: colorScheme),
-                ResonanceColors.adaptiveSecondaryBackground(for: colorScheme),
-                ResonanceColors.adaptiveBackground(for: colorScheme),
-            ],
-            startPoint: .top,
-            endPoint: .bottom
-        )
+        ResonanceColors.panelBg
     }
 
     // MARK: - Page Dots
 
     private var pageDots: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 12) {
             ForEach(OnboardingPage.allCases, id: \.rawValue) { page in
-                Capsule()
-                    .fill(page == currentPage ? ResonanceColors.accent : Color.secondary.opacity(0.3))
-                    .frame(width: page == currentPage ? 24 : 8, height: 8)
-                    .animation(.easeInOut(duration: UIConstants.Animation.quick), value: currentPage)
+                RetroLEDIndicator(
+                    isOn: page == currentPage,
+                    color: page == currentPage ? ResonanceColors.ledGreen : ResonanceColors.metalMid,
+                    size: 6
+                )
             }
         }
         .padding(.top, 8)

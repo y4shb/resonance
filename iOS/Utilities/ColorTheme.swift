@@ -135,4 +135,16 @@ extension ResonanceColors {
             return color
         }
     }
+
+    // MARK: - Retro Surface Colors
+
+    /// Accent color at 60% saturation for dark mode desaturated variant.
+    static func accentMuted(_ accent: Color) -> Color {
+        adjustSaturation(accent, by: -0.4)
+    }
+
+    /// Accent at 80% opacity for LCD backlight tint.
+    static func phosphorBlue(_ accent: Color) -> Color {
+        accent.opacity(0.8)
+    }
 }

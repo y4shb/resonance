@@ -59,71 +59,52 @@ struct MainView: View {
     // MARK: - Body
 
     var body: some View {
-        TabView(selection: $selectedTab) {
-            NowPlayingView(
-                    viewModel: nowPlayingViewModel,
-                    stateEngine: stateEngine,
-                    heroNamespace: heroNamespace,
-                    onBrowsePlaylists: { selectedTab = .playlists }
+        Group {
+            switch selectedTab {
+            case .nowPlaying:
+                NavigationStack {
+                    NowPlayingView(
+                        viewModel: nowPlayingViewModel,
+                        stateEngine: stateEngine,
+                        heroNamespace: heroNamespace,
+                        onBrowsePlaylists: { selectedTab = .playlists }
+                    )
+                }
+            case .mood:
+                MoodTabView(stateEngine: stateEngine)
+            case .playlists:
+                NavigationStack {
+                    PlaylistBrowserView(
+                        viewModel: playlistViewModel,
+                        onPlaylistSelected: { _ in selectedTab = .nowPlaying }
+                    )
+                }
+            case .insights:
+                InsightsView()
+            case .settings:
+                SettingsView(
+                    musicService: musicService,
+                    historicalEngine: historicalEngine,
+                    stateEngine: stateEngine
                 )
-                .tabItem {
-                    Label(Tab.nowPlaying.title, systemImage: Tab.nowPlaying.systemImage)
-                }
-                .tag(Tab.nowPlaying)
-
-            MoodTabView(stateEngine: stateEngine)
-                .tabItem {
-                    Label(Tab.mood.title, systemImage: Tab.mood.systemImage)
-                }
-                .tag(Tab.mood)
-
-            PlaylistBrowserView(
-                viewModel: playlistViewModel,
-                onPlaylistSelected: { _ in
-                    // Switch to Now Playing tab after selecting a playlist
-                    selectedTab = .nowPlaying
-                }
-            )
-            .tabItem {
-                Label(Tab.playlists.title, systemImage: Tab.playlists.systemImage)
             }
-            .tag(Tab.playlists)
-
-            InsightsView()
-            .tabItem {
-                Label(Tab.insights.title, systemImage: Tab.insights.systemImage)
-            }
-            .tag(Tab.insights)
-
-            SettingsView(
-                musicService: musicService,
-                historicalEngine: historicalEngine,
-                stateEngine: stateEngine
-            )
-            .tabItem {
-                Label(Tab.settings.title, systemImage: Tab.settings.systemImage)
-            }
-            .tag(Tab.settings)
         }
+        .animation(.spring(RetroAnimation.traySlide), value: selectedTab)
         .safeAreaInset(edge: .bottom) {
-            if shouldShowMiniPlayer {
-                MiniPlayerView(
-                    viewModel: nowPlayingViewModel,
-                    onTapNavigate: {
-                        selectedTab = .nowPlaying
-                    }
-                )
-                .transition(.asymmetric(
-                    insertion: .move(edge: .bottom).combined(with: .opacity),
-                    removal: .move(edge: .bottom).combined(with: .opacity).animation(.easeIn(duration: 0.2))
-                ))
+            VStack(spacing: 0) {
+                if shouldShowMiniPlayer {
+                    MiniPlayerView(
+                        viewModel: nowPlayingViewModel,
+                        onTapNavigate: { selectedTab = .nowPlaying }
+                    )
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+                CassetteDeckTabBar(selectedTab: $selectedTab)
             }
         }
-        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: shouldShowMiniPlayer)
-        .tint(ResonanceColors.accent)
+        .animation(.spring(RetroAnimation.traySlide), value: shouldShowMiniPlayer)
+        .retroAccentColor(nowPlayingViewModel.artworkAccentColor)
         .onAppear {
-            // When no playlist is active, default to .playlists so the user
-            // lands on the playlist picker instead of an empty Now Playing screen.
             if nowPlayingViewModel.activePlaylistName == nil {
                 selectedTab = .playlists
             }

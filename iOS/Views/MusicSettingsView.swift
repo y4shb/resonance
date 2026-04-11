@@ -19,12 +19,15 @@ struct MusicSettingsView: View {
     @State private var isRequestingAuth = false
 
     var body: some View {
-        List {
-            connectionSection
-            librarySection
-            playlistSection
+        ScrollView {
+            VStack(spacing: 16) {
+                connectionSection
+                librarySection
+                playlistSection
+            }
+            .padding()
         }
-        .listStyle(.insetGrouped)
+        .background(ResonanceColors.panelBg)
         .navigationTitle("My Music")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -32,105 +35,111 @@ struct MusicSettingsView: View {
     // MARK: - Connection Section (moved from SettingsView.musicKitSection)
 
     private var connectionSection: some View {
-        Section {
-            HStack {
-                Label("Apple Music", systemImage: "music.note")
-                Spacer()
-                authStatusBadge
-            }
+        BrushedMetalSurface(cornerRadius: 10) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("MUSIC ACCESS")
+                    .retroEngravedLabel()
 
-            if musicService.authorizationStatus != .authorized {
-                Button(action: requestAuthorization) {
-                    HStack {
-                        Text("Grant Access")
-                        if isRequestingAuth {
-                            Spacer()
-                            ProgressView()
+                HStack {
+                    Label("Apple Music", systemImage: "music.note")
+                    Spacer()
+                    authStatusLED
+                }
+
+                if musicService.authorizationStatus != .authorized {
+                    Button(action: requestAuthorization) {
+                        HStack {
+                            Text("Grant Access")
+                            if isRequestingAuth {
+                                Spacer()
+                                ProgressView()
+                            }
                         }
                     }
+                    .disabled(isRequestingAuth || musicService.authorizationStatus == .denied)
                 }
-                .disabled(isRequestingAuth || musicService.authorizationStatus == .denied)
-            }
 
-            if musicService.authorizationStatus == .denied {
-                Text("Access was denied. Please enable Apple Music in Settings > Privacy > Media & Apple Music.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                if musicService.authorizationStatus == .denied {
+                    Text("Access was denied. Please enable Apple Music in Settings > Privacy > Media & Apple Music.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Text("Resonance requires an Apple Music subscription to play music and access your library.")
+                    .font(RetroTypography.lcdCaption)
+                    .foregroundStyle(.tertiary)
             }
-        } header: {
-            Text("Music Access")
-        } footer: {
-            Text("Resonance requires an Apple Music subscription to play music and access your library.")
+            .padding(16)
         }
     }
 
-    // MARK: - Auth Status Badge (moved from SettingsView)
+    // MARK: - Auth Status LED (replaces badge)
 
     @ViewBuilder
-    private var authStatusBadge: some View {
+    private var authStatusLED: some View {
         switch musicService.authorizationStatus {
         case .authorized:
-            Label("Connected", systemImage: "checkmark.circle.fill")
-                .font(.caption)
-                .foregroundStyle(.green)
-                .labelStyle(.titleAndIcon)
+            RetroLEDIndicator(isOn: true, color: ResonanceColors.ledGreen)
         case .denied:
-            Label("Denied", systemImage: "xmark.circle.fill")
-                .font(.caption)
-                .foregroundStyle(.red)
-                .labelStyle(.titleAndIcon)
+            RetroLEDIndicator(isOn: true, color: ResonanceColors.ledRed)
         case .restricted:
-            Label("Restricted", systemImage: "exclamationmark.triangle.fill")
-                .font(.caption)
-                .foregroundStyle(.orange)
-                .labelStyle(.titleAndIcon)
+            RetroLEDIndicator(isOn: true, color: ResonanceColors.ledAmber)
         case .notDetermined:
-            Label("Not Set Up", systemImage: "questionmark.circle")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .labelStyle(.titleAndIcon)
+            RetroLEDIndicator(isOn: false, color: ResonanceColors.ledAmber)
         @unknown default:
-            Label("Unknown", systemImage: "questionmark.circle")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .labelStyle(.titleAndIcon)
+            RetroLEDIndicator(isOn: false, color: ResonanceColors.ledAmber)
         }
     }
 
     // MARK: - Library Section
 
     private var librarySection: some View {
-        Section {
-            Button {
-                // Trigger library re-scan via notification so the app coordinator can handle it
-                NotificationCenter.default.post(name: .resonanceRescanLibrary, object: nil)
-            } label: {
-                Label("Re-scan Music Library", systemImage: "arrow.clockwise")
+        BrushedMetalSurface(cornerRadius: 10) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("LIBRARY")
+                    .retroEngravedLabel()
+
+                Button {
+                    // Trigger library re-scan via notification so the app coordinator can handle it
+                    NotificationCenter.default.post(name: .resonanceRescanLibrary, object: nil)
+                } label: {
+                    Label("Re-scan Music Library", systemImage: "arrow.clockwise")
+                }
+                .disabled(musicService.authorizationStatus != .authorized)
+
+                Text("Re-analyzes your Apple Music library to discover new songs and update audio features.")
+                    .font(RetroTypography.lcdCaption)
+                    .foregroundStyle(.tertiary)
             }
-            .disabled(musicService.authorizationStatus != .authorized)
-        } header: {
-            Text("Library")
-        } footer: {
-            Text("Re-analyzes your Apple Music library to discover new songs and update audio features.")
+            .padding(16)
         }
     }
 
     // MARK: - Playlist Section
 
     private var playlistSection: some View {
-        Section {
-            VStack(alignment: .leading, spacing: 4) {
-                Toggle("Cross-Playlist Recommendations", isOn: $preferences.allowCrossPlaylistRecommendations)
-                    .onChange(of: preferences.allowCrossPlaylistRecommendations) { _, _ in
-                        onSave()
-                    }
+        BrushedMetalSurface(cornerRadius: 10) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("PLAYLISTS")
+                    .retroEngravedLabel()
+
+                HStack {
+                    Text("Cross-Playlist Recommendations")
+                    Spacer()
+                    RetroToggleSwitch(
+                        isOn: $preferences.allowCrossPlaylistRecommendations,
+                        label: ""
+                    )
+                }
+                .onChange(of: preferences.allowCrossPlaylistRecommendations) { _, _ in
+                    onSave()
+                }
 
                 Text("Let the AI DJ pick songs from other playlists when they fit your current mood better.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(RetroTypography.lcdCaption)
+                    .foregroundStyle(.tertiary)
             }
-        } header: {
-            Text("Playlists")
+            .padding(16)
         }
     }
 

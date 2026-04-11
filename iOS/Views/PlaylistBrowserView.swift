@@ -197,55 +197,119 @@ struct PlaylistBrowserView: View {
         }
     }
 
-    // MARK: - Playlist List
+    // MARK: - Playlist List (Cassette Grid)
 
     private var playlistList: some View {
-        List {
-            // MARK: - Resonance Mixes
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
 
-            Section {
-                ForEach(MoodPlaylist.allCases) { moodPlaylist in
-                    MoodPlaylistRow(
-                        playlist: moodPlaylist,
-                        songCount: moodPlaylistCounts[moodPlaylist] ?? 0
-                    )
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        selectedMoodPlaylist = moodPlaylist
-                    }
-                }
-            } header: {
-                Label("Resonance Mixes", systemImage: "brain.head.profile")
-                    .font(.caption)
-                    .fontWeight(.semibold)
-            }
+                // MARK: - Resonance Mixes (Horizontal Carousel)
 
-            // MARK: - User Playlists
+                VStack(alignment: .leading, spacing: 10) {
+                    Label("Resonance Mixes", systemImage: "brain.head.profile")
+                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                        .tracking(1)
+                        .padding(.horizontal, 20)
 
-            Section {
-                ForEach(filteredPlaylists) { playlistInfo in
-                    NavigationLink(value: playlistInfo) {
-                        PlaylistRow(
-                            playlistInfo: playlistInfo,
-                            isActive: viewModel.activePlaylistName == playlistInfo.name
-                        )
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        LazyHStack(spacing: 14) {
+                            ForEach(MoodPlaylist.allCases) { moodPlaylist in
+                                MiniCassetteView(
+                                    title: moodPlaylist.displayName,
+                                    subtitle: "\(moodPlaylistCounts[moodPlaylist] ?? 0) songs",
+                                    accentColor: moodPlaylistAccentColor(moodPlaylist),
+                                    width: 160
+                                )
+                                .rotation3DEffect(
+                                    .degrees(3),
+                                    axis: (x: 1, y: 0, z: 0),
+                                    perspective: 0.5
+                                )
+                                .onTapGesture {
+                                    selectionTrigger += 1
+                                    selectedMoodPlaylist = moodPlaylist
+                                }
+                                .accessibilityLabel("\(moodPlaylist.displayName), \(moodPlaylistCounts[moodPlaylist] ?? 0) songs")
+                            }
+                        }
+                        .padding(.horizontal, 20)
                     }
                     .sensoryFeedback(.selection, trigger: selectionTrigger)
                 }
-            } header: {
-                if viewModel.isLoading {
-                    HStack(spacing: 8) {
-                        SkeletonShape(width: 12, height: 12, cornerRadius: 6)
-                            .shimmer()
-                        Text("Updating...")
-                            .font(.caption)
+
+                // MARK: - Your Playlists (Grid)
+
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        if viewModel.isLoading {
+                            HStack(spacing: 6) {
+                                ProgressView()
+                                    .scaleEffect(0.6)
+                                Text("UPDATING...")
+                                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                                    .foregroundStyle(.secondary)
+                                    .tracking(1)
+                            }
+                        } else {
+                            Text("YOUR PLAYLISTS (\(filteredPlaylists.count))")
+                                .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                                .foregroundStyle(.secondary)
+                                .tracking(1)
+                        }
+                        Spacer()
                     }
-                } else {
-                    Text("\(filteredPlaylists.count) playlists")
+                    .padding(.horizontal, 20)
+
+                    LazyVGrid(
+                        columns: [GridItem(.adaptive(minimum: 150), spacing: 14)],
+                        spacing: 16
+                    ) {
+                        ForEach(filteredPlaylists) { playlistInfo in
+                            NavigationLink(value: playlistInfo) {
+                                ZStack {
+                                    MiniCassetteView(
+                                        artwork: playlistInfo.artwork,
+                                        title: playlistInfo.name,
+                                        subtitle: playlistInfo.songCount.map { "\($0) songs" } ?? "Playlist",
+                                        width: 160
+                                    )
+
+                                    // Active indicator overlay
+                                    if viewModel.activePlaylistName == playlistInfo.name {
+                                        VStack {
+                                            HStack {
+                                                Spacer()
+                                                Image(systemName: "speaker.wave.2.fill")
+                                                    .font(.system(size: 10))
+                                                    .foregroundStyle(ResonanceColors.accent)
+                                                    .padding(4)
+                                                    .background(
+                                                        Circle()
+                                                            .fill(.ultraThinMaterial)
+                                                    )
+                                                    .shadow(color: ResonanceColors.accent.opacity(0.5), radius: 4)
+                                            }
+                                            .padding(6)
+                                            Spacer()
+                                        }
+                                    }
+                                }
+                                .accessibilityLabel(
+                                    "\(playlistInfo.name)"
+                                    + (playlistInfo.songCount.map { ", \($0) songs" } ?? "")
+                                    + (viewModel.activePlaylistName == playlistInfo.name ? ", currently playing" : "")
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.horizontal, 16)
                 }
             }
+            .padding(.top, 8)
+            .padding(.bottom, 20)
         }
-        .listStyle(.insetGrouped)
         .navigationDestination(for: PlaylistDisplayInfo.self) { playlistInfo in
             PlaylistDetailView(
                 playlistInfo: playlistInfo,

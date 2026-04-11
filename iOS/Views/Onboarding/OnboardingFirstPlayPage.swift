@@ -75,36 +75,20 @@ struct FirstPlayPage: View {
 
     private var preparingContent: some View {
         VStack(spacing: 24) {
-            // Pulsing brain orb while preparing
-            ZStack {
-                Circle()
-                    .fill(ResonanceColors.accent.opacity(0.1))
-                    .frame(width: 140, height: 140)
-                    .blur(radius: 30)
-                    .scaleEffect(isPulsing ? 1.1 : 1.0)
-                    .animation(
-                        reduceMotion ? .none :
-                            .easeInOut(duration: 1.5).repeatForever(autoreverses: true),
-                        value: isPulsing
-                    )
+            // Boot-up LED indicator while preparing
+            RetroLEDIndicator(isOn: true, color: ResonanceColors.ledAmber, size: 16, blinkRate: 2)
 
-                Image(systemName: "brain.head.profile")
-                    .font(.system(size: 52))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [ResonanceColors.accent, .purple],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+            RetroLCDPanel(title: "INITIALIZING") {
+                VStack(spacing: 8) {
+                    Text("PREPARING FIRST SESSION...")
+                        .font(RetroTypography.lcdBody)
+                    ProgressView()
+                        .tint(ResonanceColors.ledGreen)
+                }
+                .padding(16)
+                .frame(maxWidth: .infinity)
             }
-
-            Text("Getting your first session ready...")
-                .font(.headline)
-                .foregroundStyle(.secondary)
-
-            ProgressView()
-                .tint(ResonanceColors.accent)
+            .padding(.horizontal, 32)
         }
         .onAppear { isPulsing = true }
     }
@@ -114,47 +98,49 @@ struct FirstPlayPage: View {
     private var readyContent: some View {
         VStack(spacing: 24) {
             // HeartPulseRing with heart rate display
-            ZStack {
-                HeartPulseRing(
-                    heartRate: heartRate,
-                    musicBPM: demoBPM,
-                    accentColor: ResonanceColors.accent,
-                    reduceMotion: reduceMotion,
-                    isTransitioning: false
-                )
-                .frame(width: 200, height: 200)
+            BrushedMetalSurface(cornerRadius: 12) {
+                ZStack {
+                    HeartPulseRing(
+                        heartRate: heartRate,
+                        musicBPM: demoBPM,
+                        accentColor: ResonanceColors.accent,
+                        reduceMotion: reduceMotion,
+                        isTransitioning: false
+                    )
+                    .frame(width: 200, height: 200)
 
-                // Heart rate readout inside the ring
-                VStack(spacing: 4) {
-                    Image(systemName: "heart.fill")
-                        .font(.title2)
-                        .foregroundStyle(.red)
-                        .symbolEffect(.pulse, isActive: !reduceMotion)
+                    // Heart rate readout inside the ring
+                    VStack(spacing: 4) {
+                        RetroLEDIndicator(isOn: true, color: ResonanceColors.ledRed, size: 10)
 
-                    Text("\(Int(heartRate))")
-                        .font(.system(size: 36, weight: .bold, design: .rounded))
-                        .foregroundStyle(.primary)
-                        .contentTransition(.numericText())
+                        Text("\(Int(heartRate))")
+                            .font(RetroTypography.ledDigit)
+                            .foregroundStyle(.primary)
+                            .contentTransition(.numericText())
 
-                    Text("BPM")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+                        Text("BPM")
+                            .font(RetroTypography.lcdCaption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
+                .padding(12)
             }
 
             // Context text
-            VStack(spacing: 8) {
-                Text("Your music is now\nresponding to your body")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .multilineTextAlignment(.center)
+            RetroLCDPanel(title: "STATUS") {
+                VStack(spacing: 8) {
+                    Text("MUSIC NOW RESPONDING\nTO YOUR BODY")
+                        .font(RetroTypography.lcdBody)
+                        .multilineTextAlignment(.center)
 
-                // Song count summary
-                if analysisViewModel.analyzedSongs > 0 {
-                    Text("\(analysisViewModel.analyzedSongs) songs analyzed and ready")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                    // Song count summary
+                    if analysisViewModel.analyzedSongs > 0 {
+                        Text("\(analysisViewModel.analyzedSongs) TRACKS ANALYZED")
+                            .font(RetroTypography.lcdCaption)
+                    }
                 }
+                .padding(12)
+                .frame(maxWidth: .infinity)
             }
 
             // Top emotion categories summary
@@ -168,57 +154,34 @@ struct FirstPlayPage: View {
     // MARK: - Top Emotions Summary
 
     private var topEmotionsSummary: some View {
-        HStack(spacing: 12) {
-            ForEach(Array(analysisViewModel.emotionCounters.prefix(3))) { counter in
-                VStack(spacing: 4) {
-                    Circle()
-                        .fill(counter.category.color)
-                        .frame(width: 8, height: 8)
+        BrushedMetalSurface(cornerRadius: 10) {
+            HStack(spacing: 12) {
+                ForEach(Array(analysisViewModel.emotionCounters.prefix(3))) { counter in
+                    VStack(spacing: 4) {
+                        RetroLEDIndicator(isOn: true, color: counter.category.color, size: 6)
 
-                    Text(counter.category.displayName)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+                        Text(counter.category.displayName)
+                            .font(RetroTypography.lcdCaption)
+                            .foregroundStyle(.secondary)
 
-                    Text("\(counter.count)")
-                        .font(.caption.monospacedDigit().weight(.semibold))
-                        .foregroundStyle(.primary)
+                        Text("\(counter.count)")
+                            .font(RetroTypography.lcdBody)
+                            .foregroundStyle(.primary)
+                    }
+                    .frame(maxWidth: .infinity)
                 }
-                .frame(maxWidth: .infinity)
             }
+            .padding(.vertical, 12)
+            .padding(.horizontal, 20)
         }
-        .padding(.vertical, 12)
-        .padding(.horizontal, 20)
-        .background(
-            RoundedRectangle(cornerRadius: 14)
-                .fill(Color(.secondarySystemGroupedBackground).opacity(0.6))
-        )
     }
 
     // MARK: - Enter Button
 
     private var enterButton: some View {
-        Button(action: onEnterApp) {
-            HStack(spacing: 8) {
-                Image(systemName: "waveform.circle.fill")
-                    .font(.title3)
-                Text("Enter Resonance")
-                    .font(.headline)
-            }
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 16)
-            .background(
-                Capsule().fill(
-                    LinearGradient(
-                        colors: [ResonanceColors.accent, .purple],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-                .shadow(color: ResonanceColors.accent.opacity(0.4), radius: 12, y: 4)
-            )
+        RetroPushButton(label: "ENTER RESONANCE", icon: "waveform.circle.fill") {
+            onEnterApp()
         }
-        .buttonStyle(.plain)
         .padding(.horizontal, 32)
     }
 

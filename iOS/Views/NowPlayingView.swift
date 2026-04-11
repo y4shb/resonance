@@ -32,6 +32,9 @@ struct NowPlayingView: View {
     // Dark mode detection (P2-20)
     @Environment(\.colorScheme) private var colorScheme
 
+    // Landscape detection for Walkman scaling
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+
     // Track whether user is actively scrubbing the slider
     @State private var isScrubbing = false
     @State private var scrubProgress = 0.0
@@ -461,20 +464,406 @@ struct NowPlayingView: View {
     private var mainPlayerVStack: some View {
         VStack(spacing: 0) {
             statusAndInputSection
-            Spacer(minLength: 4)
-            artworkSection
-                .padding(.bottom, 24)
-            songInfoView
-                .padding(.bottom, 12)
-            progressView
-                .padding(.horizontal, 24)
-                .padding(.bottom, 20)
-            transportControls
+            Spacer(minLength: 8)
+            walkmanBodyView
                 .padding(.bottom, 16)
             bottomActionRow
                 .padding(.horizontal, 24)
                 .padding(.bottom, 8)
             Spacer(minLength: 4)
+        }
+    }
+
+    // MARK: - Effective Accent Color
+
+    /// Accent color derived from album artwork, falling back to theme default
+    private var effectiveAccentColor: Color {
+        viewModel.artworkAccentColor ?? ResonanceColors.accent
+    }
+
+    // MARK: - Landscape Support
+
+    private var isLandscape: Bool {
+        verticalSizeClass == .compact
+    }
+
+    private var walkmanScale: CGFloat {
+        isLandscape ? 0.65 : 1.0
+    }
+
+    // MARK: - Walkman Body
+
+    /// Complete Walkman player enclosure viewed from the front.
+    /// Transport buttons sit at the TOP edge (3D perspective, like a real Walkman).
+    /// Below: LCD display, cassette door with album art, progress bar.
+    /// Wrapped in HeartPulseRing for AI ambient glow.
+    private var walkmanBodyView: some View {
+        ZStack {
+            // AI pulse ring (behind Walkman body)
+            HeartPulseRing(
+                heartRate: approximateHeartRate,
+                musicBPM: viewModel.currentSongBPM,
+                accentColor: effectiveAccentColor,
+                reduceMotion: reduceMotion,
+                isTransitioning: viewModel.isTransitioningTrack
+            )
+            .frame(width: 360, height: 520)
+            .opacity(0.5)
+            .blur(radius: 10)
+
+            // Walkman enclosure
+            VStack(spacing: 0) {
+                // Transport buttons at TOP edge (3D front/side view)
+                WalkmanControlsView(
+                    isPlaying: viewModel.isPlaying,
+                    onPlayPause: {
+                        playPauseTrigger += 1
+                        viewModel.togglePlayPause()
+                    },
+                    onStop: {
+                        if viewModel.isPlaying {
+                            viewModel.togglePlayPause()
+                        }
+                    },
+                    onPrevious: {
+                        previousTrigger += 1
+                        viewModel.previous()
+                    },
+                    onNext: {
+                        skipTrigger += 1
+                        viewModel.skip()
+                    },
+                    accentColor: effectiveAccentColor
+                )
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+                .background(walkmanButtonRail)
+                .rotation3DEffect(
+                    .degrees(-12),
+                    axis: (x: 1, y: 0, z: 0),
+                    anchor: .bottom,
+                    perspective: 0.3
+                )
+
+                // Main Walkman face
+                VStack(spacing: 0) {
+                    // Decorative groove (button rail meets body)
+                    walkmanGrooveLine
+
+                    // LCD header
+                    walkmanLCDHeader
+                        .padding(.vertical, 6)
+
+                    // Cassette deck in recessed door
+                    walkmanCassetteDeck
+                        .padding(.bottom, 8)
+
+                    // Progress bar
+                    WalkmanProgressView(
+                        progress: $viewModel.playbackProgress,
+                        currentTime: viewModel.currentTime,
+                        duration: viewModel.duration,
+                        accentColor: effectiveAccentColor,
+                        onScrubStart: { viewModel.seekStarted() },
+                        onScrubEnd: { value in viewModel.seek(to: value) }
+                    )
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 6)
+
+                    // Bottom decorative details
+                    walkmanBottomDetails
+                        .padding(.bottom, 4)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 8)
+                .background(walkmanMetalBody)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+            .shadow(color: .black.opacity(0.6), radius: 20, x: 0, y: 10)
+            .shadow(color: effectiveAccentColor.opacity(0.1), radius: 30, x: 0, y: 0)
+            .scaleEffect(walkmanScale)
+        }
+        .modifier(HeroArtworkModifier(namespace: heroNamespace))
+    }
+
+    // MARK: - Button Rail (Top Edge)
+
+    /// The top edge of the Walkman where buttons protrude.
+    /// Uses UnevenRoundedRectangle for realistic edge shape.
+    private var walkmanButtonRail: some View {
+        UnevenRoundedRectangle(
+            topLeadingRadius: 12,
+            bottomLeadingRadius: 2,
+            bottomTrailingRadius: 2,
+            topTrailingRadius: 12
+        )
+        .fill(
+            LinearGradient(
+                colors: [
+                    Color(red: 0.16, green: 0.16, blue: 0.19),
+                    Color(red: 0.12, green: 0.12, blue: 0.14),
+                    Color(red: 0.10, green: 0.10, blue: 0.12)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
+        .overlay(
+            UnevenRoundedRectangle(
+                topLeadingRadius: 12,
+                bottomLeadingRadius: 2,
+                bottomTrailingRadius: 2,
+                topTrailingRadius: 12
+            )
+            .stroke(
+                LinearGradient(
+                    colors: [Color.white.opacity(0.12), Color.white.opacity(0.03)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                ),
+                lineWidth: 0.5
+            )
+        )
+    }
+
+    // MARK: - Groove Line
+
+    /// Decorative groove between button rail and main face.
+    private var walkmanGrooveLine: some View {
+        VStack(spacing: 1) {
+            Rectangle()
+                .fill(Color.black.opacity(0.4))
+                .frame(height: 1)
+            Rectangle()
+                .fill(Color.white.opacity(0.06))
+                .frame(height: 0.5)
+        }
+        .padding(.horizontal, 2)
+    }
+
+    // MARK: - Bottom Details
+
+    /// Decorative details at the bottom of the Walkman face.
+    private var walkmanBottomDetails: some View {
+        HStack {
+            Image(systemName: "headphones")
+                .font(.system(size: 7))
+                .foregroundStyle(.white.opacity(0.2))
+
+            Spacer()
+
+            Text("AI \u{00B7} R1")
+                .font(.system(size: 7, weight: .medium, design: .monospaced))
+                .tracking(1)
+                .foregroundStyle(.white.opacity(0.15))
+
+            Spacer()
+
+            Text("STEREO")
+                .font(.system(size: 6, weight: .bold, design: .monospaced))
+                .tracking(1.5)
+                .foregroundStyle(.white.opacity(0.15))
+        }
+        .padding(.horizontal, 16)
+    }
+
+    // MARK: - Walkman LCD Header
+
+    /// Recessed LCD panel showing LED indicator, RESONANCE branding,
+    /// tape counter, and monospaced song title/artist.
+    private var walkmanLCDHeader: some View {
+        VStack(spacing: 6) {
+            // Top bar: LED + brand + tape counter
+            HStack(spacing: 8) {
+                WalkmanLEDView(isPlaying: viewModel.isPlaying, accentColor: effectiveAccentColor)
+
+                Text("RESONANCE")
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .tracking(3)
+                    .foregroundStyle(effectiveAccentColor.opacity(0.6))
+
+                Spacer()
+
+                // Tape counter (0000–9999 based on progress)
+                Text(String(format: "%04d", Int(viewModel.playbackProgress * 9999)))
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .foregroundStyle(.green.opacity(0.7))
+            }
+            .padding(.horizontal, 12)
+
+            // LCD song display
+            VStack(spacing: 2) {
+                Text(viewModel.currentSong.title)
+                    .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                    .lineLimit(1)
+                    .foregroundStyle(.white.opacity(0.9))
+
+                Text(viewModel.currentSong.artistName)
+                    .font(.system(size: 11, weight: .regular, design: .monospaced))
+                    .lineLimit(1)
+                    .foregroundStyle(.white.opacity(0.5))
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
+            .padding(.horizontal, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(Color(red: 0.04, green: 0.05, blue: 0.08))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(Color.white.opacity(0.06), lineWidth: 0.5)
+                    )
+            )
+            .padding(.horizontal, 8)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(viewModel.currentSong.title) by \(viewModel.currentSong.artistName)")
+    }
+
+    // MARK: - Walkman Cassette Deck
+
+    /// CassettePlayerView inside a recessed cassette door frame.
+    /// The door has a visible frame, inner shadow, and hinge line.
+    private var walkmanCassetteDeck: some View {
+        ZStack {
+            CassettePlayerView(
+                artwork: viewModel.currentSong.artwork,
+                isPlaying: viewModel.isPlaying,
+                playbackProgress: viewModel.playbackProgress,
+                accentColor: effectiveAccentColor,
+                songId: viewModel.currentSong.appleMusicId
+            )
+
+            // AI loading overlay
+            if viewModel.isLoadingAISelection {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(.ultraThinMaterial)
+                    .frame(width: 310, height: 197)
+                    .overlay(
+                        VStack(spacing: 12) {
+                            ProgressView()
+                                .tint(effectiveAccentColor)
+                            Text("AI selecting...")
+                                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                                .foregroundStyle(effectiveAccentColor.opacity(0.7))
+                        }
+                    )
+                    .transition(.opacity)
+                    .accessibilityLabel("Loading next song")
+            }
+        }
+        .padding(6)
+        .background(
+            // Recessed cassette door compartment
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color(red: 0.04, green: 0.04, blue: 0.06))
+                .overlay(
+                    // Inner shadow for depth
+                    RoundedRectangle(cornerRadius: 10)
+                        .strokeBorder(
+                            LinearGradient(
+                                colors: [
+                                    Color.black.opacity(0.4),
+                                    Color.white.opacity(0.04),
+                                    Color.black.opacity(0.2)
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            ),
+                            lineWidth: 1
+                        )
+                )
+        )
+        .overlay(alignment: .bottom) {
+            // Door hinge line
+            Capsule()
+                .fill(
+                    LinearGradient(
+                        colors: [Color.clear, Color.white.opacity(0.08), Color.clear],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .frame(height: 1)
+                .padding(.horizontal, 20)
+                .offset(y: 4)
+        }
+    }
+
+    // MARK: - Walkman Metal Body
+
+    /// Brushed metal background for the Walkman enclosure.
+    /// Multi-layer gradient simulates real brushed aluminum with edge highlights,
+    /// ventilation lines, and subtle surface texture.
+    private var walkmanMetalBody: some View {
+        ZStack {
+            // Brushed metal base
+            RoundedRectangle(cornerRadius: 12)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 0.14, green: 0.14, blue: 0.17),
+                            Color(red: 0.11, green: 0.11, blue: 0.13),
+                            Color(red: 0.12, green: 0.12, blue: 0.14),
+                            Color(red: 0.09, green: 0.09, blue: 0.11),
+                            Color(red: 0.08, green: 0.08, blue: 0.10)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+
+            // Brushed metal texture (horizontal grain)
+            RoundedRectangle(cornerRadius: 12)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.03),
+                            Color.clear,
+                            Color.white.opacity(0.02),
+                            Color.clear,
+                            Color.white.opacity(0.015),
+                            Color.clear,
+                            Color.white.opacity(0.01)
+                        ],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+
+            // Ventilation lines (subtle horizontal slots near bottom)
+            VStack {
+                Spacer()
+                VStack(spacing: 3) {
+                    ForEach(0..<3, id: \.self) { _ in
+                        Capsule()
+                            .fill(Color.black.opacity(0.15))
+                            .frame(width: 40, height: 1)
+                    }
+                }
+                .padding(.bottom, 20)
+            }
+
+            // Top edge highlight
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.15),
+                            Color.white.opacity(0.05),
+                            Color.white.opacity(0.02),
+                            Color.clear
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    ),
+                    lineWidth: 0.5
+                )
+
+            // Accent glow edge
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(effectiveAccentColor.opacity(0.08), lineWidth: 1)
+                .blur(radius: 4)
         }
     }
 
