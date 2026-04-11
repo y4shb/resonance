@@ -11,9 +11,9 @@ import SwiftUI
 // MARK: - Retro LCD Panel
 
 struct RetroLCDPanel<Content: View>: View {
-    let content: () -> Content
     var title: String? = nil
     var width: CGFloat? = nil
+    @ViewBuilder let content: () -> Content
 
     @Environment(\.retroAccentColor) private var accentColor
 

@@ -12,19 +12,19 @@ import SwiftUI
 
 enum RetroAnimation {
     /// VU meter needle overshoot-then-settle.
-    static let needleBounce = Spring(response: 0.4, dampingFraction: 0.5)
+    static let needleBounce = Spring(response: 0.4, dampingRatio: 0.5)
 
     /// Rotary knob snap to detent.
-    static let knobRotation = Spring(response: 0.2, dampingFraction: 0.8)
+    static let knobRotation = Spring(response: 0.2, dampingRatio: 0.8)
 
     /// Toggle switch throw.
-    static let switchFlip = Spring(response: 0.15, dampingFraction: 0.7)
+    static let switchFlip = Spring(response: 0.15, dampingRatio: 0.7)
 
     /// Push button press/release travel.
-    static let buttonPress = Spring(response: 0.1, dampingFraction: 0.6)
+    static let buttonPress = Spring(response: 0.1, dampingRatio: 0.6)
 
     /// Screen transition (cassette tray slide).
-    static let traySlide = Spring(response: 0.35, dampingFraction: 0.85)
+    static let traySlide = Spring(response: 0.35, dampingRatio: 0.85)
 
     /// LED on/off state change.
     static let ledFade = Animation.easeInOut(duration: 0.3)
